@@ -1,52 +1,52 @@
-"use client"
+"use client";
 
-import { ProtectedRoute } from "@/components/protected-route"
-import { SidebarNavigation } from "@/components/sidebar-navigation"
-import { TopBar } from "@/components/top-bar"
-import { useState } from "react"
-import { EditorPanel } from "@/components/customization/editor-panel"
-import { LivePreview } from "@/components/customization/live-preview"
-import { ActionBar } from "@/components/customization/action-bar"
-import { useToast } from "@/hooks/use-toast"
+import { ProtectedRoute } from "@/components/protected-route";
+import { SidebarNavigation } from "@/components/sidebar-navigation";
+import { TopBar } from "@/components/top-bar";
+import { useState } from "react";
+import { EditorPanel } from "@/components/customization/editor-panel";
+import { LivePreview } from "@/components/customization/live-preview";
+import { ActionBar } from "@/components/customization/action-bar";
+import { useToast } from "@/hooks/use-toast";
 
 interface DisplayCustomization {
-  template: string
-  layout: string
+  template: string;
+  layout: string;
   prayerTimes: {
-    fajr: string
-    dhuhr: string
-    asr: string
-    maghrib: string
-    isha: string
-  }
+    fajr: string;
+    dhuhr: string;
+    asr: string;
+    maghrib: string;
+    isha: string;
+  };
   iqamahOffsets: {
-    fajr: number
-    dhuhr: number
-    asr: number
-    maghrib: number
-    isha: number
-  }
+    fajr: number;
+    dhuhr: number;
+    asr: number;
+    maghrib: number;
+    isha: number;
+  };
   colors: {
-    primary: string
-    secondary: string
-    text: string
-    accent: string
-  }
-  backgroundType: "solid" | "gradient" | "image" | "slideshow"
-  backgroundColor: string
-  backgroundImage: string[]
-  slideshowDuration: number
-  announcements: Array<{ text: string; duration: number }>
-  showHijriDate: boolean
-  font: string
+    primary: string;
+    secondary: string;
+    text: string;
+    accent: string;
+  };
+  backgroundType: "solid" | "gradient" | "image" | "slideshow";
+  backgroundColor: string;
+  backgroundImage: string[];
+  slideshowDuration: number;
+  announcements: Array<{ text: string; duration: number }>;
+  showHijriDate: boolean;
+  font: string;
 }
 
 interface CustomizePageClientProps {
-  displayId: string
+  displayId: string;
 }
 
 export function CustomizePageClient({ displayId }: CustomizePageClientProps) {
-  const { toast } = useToast()
+  const { toast } = useToast();
   const [customization, setCustomization] = useState<DisplayCustomization>({
     template: "masjid-classic",
     layout: "vertical",
@@ -76,25 +76,25 @@ export function CustomizePageClient({ displayId }: CustomizePageClientProps) {
     slideshowDuration: 5,
     announcements: [{ text: "Jumua Khutbah at 1:00 PM", duration: 5 }],
     showHijriDate: true,
-    font: "Arial",
-  })
+    font: "Amiri",
+  });
 
-  const [lastSaved, setLastSaved] = useState<string>("Just now")
+  const [lastSaved, setLastSaved] = useState<string>("Just now");
 
   const handleSaveDraft = () => {
-    setLastSaved("Just now")
+    setLastSaved("Just now");
     toast({
       title: "Draft saved",
       description: "Your customization has been saved as draft",
-    })
-  }
+    });
+  };
 
   const handlePublish = () => {
     toast({
       title: "Display published",
       description: "Your customization is now live on the display",
-    })
-  }
+    });
+  };
 
   return (
     <ProtectedRoute>
@@ -107,7 +107,10 @@ export function CustomizePageClient({ displayId }: CustomizePageClientProps) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {/* Left: Editor Panel */}
             <div className="overflow-y-auto max-h-[calc(100vh-200px)] rounded-lg border border-border bg-card">
-              <EditorPanel customization={customization} setCustomization={setCustomization} />
+              <EditorPanel
+                customization={customization}
+                setCustomization={setCustomization}
+              />
             </div>
 
             {/* Right: Live Preview */}
@@ -127,5 +130,5 @@ export function CustomizePageClient({ displayId }: CustomizePageClientProps) {
         </div>
       </main>
     </ProtectedRoute>
-  )
+  );
 }
