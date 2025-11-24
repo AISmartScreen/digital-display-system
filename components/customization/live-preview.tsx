@@ -1,8 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useEffect, useState, useRef } from "react";
-import { MasjidTemplate } from "../templates/masjid-template";
+import { useEffect, useState } from "react";
 
 interface DisplayCustomization {
   template: string;
@@ -21,10 +20,22 @@ interface DisplayCustomization {
 
 interface LivePreviewProps {
   customization: DisplayCustomization;
+  displayId: string;
 }
 
-export function LivePreview({ customization }: LivePreviewProps) {
+export function LivePreview({ customization, displayId }: LivePreviewProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [iframeKey, setIframeKey] = useState(0);
+
+  // Update iframe when customization changes
+  useEffect(() => {
+    // Debounce iframe reload to avoid too many refreshes
+    const timeout = setTimeout(() => {
+      setIframeKey((prev) => prev + 1);
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [customization]);
 
   useEffect(() => {
     if (
@@ -44,69 +55,34 @@ export function LivePreview({ customization }: LivePreviewProps) {
     customization.slideshowDuration,
   ]);
 
-  const getBackgroundStyle = (): React.CSSProperties => {
-    const baseStyle: React.CSSProperties = {
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-      transition: "background-image 1s ease-in-out",
-    };
-
-    if (customization.backgroundType === "solid") {
-      return { ...baseStyle, backgroundColor: customization.backgroundColor };
-    }
-
-    if (
-      customization.backgroundType === "image" &&
-      customization.backgroundImage?.[0]
-    ) {
-      return {
-        ...baseStyle,
-        backgroundImage: `url(${customization.backgroundImage[0]})`,
-      };
-    }
-
-    if (
-      customization.backgroundType === "slideshow" &&
-      customization.backgroundImage.length > 0
-    ) {
-      return {
-        ...baseStyle,
-        backgroundImage: `url(${customization.backgroundImage[currentSlide]})`,
-      };
-    }
-
-    return { ...baseStyle, backgroundColor: "#1A472A" };
-  };
-
-  const renderTemplate = () => {
-    switch (customization.template) {
-      case "masjid-classic":
-        return (
-          <MasjidTemplate
-            customization={customization}
-            backgroundStyle={getBackgroundStyle()}
-          />
-        );
-      default:
-        return (
-          <div className="flex items-center justify-center h-full text-white text-center p-8">
-            <div>
-              <p className="text-2xl font-bold mb-2">Select a Template</p>
-              <p className="text-sm opacity-70">
-                Choose a template from the editor to see preview
-              </p>
-            </div>
-          </div>
-        );
-    }
+  // Construct preview URL with customization parameters
+  const getPreviewUrl = () => {
+    const baseUrl = `/displays/${displayId}/preview`;
+    const params = new URLSearchParams({
+      config: JSON.stringify(customization),
+      isLivePreview: "true", // Add flag to indicate this is live preview mode
+    });
+    return `${baseUrl}?${params.toString()}`;
   };
 
   return (
     <div className="sticky top-20 rounded-lg overflow-hidden border-2 border-primary/50 shadow-xl bg-black">
       <div className="relative w-full" style={{ aspectRatio: "16 / 9" }}>
         <div className="absolute inset-0 w-full h-full overflow-hidden">
-          {renderTemplate()}
+          <iframe
+            key={iframeKey}
+            src={getPreviewUrl()}
+            className="w-full h-full border-0"
+            title="Live Display Preview"
+            sandbox="allow-scripts allow-same-origin"
+            style={{
+              transform: "scale(1)",
+              transformOrigin: "top left",
+            }}
+          />
         </div>
+
+        {/* Top overlay badges */}
         <div className="absolute top-0 left-0 right-0 flex items-start justify-between p-4 pointer-events-none z-50">
           <div className="bg-black/70 text-white px-3 py-1.5 rounded-md text-xs font-mono backdrop-blur-sm border border-white/20">
             <span className="opacity-70">Layout:</span>{" "}
@@ -115,6 +91,8 @@ export function LivePreview({ customization }: LivePreviewProps) {
             </span>
           </div>
         </div>
+
+        {/* Bottom overlay badge */}
         <div className="absolute bottom-4 left-4 bg-black/70 text-white px-3 py-1.5 rounded-md text-xs font-mono backdrop-blur-sm border border-white/20 pointer-events-none z-50">
           <span className="opacity-70">Template:</span>{" "}
           <span className="font-bold">
@@ -125,6 +103,8 @@ export function LivePreview({ customization }: LivePreviewProps) {
           </span>
         </div>
       </div>
+
+      {/* Bottom info bar */}
       <div className="bg-card border-t border-border px-4 py-3 text-xs text-muted-foreground flex items-center justify-between">
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1.5">

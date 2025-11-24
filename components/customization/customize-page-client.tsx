@@ -115,7 +115,10 @@ export function CustomizePageClient({ displayId }: CustomizePageClientProps) {
 
             {/* Right: Live Preview */}
             <div className="hidden lg:block">
-              <LivePreview customization={customization} />
+              <LivePreview
+                customization={customization}
+                displayId={displayId}
+              />
             </div>
           </div>
 

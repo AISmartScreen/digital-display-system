@@ -12,6 +12,7 @@ export default function PreviewPage() {
   const searchParams = useSearchParams();
   const configString = searchParams.get("config");
   const [customization, setCustomization] = useState<any>(null);
+  const [scale, setScale] = useState(1);
 
   useEffect(() => {
     if (configString) {
@@ -23,6 +24,26 @@ export default function PreviewPage() {
       }
     }
   }, [configString]);
+
+  // Perfect scaling with correct 16:9 landscape preview
+  useEffect(() => {
+    const updateScale = () => {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+
+      const targetWidth = 1920;
+      const targetHeight = 1080;
+
+      const scaleX = viewportWidth / targetWidth;
+      const scaleY = viewportHeight / targetHeight;
+
+      setScale(Math.min(scaleX, scaleY));
+    };
+
+    updateScale();
+    window.addEventListener("resize", updateScale);
+    return () => window.removeEventListener("resize", updateScale);
+  }, []);
 
   if (!customization) {
     return (
@@ -98,13 +119,31 @@ export default function PreviewPage() {
   };
 
   return (
-    <div className="w-screen h-screen bg-black overflow-hidden relative">
-      {/* Template renders in full screen */}
-      <div className="absolute inset-0 w-full h-full">{renderTemplate()}</div>
-
-      {/* PREVIEW MODE Badge */}
-      <div className="absolute top-8 right-8 bg-black/70 text-white px-4 py-2 rounded text-sm font-mono z-50 pointer-events-none backdrop-blur-sm border border-white/20">
-        PREVIEW MODE
+    <div className="w-screen h-screen bg-black flex items-center justify-center overflow-hidden">
+      {/* Maintain perfect 16:9 landscape aspect ratio */}
+      <div
+        className="relative"
+        style={{
+          width: "100vw",
+          height: "56.25vw", // 16:9 = 9/16 = 0.5625
+          maxHeight: "100vh",
+          maxWidth: "177.78vh", // 16:9 = 16/9 = 1.7778
+        }}
+      >
+        {/* 1920×1080 content scaled properly */}
+        <div
+          style={{
+            width: 1920,
+            height: 1080,
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: `translate(-50%, -50%) scale(${scale})`,
+            transformOrigin: "center center",
+          }}
+        >
+          {renderTemplate()}
+        </div>
       </div>
     </div>
   );
