@@ -14,12 +14,16 @@ const nextConfig = {
         source: "/:path*",
         headers: [
           {
-            key: "X-Robots-Tag",
-            value: "all",
+            key: "Access-Control-Allow-Origin",
+            value: "*",
           },
           {
-            key: "X-Frame-Options",
-            value: "SAMEORIGIN",
+            key: "Access-Control-Allow-Methods",
+            value: "GET, POST, PUT, DELETE, OPTIONS",
+          },
+          {
+            key: "Access-Control-Allow-Headers",
+            value: "X-Requested-With, Content-Type, Authorization",
           },
         ],
       },
