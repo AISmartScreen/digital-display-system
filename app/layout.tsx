@@ -40,7 +40,6 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`font-sans antialiased`}>
         <AuthProvider>{children}</AuthProvider>
-        <Analytics />
       </body>
     </html>
   );
