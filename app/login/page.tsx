@@ -9,7 +9,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
-import { Mail, Lock, ArrowRight } from "lucide-react"
+import { Mail, Lock, ArrowRight, Home } from "lucide-react"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -35,14 +35,14 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-secondary flex items-center justify-center p-4">
-      <Card className="w-full max-w-md p-8 shadow-xl border-border/50">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md p-8 shadow-xl border-border/50 backdrop-blur-sm">
         <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center mx-auto mb-4">
-            <Monitor className="w-6 h-6 text-primary-foreground" />
+          <div className="w-12 h-12 bg-accent/20 rounded-lg flex items-center justify-center mx-auto mb-4 border border-accent/30">
+            <Home className="w-6 h-6 text-accent" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">Display Hub</h1>
-          <p className="text-muted-foreground mt-2">Sign in to your account</p>
+          <h1 className="text-3xl font-bold text-foreground">Smart Home Hub</h1>
+          <p className="text-muted-foreground mt-2">Control your home devices</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -55,7 +55,7 @@ export default function LoginPage() {
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="pl-10"
+                className="pl-10 bg-secondary/50 border-border/50"
                 required
               />
             </div>
@@ -70,7 +70,7 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="pl-10"
+                className="pl-10 bg-secondary/50 border-border/50"
                 required
               />
             </div>
@@ -78,7 +78,11 @@ export default function LoginPage() {
 
           {error && <p className="text-destructive text-sm">{error}</p>}
 
-          <Button type="submit" className="w-full mt-6 gap-2" disabled={loading}>
+          <Button
+            type="submit"
+            className="w-full mt-6 gap-2 bg-accent hover:bg-accent/90 text-accent-foreground"
+            disabled={loading}
+          >
             {loading ? "Signing in..." : "Sign in"}
             <ArrowRight className="w-4 h-4" />
           </Button>
@@ -86,12 +90,12 @@ export default function LoginPage() {
 
         <p className="text-center text-muted-foreground text-sm mt-6">
           Don't have an account?{" "}
-          <Link href="/register" className="text-primary font-semibold hover:underline">
+          <Link href="/register" className="text-accent font-semibold hover:underline">
             Sign up
           </Link>
         </p>
 
-        <div className="mt-6 pt-6 border-t border-border text-xs text-muted-foreground text-center">
+        <div className="mt-6 pt-6 border-t border-border/30 text-xs text-muted-foreground text-center">
           <p>Demo credentials:</p>
           <p>Email: demo@example.com</p>
           <p>Password: password123</p>
@@ -100,5 +104,3 @@ export default function LoginPage() {
     </div>
   )
 }
-
-import { Monitor } from "lucide-react"

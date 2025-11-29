@@ -1,41 +1,31 @@
-"use client";
+"use client"
 
-import { useAuth } from "@/providers/auth-provider";
-import { usePathname } from "next/navigation";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import {
-  LayoutDashboard,
-  Monitor,
-  Library,
-  CreditCard,
-  Users,
-  BarChart3,
-  LogOut,
-  Menu,
-} from "lucide-react";
-import { useState } from "react";
+import { useAuth } from "@/providers/auth-provider"
+import { usePathname } from "next/navigation"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Home, Zap, Lightbulb, Gauge, BarChart3, Users, LogOut, Menu } from "lucide-react"
+import { useState } from "react"
 
 const clientNavItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/displays", label: "My Displays", icon: Monitor },
-  { href: "/content-library", label: "Content Library", icon: Library },
-  { href: "/subscription", label: "Subscription", icon: CreditCard },
-];
+  { href: "/dashboard", label: "Dashboard", icon: Home },
+  { href: "/devices", label: "All Devices", icon: Lightbulb },
+  { href: "/energy", label: "Energy Monitor", icon: Zap },
+  { href: "/automation", label: "Automations", icon: Gauge },
+]
 
 const adminNavItems = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: BarChart3 },
-  { href: "/admin/clients", label: "Clients", icon: Users },
-  { href: "/admin/displays", label: "All Displays", icon: Monitor },
-];
+  { href: "/admin/dashboard", label: "System", icon: BarChart3 },
+  { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/devices", label: "All Devices", icon: Lightbulb },
+]
 
 export function SidebarNavigation() {
-  const { user, logout } = useAuth();
-  const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(false);
+  const { user, logout } = useAuth()
+  const pathname = usePathname()
+  const [isOpen, setIsOpen] = useState(false)
 
-  const navItems =
-    user?.role === "super_admin" ? adminNavItems : clientNavItems;
+  const navItems = user?.role === "super_admin" ? adminNavItems : clientNavItems
 
   return (
     <>
@@ -54,15 +44,18 @@ export function SidebarNavigation() {
         }`}
       >
         <div className="p-6 border-b border-sidebar-border">
-          <h1 className="text-xl font-bold text-sidebar-foreground">
-            Display Hub
-          </h1>
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-sidebar-primary">
+              <Home className="w-5 h-5 text-sidebar-primary-foreground" />
+            </div>
+            <h1 className="text-xl font-bold text-sidebar-foreground">Smart Home Hub</h1>
+          </div>
         </div>
 
         <nav className="p-4 space-y-2">
           {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
+            const Icon = item.icon
+            const isActive = pathname === item.href
             return (
               <Link key={item.href} href={item.href}>
                 <button
@@ -77,22 +70,20 @@ export function SidebarNavigation() {
                   <span className="font-medium">{item.label}</span>
                 </button>
               </Link>
-            );
+            )
           })}
         </nav>
 
         {/* User Section */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-sidebar-border">
           <div className="mb-4 p-3 rounded-lg bg-sidebar-accent/50">
-            <p className="text-sm font-medium text-sidebar-foreground">
-              {user?.business_name}
-            </p>
+            <p className="text-sm font-medium text-sidebar-foreground">{user?.business_name}</p>
             <p className="text-xs text-sidebar-foreground/60">{user?.email}</p>
           </div>
           <Button
             onClick={() => {
-              logout();
-              setIsOpen(false);
+              logout()
+              setIsOpen(false)
             }}
             variant="outline"
             className="w-full justify-start gap-2"
@@ -104,12 +95,7 @@ export function SidebarNavigation() {
       </div>
 
       {/* Overlay for mobile */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-30 md:hidden"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
+      {isOpen && <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setIsOpen(false)} />}
     </>
-  );
+  )
 }

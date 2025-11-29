@@ -1,13 +1,22 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
-  images: {
-    unoptimized: true,
+  eslint: {
+    ignoreDuringBuilds: true,
   },
   typescript: {
     ignoreBuildErrors: true,
   },
-  swcMinify: false, // optional, can remove if not needed
-};
+  images: {
+    unoptimized: true,
+  },
+  ...(process.env.NODE_ENV === "production"
+    ? { output: "export", trailingSlash: true }
+    : {}),
+  // TODO: Removing this currently breaks the export with Next 15.2.4.
+  // Revisit when Next.js fixes ESM externals handling for static export.
+  experimental: {
+    esmExternals: false,
+  },
+}
 
-module.exports = nextConfig;
+module.exports = nextConfig

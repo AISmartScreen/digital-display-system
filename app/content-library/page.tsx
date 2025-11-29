@@ -26,7 +26,7 @@ interface MediaFile {
 const mockMedia: MediaFile[] = [
   {
     id: "1",
-    name: "masjid-background.jpg",
+    name: "living-room-bg.jpg",
     type: "image",
     size: 2.4,
     uploadedDate: "2024-06-10",
@@ -35,7 +35,7 @@ const mockMedia: MediaFile[] = [
   },
   {
     id: "2",
-    name: "hospital-entrance.jpg",
+    name: "bedroom-ambient.jpg",
     type: "image",
     size: 1.8,
     uploadedDate: "2024-06-09",
@@ -44,16 +44,16 @@ const mockMedia: MediaFile[] = [
   },
   {
     id: "3",
-    name: "corporate-event.mp4",
+    name: "device-demo.mp4",
     type: "video",
     size: 45.2,
     uploadedDate: "2024-06-08",
-    url: "https://videos.example.com/corporate-event.mp4",
+    url: "https://videos.example.com/device-demo.mp4",
     dimensions: "1920x1080",
   },
   {
     id: "4",
-    name: "announcements-bg.png",
+    name: "welcome-screen.png",
     type: "image",
     size: 3.1,
     uploadedDate: "2024-06-07",
@@ -62,11 +62,11 @@ const mockMedia: MediaFile[] = [
   },
   {
     id: "5",
-    name: "promotional-video.mp4",
+    name: "automation-guide.mp4",
     type: "video",
     size: 52.5,
     uploadedDate: "2024-06-06",
-    url: "https://videos.example.com/promotional.mp4",
+    url: "https://videos.example.com/automation.mp4",
     dimensions: "1920x1080",
   },
 ]
@@ -120,10 +120,10 @@ export default function ContentLibraryPage() {
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
             <div>
-              <h1 className="text-4xl font-bold text-foreground">Content Library</h1>
-              <p className="text-muted-foreground mt-2">Manage and organize your media files</p>
+              <h1 className="text-4xl font-bold text-foreground">Media Library</h1>
+              <p className="text-muted-foreground mt-2">Manage your device imagery and media</p>
             </div>
-            <Button onClick={() => setShowUploader(true)} className="mt-4 md:mt-0 gap-2">
+            <Button onClick={() => setShowUploader(true)} className="mt-4 md:mt-0 gap-2 bg-accent hover:bg-accent/90">
               <Upload className="w-4 h-4" />
               Upload Media
             </Button>
@@ -132,7 +132,7 @@ export default function ContentLibraryPage() {
           {/* Upload Modal */}
           {showUploader && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-              <Card className="w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+              <Card className="w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto border-border/50">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-2xl font-bold text-foreground">Upload Media</h2>
                   <button
@@ -151,13 +151,13 @@ export default function ContentLibraryPage() {
           <StorageIndicator used={usedStorage} total={totalStorage} />
 
           {/* Filter and View Options */}
-          <Card className="p-4 mb-6">
+          <Card className="p-4 mb-6 border-border/50">
             <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
               <div className="relative flex-1 w-full">
                 <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                 <Input
                   placeholder="Search media..."
-                  className="pl-10"
+                  className="pl-10 bg-secondary/50 border-border/50"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -177,11 +177,11 @@ export default function ContentLibraryPage() {
                 ))}
               </div>
 
-              <div className="flex gap-1 border border-border rounded-lg p-1">
+              <div className="flex gap-1 border border-border/30 rounded-lg p-1">
                 <button
                   onClick={() => setViewMode("grid")}
                   className={`p-2 rounded transition-colors ${
-                    viewMode === "grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                    viewMode === "grid" ? "bg-accent text-accent-foreground" : "text-muted-foreground"
                   }`}
                 >
                   <Grid className="w-5 h-5" />
@@ -189,7 +189,7 @@ export default function ContentLibraryPage() {
                 <button
                   onClick={() => setViewMode("list")}
                   className={`p-2 rounded transition-colors ${
-                    viewMode === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                    viewMode === "list" ? "bg-accent text-accent-foreground" : "text-muted-foreground"
                   }`}
                 >
                   <List className="w-5 h-5" />
@@ -206,9 +206,11 @@ export default function ContentLibraryPage() {
               <MediaList files={filtered} onDelete={handleDeleteMedia} />
             )
           ) : (
-            <Card className="p-12 text-center">
+            <Card className="p-12 text-center border-border/50">
               <p className="text-muted-foreground mb-4">No media files found</p>
-              <Button onClick={() => setShowUploader(true)}>Upload your first file</Button>
+              <Button onClick={() => setShowUploader(true)} className="bg-accent hover:bg-accent/90">
+                Upload your first file
+              </Button>
             </Card>
           )}
         </div>

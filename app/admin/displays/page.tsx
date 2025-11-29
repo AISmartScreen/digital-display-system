@@ -22,50 +22,50 @@ interface Display {
 
 const mockDisplays: Display[] = [
   {
-    id: "DSP-001",
-    name: "Prayer Times - Main Hall",
-    clientName: "Al-Noor Masjid",
-    template: "Masjid",
+    id: "DEV-001",
+    name: "Living Room Lights",
+    clientName: "John Doe",
+    template: "Lights",
     status: "online",
     lastHeartbeat: "1m ago",
     resolution: "1920x1080",
     uptime: "99.8%",
   },
   {
-    id: "DSP-002",
-    name: "Hospital Schedule - 2nd Floor",
-    clientName: "City Hospital",
-    template: "Hospital",
+    id: "DEV-002",
+    name: "Master AC Unit",
+    clientName: "Jane Smith",
+    template: "Thermostat",
     status: "online",
     lastHeartbeat: "2m ago",
     resolution: "1920x1080",
     uptime: "99.2%",
   },
   {
-    id: "DSP-003",
-    name: "Corporate Dashboard",
-    clientName: "Tech Corp Inc",
-    template: "Corporate",
+    id: "DEV-003",
+    name: "Front Door Lock",
+    clientName: "Bob Wilson",
+    template: "Security",
     status: "offline",
     lastHeartbeat: "2h ago",
     resolution: "1920x1080",
     uptime: "98.5%",
   },
   {
-    id: "DSP-004",
-    name: "Emergency Info",
-    clientName: "City Hospital",
-    template: "Hospital",
+    id: "DEV-004",
+    name: "Garage Camera",
+    clientName: "Jane Smith",
+    template: "Camera",
     status: "warning",
     lastHeartbeat: "5m ago",
     resolution: "1920x1080",
     uptime: "97.8%",
   },
   {
-    id: "DSP-005",
-    name: "Announcement Board",
-    clientName: "Islamic Center",
-    template: "Masjid",
+    id: "DEV-005",
+    name: "Patio Display",
+    clientName: "Alice Brown",
+    template: "Lights",
     status: "online",
     lastHeartbeat: "30s ago",
     resolution: "1920x1080",
@@ -88,11 +88,11 @@ export default function AdminDisplaysPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "online":
-        return "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+        return "bg-accent/20 text-accent"
       case "offline":
-        return "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+        return "bg-destructive/20 text-destructive"
       case "warning":
-        return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"
+        return "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
       default:
         return ""
     }
@@ -107,44 +107,44 @@ export default function AdminDisplaysPage() {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-4xl font-bold text-foreground">All Displays</h1>
-            <p className="text-muted-foreground mt-2">Monitor and manage all displays across all clients</p>
+            <h1 className="text-4xl font-bold text-foreground">All Devices</h1>
+            <p className="text-muted-foreground mt-2">Monitor and manage all smart home devices</p>
           </div>
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <Card className="p-4">
-              <p className="text-sm text-muted-foreground">Total Displays</p>
+            <Card className="p-4 border-border/50">
+              <p className="text-sm text-muted-foreground">Total Devices</p>
               <p className="text-3xl font-bold text-foreground mt-1">{mockDisplays.length}</p>
             </Card>
-            <Card className="p-4">
+            <Card className="p-4 border-border/50">
               <p className="text-sm text-muted-foreground">Online</p>
-              <p className="text-3xl font-bold text-green-600 mt-1">
+              <p className="text-3xl font-bold text-accent mt-1">
                 {mockDisplays.filter((d) => d.status === "online").length}
               </p>
             </Card>
-            <Card className="p-4">
+            <Card className="p-4 border-border/50">
               <p className="text-sm text-muted-foreground">Offline</p>
-              <p className="text-3xl font-bold text-red-600 mt-1">
+              <p className="text-3xl font-bold text-destructive mt-1">
                 {mockDisplays.filter((d) => d.status === "offline").length}
               </p>
             </Card>
-            <Card className="p-4">
+            <Card className="p-4 border-border/50">
               <p className="text-sm text-muted-foreground">Warning</p>
-              <p className="text-3xl font-bold text-yellow-600 mt-1">
+              <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">
                 {mockDisplays.filter((d) => d.status === "warning").length}
               </p>
             </Card>
           </div>
 
           {/* Filter Bar */}
-          <Card className="p-4 mb-6">
+          <Card className="p-4 mb-6 border-border/50">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                 <Input
-                  placeholder="Search displays..."
-                  className="pl-10"
+                  placeholder="Search devices..."
+                  className="pl-10 bg-secondary/50 border-border/50"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -166,16 +166,16 @@ export default function AdminDisplaysPage() {
           </Card>
 
           {/* Displays Table */}
-          <Card className="overflow-hidden">
+          <Card className="overflow-hidden border-border/50">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-border bg-secondary/50">
-                    <th className="text-left py-3 px-4 font-semibold text-foreground">Display Name</th>
-                    <th className="text-left py-3 px-4 font-semibold text-foreground">Client</th>
-                    <th className="text-left py-3 px-4 font-semibold text-foreground">Template</th>
+                  <tr className="border-b border-border/30 bg-secondary/30">
+                    <th className="text-left py-3 px-4 font-semibold text-foreground">Device Name</th>
+                    <th className="text-left py-3 px-4 font-semibold text-foreground">Owner</th>
+                    <th className="text-left py-3 px-4 font-semibold text-foreground">Type</th>
                     <th className="text-left py-3 px-4 font-semibold text-foreground">Status</th>
-                    <th className="text-left py-3 px-4 font-semibold text-foreground">Last Heartbeat</th>
+                    <th className="text-left py-3 px-4 font-semibold text-foreground">Last Seen</th>
                     <th className="text-left py-3 px-4 font-semibold text-foreground">Resolution</th>
                     <th className="text-left py-3 px-4 font-semibold text-foreground">Uptime</th>
                     <th className="text-left py-3 px-4 font-semibold text-foreground">Actions</th>
@@ -184,7 +184,10 @@ export default function AdminDisplaysPage() {
                 <tbody>
                   {filtered.length > 0 ? (
                     filtered.map((display) => (
-                      <tr key={display.id} className="border-b border-border hover:bg-secondary/30 transition-colors">
+                      <tr
+                        key={display.id}
+                        className="border-b border-border/30 hover:bg-secondary/20 transition-colors"
+                      >
                         <td className="py-3 px-4 font-medium text-foreground">{display.name}</td>
                         <td className="py-3 px-4 text-muted-foreground">{display.clientName}</td>
                         <td className="py-3 px-4 text-muted-foreground">{display.template}</td>
@@ -201,8 +204,8 @@ export default function AdminDisplaysPage() {
                           <span
                             className={`inline-block px-2 py-1 rounded text-xs font-medium ${
                               Number.parseInt(display.uptime) > 99
-                                ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-                                : "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"
+                                ? "bg-accent/20 text-accent"
+                                : "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
                             }`}
                           >
                             {display.uptime}
@@ -216,7 +219,6 @@ export default function AdminDisplaysPage() {
                             {display.status !== "offline" && (
                               <Button size="sm" variant="outline" className="gap-1 text-destructive bg-transparent">
                                 <Power className="w-4 h-4" />
-                                Restart
                               </Button>
                             )}
                           </div>
@@ -226,7 +228,7 @@ export default function AdminDisplaysPage() {
                   ) : (
                     <tr>
                       <td colSpan={8} className="py-8 text-center text-muted-foreground">
-                        No displays found
+                        No devices found
                       </td>
                     </tr>
                   )}

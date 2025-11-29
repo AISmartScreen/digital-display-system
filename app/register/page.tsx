@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Mail, Lock, Building2, ArrowRight } from "lucide-react"
+import { Mail, Lock, Home, ArrowRight } from "lucide-react"
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("")
@@ -43,14 +43,14 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-secondary flex items-center justify-center p-4">
-      <Card className="w-full max-w-md p-8 shadow-xl border-border/50">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md p-8 shadow-xl border-border/50 backdrop-blur-sm">
         <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center mx-auto mb-4">
-            <Building2 className="w-6 h-6 text-primary-foreground" />
+          <div className="w-12 h-12 bg-accent/20 rounded-lg flex items-center justify-center mx-auto mb-4 border border-accent/30">
+            <Home className="w-6 h-6 text-accent" />
           </div>
           <h1 className="text-3xl font-bold text-foreground">Create Account</h1>
-          <p className="text-muted-foreground mt-2">Join Display Hub today</p>
+          <p className="text-muted-foreground mt-2">Join Smart Home Hub</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -63,37 +63,37 @@ export default function RegisterPage() {
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="pl-10"
+                className="pl-10 bg-secondary/50 border-border/50"
                 required
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Business Name</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Name</label>
             <div className="relative">
-              <Building2 className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+              <Home className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="Your Business Name"
+                placeholder="Your Name"
                 value={businessName}
                 onChange={(e) => setBusinessName(e.target.value)}
-                className="pl-10"
+                className="pl-10 bg-secondary/50 border-border/50"
                 required
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Business Type</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Device Type</label>
             <Select value={businessType} onValueChange={setBusinessType}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-secondary/50 border-border/50">
                 <SelectValue placeholder="Select type..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="masjid">Masjid</SelectItem>
-                <SelectItem value="hospital">Hospital</SelectItem>
-                <SelectItem value="corporate">Corporate</SelectItem>
+                <SelectItem value="masjid">Lights & Switches</SelectItem>
+                <SelectItem value="hospital">Thermostats</SelectItem>
+                <SelectItem value="corporate">Security System</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -107,7 +107,7 @@ export default function RegisterPage() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="pl-10"
+                className="pl-10 bg-secondary/50 border-border/50"
                 required
               />
             </div>
@@ -115,7 +115,11 @@ export default function RegisterPage() {
 
           {error && <p className="text-destructive text-sm">{error}</p>}
 
-          <Button type="submit" className="w-full mt-6 gap-2" disabled={loading}>
+          <Button
+            type="submit"
+            className="w-full mt-6 gap-2 bg-accent hover:bg-accent/90 text-accent-foreground"
+            disabled={loading}
+          >
             {loading ? "Creating account..." : "Create account"}
             <ArrowRight className="w-4 h-4" />
           </Button>
@@ -123,7 +127,7 @@ export default function RegisterPage() {
 
         <p className="text-center text-muted-foreground text-sm mt-6">
           Already have an account?{" "}
-          <Link href="/login" className="text-primary font-semibold hover:underline">
+          <Link href="/login" className="text-accent font-semibold hover:underline">
             Sign in
           </Link>
         </p>

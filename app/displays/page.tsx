@@ -14,7 +14,7 @@ import { useState } from "react"
 const mockDisplays = [
   {
     id: 1,
-    name: "Prayer Times Display - Main Hall",
+    name: "Living Room Lights",
     template: "Masjid",
     status: "active",
     lastHeartbeat: "2m ago",
@@ -22,7 +22,7 @@ const mockDisplays = [
   },
   {
     id: 2,
-    name: "Hospital Schedule - 2nd Floor",
+    name: "Master Bedroom AC",
     template: "Hospital",
     status: "active",
     lastHeartbeat: "5m ago",
@@ -30,7 +30,7 @@ const mockDisplays = [
   },
   {
     id: 3,
-    name: "Corporate Dashboard",
+    name: "Front Door Lock",
     template: "Corporate",
     status: "offline",
     lastHeartbeat: "2h ago",
@@ -38,7 +38,7 @@ const mockDisplays = [
   },
   {
     id: 4,
-    name: "Masjid Announcement Board",
+    name: "Kitchen Display",
     template: "Masjid",
     status: "active",
     lastHeartbeat: "1m ago",
@@ -46,7 +46,7 @@ const mockDisplays = [
   },
   {
     id: 5,
-    name: "Emergency Info Display",
+    name: "Garage Camera",
     template: "Hospital",
     status: "active",
     lastHeartbeat: "3m ago",
@@ -54,7 +54,7 @@ const mockDisplays = [
   },
   {
     id: 6,
-    name: "Meeting Room Scheduler",
+    name: "Patio Lights",
     template: "Corporate",
     status: "offline",
     lastHeartbeat: "1h ago",
@@ -78,25 +78,25 @@ export default function DisplaysPage() {
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
             <div>
-              <h1 className="text-4xl font-bold text-foreground">My Displays</h1>
-              <p className="text-muted-foreground mt-2">Manage and monitor all your digital displays</p>
+              <h1 className="text-4xl font-bold text-foreground">My Devices</h1>
+              <p className="text-muted-foreground mt-2">Manage and control all your smart home devices</p>
             </div>
             <Link href="/displays/new">
-              <Button className="mt-4 md:mt-0 gap-2">
+              <Button className="mt-4 md:mt-0 gap-2 bg-accent hover:bg-accent/90">
                 <Plus className="w-4 h-4" />
-                Create Display
+                Add Device
               </Button>
             </Link>
           </div>
 
           {/* Search and Filter */}
-          <Card className="p-4 mb-6">
+          <Card className="p-4 mb-6 border-border/50">
             <div className="flex flex-col md:flex-row gap-4 items-center">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                 <Input
-                  placeholder="Search displays..."
-                  className="pl-10"
+                  placeholder="Search devices..."
+                  className="pl-10 bg-secondary/50 border-border/50"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -105,7 +105,7 @@ export default function DisplaysPage() {
                 <button
                   onClick={() => setViewMode("grid")}
                   className={`p-2 rounded-lg transition-colors ${
-                    viewMode === "grid" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                    viewMode === "grid" ? "bg-accent text-accent-foreground" : "bg-secondary text-muted-foreground"
                   }`}
                 >
                   <Grid className="w-5 h-5" />
@@ -113,7 +113,7 @@ export default function DisplaysPage() {
                 <button
                   onClick={() => setViewMode("list")}
                   className={`p-2 rounded-lg transition-colors ${
-                    viewMode === "list" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                    viewMode === "list" ? "bg-accent text-accent-foreground" : "bg-secondary text-muted-foreground"
                   }`}
                 >
                   <List className="w-5 h-5" />
@@ -128,9 +128,9 @@ export default function DisplaysPage() {
               filtered.map((display) => <DisplayCard key={display.id} display={display} viewMode={viewMode} />)
             ) : (
               <div className="col-span-full text-center py-12">
-                <p className="text-muted-foreground mb-4">No displays found</p>
+                <p className="text-muted-foreground mb-4">No devices found</p>
                 <Link href="/displays/new">
-                  <Button>Create your first display</Button>
+                  <Button className="bg-accent hover:bg-accent/90">Add your first device</Button>
                 </Link>
               </div>
             )}

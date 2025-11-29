@@ -5,22 +5,31 @@ import { SidebarNavigation } from "@/components/sidebar-navigation"
 import { TopBar } from "@/components/top-bar"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { MetricCard } from "@/components/metric-card"
-import { ActivityFeed } from "@/components/activity-feed"
-import { Plus } from "lucide-react"
+import { RoomGroup } from "@/components/smart-home/room-group"
+import { EnergyMonitor } from "@/components/smart-home/energy-monitor"
+import { Plus, Home, Zap } from "lucide-react"
 import Link from "next/link"
 
-const mockMetrics = [
-  { label: "Total Displays", value: "8", trend: "+2 this month", icon: "📺" },
-  { label: "Active Now", value: "7", trend: "1 offline", icon: "🟢" },
-  { label: "Storage Used", value: "2.4 GB", trend: "of 10 GB", icon: "💾" },
+const livingRoomDevices = [
+  { id: "1", name: "Main Light", type: "light" as const, status: true, value: 80 },
+  { id: "2", name: "Ceiling Fan", type: "fan" as const, status: false, value: 0 },
+  { id: "3", name: "Security Camera", type: "camera" as const, status: true, value: 100 },
 ]
 
-const mockActivity = [
-  { id: 1, action: 'Display "Masjid Hall" went offline', time: "2 minutes ago", type: "offline" },
-  { id: 2, action: 'Customization saved for "Prayer Times 1"', time: "1 hour ago", type: "save" },
-  { id: 3, action: "New announcement added", time: "3 hours ago", type: "update" },
-  { id: 4, action: 'Display "Hospital Main" synced successfully', time: "5 hours ago", type: "sync" },
+const bedroomDevices = [
+  { id: "4", name: "Bedroom Light", type: "light" as const, status: true, value: 60 },
+  { id: "5", name: "AC Unit", type: "thermostat" as const, status: true, value: 72 },
+  { id: "6", name: "Door Lock", type: "lock" as const, status: true },
+]
+
+const kitchenDevices = [
+  { id: "7", name: "Kitchen Light", type: "light" as const, status: true, value: 100 },
+  { id: "8", name: "Smart Speaker", type: "speaker" as const, status: false },
+]
+
+const outdoorDevices = [
+  { id: "9", name: "Patio Light", type: "light" as const, status: false, value: 0 },
+  { id: "10", name: "Outdoor Camera", type: "camera" as const, status: true, value: 100 },
 ]
 
 export default function DashboardPage() {
@@ -31,108 +40,80 @@ export default function DashboardPage() {
 
       <main className="md:ml-64 pt-20 pb-8 px-4 md:px-8">
         <div className="max-w-7xl mx-auto">
-          {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
             <div>
-              <h1 className="text-4xl font-bold text-foreground">Dashboard</h1>
-              <p className="text-muted-foreground mt-2">Welcome back! Here's your display overview.</p>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 rounded-lg bg-accent/10">
+                  <Home className="w-6 h-6 text-accent" />
+                </div>
+                <h1 className="text-4xl font-bold text-foreground">Smart Home</h1>
+              </div>
+              <p className="text-muted-foreground">Monitor and control all your home devices</p>
             </div>
-            <Link href="/displays/new">
+            <Link href="/devices/new">
               <Button className="mt-4 md:mt-0 gap-2">
                 <Plus className="w-4 h-4" />
-                Add New Display
+                Add Device
               </Button>
             </Link>
           </div>
 
-          {/* Metrics Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            {mockMetrics.map((metric, index) => (
-              <MetricCard key={index} {...metric} />
-            ))}
-          </div>
-
-          {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Recent Displays */}
-            <div className="lg:col-span-2">
-              <Card className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-foreground">Recent Displays</h2>
-                  <Link href="/displays">
-                    <button className="text-primary text-sm font-medium hover:underline">View all</button>
-                  </Link>
-                </div>
-
-                <div className="space-y-3">
-                  {[
-                    {
-                      name: "Prayer Times Display - Main Hall",
-                      status: "active",
-                      template: "Masjid",
-                      lastSync: "5m ago",
-                    },
-                    {
-                      name: "Hospital Schedule - 2nd Floor",
-                      status: "active",
-                      template: "Hospital",
-                      lastSync: "12m ago",
-                    },
-                    { name: "Corporate Dashboard", status: "offline", template: "Corporate", lastSync: "2h ago" },
-                  ].map((display, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between p-4 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
-                    >
-                      <div>
-                        <p className="font-medium text-foreground">{display.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {display.template} • Last sync: {display.lastSync}
-                        </p>
-                      </div>
-                      <div
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          display.status === "active"
-                            ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-                            : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
-                        }`}
-                      >
-                        {display.status === "active" ? "🟢 Active" : "🔴 Offline"}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <Link href="/displays">
-                  <Button variant="outline" className="w-full mt-4 bg-transparent">
-                    View All Displays
-                  </Button>
-                </Link>
-              </Card>
-            </div>
-
-            {/* Activity Feed */}
-            <ActivityFeed activities={mockActivity} />
-          </div>
-
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-            <Card className="p-6 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 hover:border-primary/40 transition-colors cursor-pointer">
+            <Card className="p-6 bg-gradient-to-br from-accent/10 to-accent/5 border-accent/20">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-foreground mb-1">Need Help?</h3>
-                  <p className="text-sm text-muted-foreground">Check our documentation and guides</p>
+                  <p className="text-sm text-muted-foreground mb-1">Active Devices</p>
+                  <p className="text-3xl font-bold text-foreground">7 of 10</p>
                 </div>
-                <span className="text-3xl">📚</span>
+                <span className="text-4xl">✓</span>
               </div>
             </Card>
-            <Card className="p-6 bg-gradient-to-br from-accent/10 to-accent/5 border-accent/20 hover:border-accent/40 transition-colors cursor-pointer">
+            <Card className="p-6 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-foreground mb-1">Upgrade Plan</h3>
-                  <p className="text-sm text-muted-foreground">Get unlimited displays and storage</p>
+                  <p className="text-sm text-muted-foreground mb-1">Energy Usage</p>
+                  <p className="text-3xl font-bold text-foreground">2.4 kW</p>
                 </div>
-                <span className="text-3xl">⭐</span>
+                <Zap className="w-8 h-8 text-primary" />
+              </div>
+            </Card>
+            <Card className="p-6 bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Temperature</p>
+                  <p className="text-3xl font-bold text-foreground">72°F</p>
+                </div>
+                <span className="text-4xl">🌡️</span>
+              </div>
+            </Card>
+          </div>
+
+          <div className="space-y-12 mb-12">
+            <RoomGroup name="Living Room" icon="living" devices={livingRoomDevices} />
+            <RoomGroup name="Bedroom" icon="bedroom" devices={bedroomDevices} />
+            <RoomGroup name="Kitchen" icon="kitchen" devices={kitchenDevices} />
+            <RoomGroup name="Outdoor" icon="outdoor" devices={outdoorDevices} />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <EnergyMonitor />
+            </div>
+            <Card className="p-6">
+              <h3 className="font-semibold text-foreground mb-4">System Status</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+                  <span className="text-sm text-muted-foreground">Wi-Fi</span>
+                  <span className="text-sm font-semibold text-green-500">Connected</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+                  <span className="text-sm text-muted-foreground">Hub</span>
+                  <span className="text-sm font-semibold text-green-500">Online</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+                  <span className="text-sm text-muted-foreground">Backup</span>
+                  <span className="text-sm font-semibold text-green-500">Active</span>
+                </div>
               </div>
             </Card>
           </div>

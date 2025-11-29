@@ -21,16 +21,16 @@ const plans: Plan[] = [
     name: "Starter",
     price: 29,
     period: "/month",
-    description: "Perfect for small businesses",
-    features: ["5 displays", "50 GB storage", "Email support", "Basic templates", "Monthly analytics"],
+    description: "Perfect for small homes",
+    features: ["5 devices", "50 GB storage", "Email support", "Basic templates", "Monthly analytics"],
   },
   {
     name: "Professional",
     price: 79,
     period: "/month",
-    description: "For growing businesses",
+    description: "For growing smart homes",
     features: [
-      "20 displays",
+      "20 devices",
       "500 GB storage",
       "Priority support",
       "All templates",
@@ -44,9 +44,9 @@ const plans: Plan[] = [
     name: "Enterprise",
     price: 199,
     period: "/month",
-    description: "For large organizations",
+    description: "For large installations",
     features: [
-      "Unlimited displays",
+      "Unlimited devices",
       "Unlimited storage",
       "24/7 phone support",
       "All templates + custom",
@@ -68,12 +68,12 @@ export default function SubscriptionPage() {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-foreground">Subscription Plans</h1>
-            <p className="text-muted-foreground mt-2 text-lg">Choose the perfect plan for your business</p>
+            <h1 className="text-4xl font-bold text-foreground">Plans & Pricing</h1>
+            <p className="text-muted-foreground mt-2 text-lg">Choose the right plan for your smart home</p>
           </div>
 
           {/* Current Plan Notice */}
-          <Card className="p-4 mb-8 bg-accent/10 border border-accent/30">
+          <Card className="p-4 mb-8 bg-accent/10 border border-accent/20">
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
               <div>
@@ -88,13 +88,13 @@ export default function SubscriptionPage() {
             {plans.map((plan) => (
               <Card
                 key={plan.name}
-                className={`p-6 flex flex-col transition-all ${
-                  plan.current ? "ring-2 ring-primary border-primary shadow-lg" : "hover:shadow-lg"
+                className={`p-6 flex flex-col transition-all border-border/50 ${
+                  plan.current ? "ring-2 ring-accent shadow-lg" : "hover:shadow-lg"
                 }`}
               >
                 {plan.current && (
                   <div className="mb-4">
-                    <span className="inline-block px-3 py-1 bg-primary text-primary-foreground rounded-full text-xs font-semibold">
+                    <span className="inline-block px-3 py-1 bg-accent text-accent-foreground rounded-full text-xs font-semibold">
                       Current Plan
                     </span>
                   </div>
@@ -122,20 +122,20 @@ export default function SubscriptionPage() {
                     Current Plan
                   </Button>
                 ) : (
-                  <Button className="w-full">Upgrade to {plan.name}</Button>
+                  <Button className="w-full bg-accent hover:bg-accent/90">Upgrade to {plan.name}</Button>
                 )}
               </Card>
             ))}
           </div>
 
           {/* Billing History */}
-          <Card className="p-6">
+          <Card className="p-6 border-border/50">
             <h2 className="text-2xl font-bold text-foreground mb-4">Billing History</h2>
 
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-border">
+                  <tr className="border-b border-border/30">
                     <th className="text-left py-3 px-4 font-semibold text-foreground">Date</th>
                     <th className="text-left py-3 px-4 font-semibold text-foreground">Description</th>
                     <th className="text-left py-3 px-4 font-semibold text-foreground">Amount</th>
@@ -170,12 +170,12 @@ export default function SubscriptionPage() {
                       status: "Paid",
                     },
                   ].map((invoice, index) => (
-                    <tr key={index} className="border-b border-border hover:bg-secondary/30 transition-colors">
+                    <tr key={index} className="border-b border-border/30 hover:bg-secondary/20 transition-colors">
                       <td className="py-3 px-4 text-foreground">{invoice.date}</td>
                       <td className="py-3 px-4 text-muted-foreground">{invoice.description}</td>
                       <td className="py-3 px-4 font-semibold text-foreground">{invoice.amount}</td>
                       <td className="py-3 px-4">
-                        <span className="inline-block px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium">
+                        <span className="inline-block px-3 py-1 bg-accent/20 text-accent rounded-full text-xs font-medium">
                           {invoice.status}
                         </span>
                       </td>
