@@ -45,7 +45,7 @@ export function UploadHandler({
       formData.append("environment", environment);
       formData.append("imageId", imageId);
 
-      const response = await fetch("/api/upload", {
+      const response = await fetch("/api/media/upload", {
         method: "POST",
         body: formData,
       });

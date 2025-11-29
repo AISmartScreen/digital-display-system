@@ -14,6 +14,7 @@ import {
   ImageIcon,
   Video,
   Loader2,
+  User,
 } from "lucide-react";
 
 interface MediaItem {
@@ -32,6 +33,12 @@ interface UploadCriteria {
   userId: string;
   environment: "preview" | "production";
   imageId: string;
+}
+
+interface AuthUser {
+  userId: string;
+  email: string;
+  role: "super_admin" | "client";
 }
 
 // Confirm Modal Component
@@ -56,17 +63,13 @@ function ConfirmModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={!isLoading ? onClose : undefined}
       />
-
-      {/* Modal */}
       <div className="relative bg-slate-800 border border-slate-700 rounded-lg p-6 max-w-md w-full mx-4 shadow-2xl">
         <h3 className="text-lg font-semibold text-slate-50 mb-2">{title}</h3>
         <p className="text-slate-400 text-sm mb-6">{message}</p>
-
         <div className="flex gap-3 justify-end">
           <Button
             onClick={onClose}
@@ -161,7 +164,6 @@ function MediaGallery({
 
   return (
     <>
-      {/* Modals */}
       <ConfirmModal
         isOpen={showDeleteModal}
         onClose={() => {
@@ -183,7 +185,6 @@ function MediaGallery({
         isLoading={isDeleting === "clear-all"}
       />
 
-      {/* Header with Clear All Button */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-slate-50">
           Your Files ({items.length})
@@ -199,14 +200,12 @@ function MediaGallery({
         </Button>
       </div>
 
-      {/* Gallery Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {items.map((item) => (
           <Card
             key={item.id}
             className="bg-slate-800 border-slate-700 overflow-hidden hover:border-slate-600 transition-colors relative"
           >
-            {/* Loading Overlay */}
             {isDeleting === item.id && (
               <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-10 flex items-center justify-center">
                 <div className="flex flex-col items-center gap-2">
@@ -216,7 +215,6 @@ function MediaGallery({
               </div>
             )}
 
-            {/* Preview */}
             <div className="bg-slate-900 aspect-video flex items-center justify-center overflow-hidden">
               {item.fileType === "image" ? (
                 <img
@@ -232,7 +230,6 @@ function MediaGallery({
               )}
             </div>
 
-            {/* Info */}
             <div className="p-4 space-y-3">
               <div>
                 <div className="flex items-center gap-2 mb-1">
@@ -251,12 +248,10 @@ function MediaGallery({
                 </p>
               </div>
 
-              {/* URL */}
               <div className="bg-slate-700/50 rounded p-2 font-mono text-xs text-slate-300 truncate">
                 {item.fileUrl}
               </div>
 
-              {/* Actions */}
               <div className="flex gap-2">
                 <Button
                   size="sm"
@@ -303,19 +298,64 @@ export function MediaManager() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [showCriteriaForm, setShowCriteriaForm] = useState(false);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
 
   // Upload criteria state
   const [uploadCriteria, setUploadCriteria] = useState<UploadCriteria>({
-    userId: "user-" + Math.random().toString(36).substr(2, 9),
-    environment: "preview",
-    imageId: "img-001",
+    userId: "",
+    environment: "production",
+    imageId: "background",
   });
 
+  // Fetch current user on mount
   useEffect(() => {
-    fetchMedia();
+    fetchCurrentUser();
   }, []);
 
+  // Update userId when currentUser is loaded
+  useEffect(() => {
+    if (currentUser) {
+      setUploadCriteria((prev) => ({
+        ...prev,
+        userId: currentUser.userId,
+      }));
+      fetchMedia();
+    }
+  }, [currentUser]);
+
+  const fetchCurrentUser = async () => {
+    setIsLoadingUser(true);
+
+    const mockUser: AuthUser = {
+      userId: "1",
+      email: "mockuser@example.com",
+      role: "client",
+    };
+
+    try {
+      const response = await fetch("/api/auth/me");
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentUser(data.user);
+      } else {
+        const data = mockUser;
+        setCurrentUser(data);
+        // setError("Failed to authenticate. Please log in.");
+      }
+    } catch (err) {
+      console.error("Failed to fetch user:", err);
+      const data = mockUser;
+      setCurrentUser(data);
+      // setError("Failed to load user information");
+    } finally {
+      setIsLoadingUser(false);
+    }
+  };
+
   const fetchMedia = async () => {
+    if (!currentUser) return;
+
     try {
       const response = await fetch("/api/media");
       const data = await response.json();
@@ -326,6 +366,11 @@ export function MediaManager() {
   };
 
   const handleFileSelect = async (files: File[]) => {
+    if (!currentUser) {
+      setError("You must be logged in to upload files");
+      return;
+    }
+
     setIsUploading(true);
     setError("");
     setMessage("");
@@ -333,17 +378,15 @@ export function MediaManager() {
     try {
       const formData = new FormData();
 
-      // Add all files
       files.forEach((file) => {
         formData.append("files", file);
       });
 
-      // Add criteria
-      formData.append("id", uploadCriteria.userId);
+      formData.append("id", currentUser.userId);
       formData.append("environment", uploadCriteria.environment);
       formData.append("imageId", uploadCriteria.imageId);
 
-      const response = await fetch("/api/upload", {
+      const response = await fetch("/api/media/uploadMedia", {
         method: "POST",
         body: formData,
       });
@@ -355,7 +398,6 @@ export function MediaManager() {
 
       const data = await response.json();
 
-      // Transform uploaded blobs to MediaItems
       const newMediaItems = data.blobs.map((blob: any) => ({
         id: blob.pathname,
         fileName: blob.pathname.split("/").pop(),
@@ -363,7 +405,7 @@ export function MediaManager() {
           ? "image"
           : "video",
         fileUrl: blob.url,
-        fileSize: 0, // Vercel Blob doesn't return size immediately
+        fileSize: 0,
         uploadedAt: new Date().toISOString(),
         userId: blob.id,
         environment: blob.environment,
@@ -374,7 +416,6 @@ export function MediaManager() {
       setMessage(`Successfully uploaded ${files.length} file(s)`);
       setTimeout(() => setMessage(""), 3000);
 
-      // Refresh media list to get updated data
       fetchMedia();
     } catch (err) {
       setError(
@@ -415,7 +456,6 @@ export function MediaManager() {
     setError("");
 
     try {
-      // Delete all items one by one
       const deletePromises = mediaItems.map((item) =>
         fetch(`/api/media/${encodeURIComponent(item.id)}`, {
           method: "DELETE",
@@ -435,23 +475,70 @@ export function MediaManager() {
   };
 
   const totalSize = mediaItems.reduce((sum, item) => sum + item.fileSize, 0);
-  const maxSize = 5 * 1024 * 1024 * 1024; // 5GB
+  const maxSize = 5 * 1024 * 1024 * 1024;
+
+  if (isLoadingUser) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-12 h-12 text-slate-400 animate-spin" />
+          <p className="text-slate-400">Loading user information...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+        <Card className="bg-slate-800 border-slate-700 p-8 max-w-md">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-slate-50 text-center mb-2">
+            Authentication Required
+          </h2>
+          <p className="text-slate-400 text-center mb-6">
+            Please log in to access the media library.
+          </p>
+          <Button
+            onClick={() => (window.location.href = "/login")}
+            className="w-full bg-orange-500 hover:bg-orange-600"
+          >
+            Go to Login
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      {/* Header */}
       <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <h1 className="text-2xl font-bold text-slate-50">Media Library</h1>
-          <p className="text-slate-400 text-sm">
-            Upload and manage images and videos for your displays
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-50">
+                Media Library
+              </h1>
+              <p className="text-slate-400 text-sm">
+                Upload and manage images and videos for your displays
+              </p>
+            </div>
+            <div className="flex items-center gap-3 bg-slate-800 border border-slate-700 rounded-lg px-4 py-2">
+              <User className="w-4 h-4 text-slate-400" />
+              <div>
+                <p className="text-sm font-medium text-slate-50">
+                  {currentUser.email}
+                </p>
+                <p className="text-xs text-slate-400 capitalize">
+                  {currentUser.role.replace("_", " ")}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Storage Info */}
         <Card className="bg-slate-800 border-slate-700 p-4 mb-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -473,7 +560,6 @@ export function MediaManager() {
           </div>
         </Card>
 
-        {/* Messages */}
         {error && (
           <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6">
             <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
@@ -488,7 +574,6 @@ export function MediaManager() {
           </div>
         )}
 
-        {/* Upload Section */}
         <div className="mb-12">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-slate-50">
@@ -505,7 +590,6 @@ export function MediaManager() {
             </Button>
           </div>
 
-          {/* Criteria Form */}
           {showCriteriaForm && (
             <Card className="bg-slate-800 border-slate-700 p-4 mb-4">
               <h3 className="text-sm font-semibold text-slate-50 mb-3">
@@ -514,19 +598,13 @@ export function MediaManager() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="text-xs text-slate-400 mb-1 block">
-                    User ID
+                    User ID (Read-only)
                   </label>
                   <input
                     type="text"
-                    value={uploadCriteria.userId}
-                    onChange={(e) =>
-                      setUploadCriteria({
-                        ...uploadCriteria,
-                        userId: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-slate-200 text-sm focus:outline-none focus:border-orange-500"
-                    placeholder="user-123"
+                    value={currentUser.userId}
+                    disabled
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-slate-400 text-sm cursor-not-allowed"
                   />
                 </div>
                 <div>
@@ -571,13 +649,12 @@ export function MediaManager() {
           <UploadZone
             onFileSelect={handleFileSelect}
             isUploading={isUploading}
-            id={uploadCriteria.userId}
+            id={currentUser.userId}
             environment={uploadCriteria.environment}
             imageId={uploadCriteria.imageId}
           />
         </div>
 
-        {/* Gallery Section */}
         <div>
           <MediaGallery
             items={mediaItems}

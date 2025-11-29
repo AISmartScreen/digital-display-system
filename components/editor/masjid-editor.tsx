@@ -7,6 +7,7 @@ interface MasjidEditorPanelProps {
   config: any;
   onConfigChange: (config: any) => void;
   displayId?: string;
+  environment?: "preview" | "production";
 }
 
 interface CollapsibleSectionProps {
@@ -80,18 +81,67 @@ function ImageUploader({
   images,
   onChange,
   maxImages = 10,
-  displayId,
-  imageType,
+  displayId = "1",
+  imageType = "background",
+  environment = "preview",
 }: {
   images: string[];
   onChange: (imgs: string[]) => void;
   maxImages?: number;
   displayId?: string;
   imageType: "logo" | "background" | "slideshow";
+  environment?: "preview" | "production";
 }) {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [MediaUploadedImages, setMediaUploadedImages] = useState<string[]>([]);
+  const [isLoadingProduction, setIsLoadingProduction] = useState(false);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const fetchAllImages = async () => {
+      if (!displayId || !imageType) return;
+
+      setIsLoadingProduction(true);
+      setIsLoadingPreview(true);
+
+      try {
+        const response = await fetch(`/api/media`);
+        if (!response.ok) {
+          console.error("Failed to fetch images:", await response.text());
+          return;
+        }
+
+        const allMedia = await response.json();
+
+        // Filter production + preview together
+        const combinedImages = allMedia
+          .filter(
+            (item: any) =>
+              (item.environment === "production" ||
+                item.environment === "preview") &&
+              item.imageId === imageType &&
+              item.userId === displayId
+          )
+          .map((item: any) => item.fileUrl);
+
+        console.log(
+          `Loaded ${combinedImages.length} total images (production + preview) for ${imageType}`
+        );
+
+        // Set only this state as requested
+        setMediaUploadedImages(combinedImages);
+      } catch (err) {
+        console.error("Error fetching images:", err);
+      } finally {
+        setIsLoadingProduction(false);
+        setIsLoadingPreview(false);
+      }
+    };
+
+    fetchAllImages();
+  }, [displayId, imageType]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -115,28 +165,72 @@ function ImageUploader({
         return;
       }
 
-      // Create temporary URLs for preview
-      const newImageUrls = validFiles.map((file) => URL.createObjectURL(file));
+      // Upload to server with all required parameters
+      const formData = new FormData();
+      validFiles.forEach((file) => formData.append("images", file));
+      formData.append("id", displayId || "1");
+      formData.append("environment", environment);
+      formData.append("imageId", imageType);
 
+      console.log("Uploading to:", environment, "imageType:", imageType);
+
+      const response = await fetch("/api/media/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Upload failed");
+      }
+
+      const data = await response.json();
+      console.log("Upload successful:", data);
+
+      // Update the images
       if (maxImages === 1) {
-        // Clean up old object URL if exists
-        if (images.length > 0 && images[0].startsWith("blob:")) {
-          URL.revokeObjectURL(images[0]);
-        }
-        onChange(newImageUrls.slice(0, 1));
+        onChange(data.urls.slice(0, 1));
       } else {
-        const combined = [...images, ...newImageUrls].slice(0, maxImages);
+        const combined = [...images, ...data.urls].slice(0, maxImages);
         onChange(combined);
       }
 
-      // Here you would typically upload to your server
-      // Example:
-      // const formData = new FormData();
-      // validFiles.forEach(file => formData.append('images', file));
-      // const response = await fetch('/api/upload', { method: 'POST', body: formData });
-      // const data = await response.json();
-      // onChange(data.urls);
+      // Refresh the uploaded images list for the current environment
+      if (displayId && imageType) {
+        const imagesResponse = await fetch(`/api/media`);
+        if (imagesResponse.ok) {
+          const allMedia = await imagesResponse.json();
+
+          // Filter for production images
+          const productionFiltered = allMedia
+            .filter(
+              (item: any) =>
+                item.environment === "production" &&
+                item.imageId === imageType &&
+                item.userId === displayId
+            )
+            .map((item: any) => item.fileUrl);
+
+          // Filter for preview images
+          const previewFiltered = allMedia
+            .filter(
+              (item: any) =>
+                item.environment === "preview" &&
+                item.imageId === imageType &&
+                item.userId === displayId
+            )
+            .map((item: any) => item.fileUrl);
+
+          setMediaUploadedImages([...productionFiltered, ...previewFiltered]);
+
+          console.log("Refreshed image lists:", {
+            production: productionFiltered.length,
+            preview: previewFiltered.length,
+          });
+        }
+      }
     } catch (error) {
+      console.error("Upload error:", error);
       setUploadError(error instanceof Error ? error.message : "Upload failed");
     } finally {
       setIsUploading(false);
@@ -147,12 +241,19 @@ function ImageUploader({
   };
 
   const handleRemoveImage = (index: number) => {
-    const imageToRemove = images[index];
-    // Clean up object URL if it's a blob
-    if (imageToRemove.startsWith("blob:")) {
-      URL.revokeObjectURL(imageToRemove);
-    }
     onChange(images.filter((_, i) => i !== index));
+  };
+
+  const handleImageClick = (img: string) => {
+    if (!images.includes(img)) {
+      if (maxImages === 1) {
+        onChange([img]);
+      } else {
+        if (images.length < maxImages) {
+          onChange([...images, img]);
+        }
+      }
+    }
   };
 
   const canUploadMore = images.length < maxImages;
@@ -186,12 +287,12 @@ function ImageUploader({
                       : imageType === "background"
                       ? "Background"
                       : "Images"
-                  }${maxImages > 1 && imageType !== "logo" ? "" : ""}`}
+                  }`}
             </span>
           </button>
           {maxImages > 1 && (
             <p className="text-xs text-gray-500 mt-2 text-center">
-              {images.length} / {maxImages} images uploaded
+              {images.length} / {maxImages} images selected
             </p>
           )}
         </div>
@@ -204,27 +305,84 @@ function ImageUploader({
         </div>
       )}
 
-      {/* Uploaded Images Grid */}
+      {/* Currently Selected Images Grid */}
       {images.length > 0 && (
-        <div className="grid grid-cols-2 gap-2">
-          {images.map((img, idx) => (
-            <div key={idx} className="relative group">
-              <img
-                src={img}
-                alt={`Upload ${idx + 1}`}
-                className="w-full h-24 object-cover rounded border border-gray-700"
-              />
-              <button
-                type="button"
-                onClick={() => handleRemoveImage(idx)}
-                className="absolute top-1 right-1 p-1 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-              >
-                <X className="w-3 h-3 text-white" />
-              </button>
-            </div>
-          ))}
+        <div>
+          <label className="text-xs text-gray-400 font-medium block mb-2">
+            Currently Selected ({images.length})
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {images.map((img, idx) => (
+              <div key={idx} className="relative group">
+                <img
+                  src={img}
+                  alt={`Selected ${idx + 1}`}
+                  className="w-full h-24 object-cover rounded border border-gray-700"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveImage(idx)}
+                  className="absolute top-1 right-1 p-1 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                >
+                  <X className="w-3 h-3 text-white" />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
+
+      {/* Images Carousel */}
+      <div className="mt-4 pt-4 border-t border-gray-700">
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-xs font-medium flex items-center gap-2">
+            <span className="inline-block w-2 h-2 bg-green-500 rounded-full"></span>
+            <span className="text-green-400">
+              Media uploaded Images ({MediaUploadedImages.length})
+            </span>
+          </label>
+        </div>
+
+        {isLoadingProduction ? (
+          <div className="text-center py-6">
+            <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-green-400 border-t-transparent"></div>
+            <p className="text-xs text-gray-400 mt-2">
+              Loading media uploaded images...
+            </p>
+          </div>
+        ) : MediaUploadedImages.length > 0 ? (
+          <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto custom-scrollbar">
+            {MediaUploadedImages.map((img, idx) => (
+              <div
+                key={idx}
+                className="relative group cursor-pointer"
+                onClick={() => handleImageClick(img)}
+              >
+                <img
+                  src={img}
+                  alt={`Production ${idx + 1}`}
+                  className={`w-full h-20 object-cover rounded border-2 transition-colors ${
+                    images.includes(img)
+                      ? "border-green-500"
+                      : "border-gray-700 hover:border-green-400"
+                  }`}
+                />
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center">
+                  <span className="text-white text-xs font-medium">
+                    {images.includes(img) ? "✓ Selected" : "Click to use"}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-6 border-2 border-dashed border-gray-700 rounded-lg bg-gray-800/20">
+            <p className="text-xs text-gray-500">
+              No media uploaded images uploaded yet
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -233,6 +391,7 @@ export default function MasjidEditorPanel({
   config,
   onConfigChange,
   displayId,
+  environment = "preview",
 }: MasjidEditorPanelProps) {
   // Default configuration matching preview page expectations
   const defaultConfig = {
@@ -381,6 +540,7 @@ export default function MasjidEditorPanel({
               maxImages={1}
               displayId={displayId}
               imageType="logo"
+              environment={environment}
             />
           </div>
         </div>
@@ -753,6 +913,7 @@ export default function MasjidEditorPanel({
                       ? "slideshow"
                       : "background"
                   }
+                  environment={environment}
                 />
               </div>
 

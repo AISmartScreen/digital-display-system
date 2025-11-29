@@ -6,10 +6,10 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     
-    // Get files (support both 'files' and 'images' for compatibility)
-    let files = formData.getAll('images') as File[];
+    // Try both 'files' and 'images' keys for compatibility
+    let files = formData.getAll('files') as File[];
     if (files.length === 0) {
-      files = formData.getAll('files') as File[];
+      files = formData.getAll('images') as File[];
     }
     
     const userId = formData.get('id') as string;
@@ -50,17 +50,10 @@ export async function POST(request: Request) {
     const ONE_DAY_IN_SECONDS = 86400;
 
     const uploadPromises = files.map(async (file) => {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        throw new Error(`${file.name} is not an image file`);
-      }
-
       // Generate unique filename with timestamp
       const timestamp = Date.now();
       // Structure: userId/environment/imageId/timestamp-filename
       const filename = `${userId}/${environment}/${imageId}/${timestamp}-${file.name}`;
-      
-      console.log('Uploading file:', filename);
       
       // Configure blob options based on environment
       const blobOptions: any = {
@@ -72,15 +65,10 @@ export async function POST(request: Request) {
       // Only add TTL for preview environment
       if (environment === 'preview') {
         blobOptions.cacheControlMaxAge = ONE_DAY_IN_SECONDS;
-        console.log('Preview mode: Setting 24-hour TTL');
-      } else {
-        console.log('Production mode: No TTL - permanent storage');
       }
       // Production has no TTL - stored forever
       
       const blob = await put(filename, file, blobOptions);
-      
-      console.log('Upload successful:', blob.url);
       
       return {
         url: blob.url,
@@ -94,8 +82,6 @@ export async function POST(request: Request) {
 
     const uploadedBlobs = await Promise.all(uploadPromises);
 
-    console.log(`Successfully uploaded ${uploadedBlobs.length} files`);
-
     return NextResponse.json({
       success: true,
       urls: uploadedBlobs.map(blob => blob.url),
@@ -105,37 +91,6 @@ export async function POST(request: Request) {
     console.error('Upload error:', error);
     return NextResponse.json(
       { error: 'Upload failed', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
-  }
-}
-
-// Optional: Add DELETE endpoint to clean up images
-export async function DELETE(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const url = searchParams.get('url');
-    
-    if (!url) {
-      return NextResponse.json(
-        { error: 'URL parameter required' },
-        { status: 400 }
-      );
-    }
-
-    // Import del from @vercel/blob
-    const { del } = await import('@vercel/blob');
-    await del(url, {
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-    });
-
-    console.log('Successfully deleted:', url);
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Delete error:', error);
-    return NextResponse.json(
-      { error: 'Delete failed', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
