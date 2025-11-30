@@ -52,6 +52,8 @@ const templateGradients: Record<string, string> = {
   corporate: "from-gray-500/20 to-slate-500/20",
 };
 
+const BaseURL = process.env.NEXT_PUBLIC_BASE_URL || "localhost:3000";
+
 export function DisplaysPageCard({
   id,
   name,
@@ -69,7 +71,7 @@ export function DisplaysPageCard({
   const [copied, setCopied] = useState(false);
 
   const handleCopyUrl = () => {
-    navigator.clipboard.writeText(displayUrl);
+    navigator.clipboard.writeText(`${BaseURL}${displayUrl}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -227,6 +229,7 @@ export function DisplaysPageCard({
           <p className="text-xs text-gray-500 mb-1">Display URL</p>
           <div className="flex items-center gap-2">
             <code className="text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-1 truncate">
+              {BaseURL}
               {displayUrl}
             </code>
             <Button
