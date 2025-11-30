@@ -3,9 +3,67 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronDown, ChevronUp, Plus, Trash2, Upload, X } from "lucide-react";
 
+// Types
+interface PrayerTimes {
+  fajr: string;
+  dhuhr: string;
+  asr: string;
+  maghrib: string;
+  isha: string;
+}
+
+interface IqamahOffsets {
+  fajr: number;
+  dhuhr: number;
+  asr: number;
+  maghrib: number;
+  isha: number;
+}
+
+interface Colors {
+  primary: string;
+  secondary: string;
+  text: string;
+  accent: string;
+}
+
+interface BackgroundGradient {
+  from: string;
+  to: string;
+}
+
+interface Announcement {
+  text: string;
+  duration: number;
+}
+
+interface MasjidConfig {
+  template: string;
+  prayerTimes: PrayerTimes;
+  iqamahOffsets: IqamahOffsets;
+  colors: Colors;
+  backgroundType: "solid" | "gradient" | "image" | "slideshow";
+  backgroundColor: string;
+  backgroundGradient: BackgroundGradient;
+  backgroundImage: string[];
+  slideshowDuration: number;
+  announcements: Announcement[];
+  showHijriDate: boolean;
+  showNextPrayer: boolean;
+  showCurrentTime: boolean;
+  font: string;
+  fontSize: number;
+  logo: string;
+  masjidName: string;
+  showWeather: boolean;
+  animationSpeed: "slow" | "normal" | "fast";
+  layout: "vertical" | "horizontal" | "centered";
+  colorTheme?: Colors;
+}
+
 interface MasjidEditorPanelProps {
-  config: any;
-  onConfigChange: (config: any) => void;
+  config?: Partial<MasjidConfig>;
+  onConfigChange: (config: MasjidConfig) => void;
   displayId?: string;
   environment?: "preview" | "production";
 }
@@ -16,21 +74,14 @@ interface CollapsibleSectionProps {
   defaultOpen?: boolean;
 }
 
-interface UploadedBlob {
-  url: string;
-  pathname: string;
-  downloadUrl: string;
-  id: string;
-  environment: string;
-  imageId: string;
-}
-
+// Collapsible Section Component
 function CollapsibleSection({
   title,
   children,
   defaultOpen = true,
 }: CollapsibleSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
+
   return (
     <div className="border-b border-gray-800 last:border-0">
       <button
@@ -51,6 +102,7 @@ function CollapsibleSection({
   );
 }
 
+// Color Picker Component
 function ColorPicker({
   value,
   onChange,
@@ -77,6 +129,7 @@ function ColorPicker({
   );
 }
 
+// Image Uploader Component
 function ImageUploader({
   images,
   onChange,
@@ -94,18 +147,15 @@ function ImageUploader({
 }) {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [MediaUploadedImages, setMediaUploadedImages] = useState<string[]>([]);
-  const [isLoadingProduction, setIsLoadingProduction] = useState(false);
-  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [mediaUploadedImages, setMediaUploadedImages] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const fetchAllImages = async () => {
+    const fetchImages = async () => {
       if (!displayId || !imageType) return;
 
-      setIsLoadingProduction(true);
-      setIsLoadingPreview(true);
-
+      setIsLoading(true);
       try {
         const response = await fetch(`/api/media`);
         if (!response.ok) {
@@ -114,9 +164,7 @@ function ImageUploader({
         }
 
         const allMedia = await response.json();
-
-        // Filter production + preview together
-        const combinedImages = allMedia
+        const filteredImages = allMedia
           .filter(
             (item: any) =>
               (item.environment === "production" ||
@@ -126,21 +174,15 @@ function ImageUploader({
           )
           .map((item: any) => item.fileUrl);
 
-        console.log(
-          `Loaded ${combinedImages.length} total images (production + preview) for ${imageType}`
-        );
-
-        // Set only this state as requested
-        setMediaUploadedImages(combinedImages);
+        setMediaUploadedImages(filteredImages);
       } catch (err) {
         console.error("Error fetching images:", err);
       } finally {
-        setIsLoadingProduction(false);
-        setIsLoadingPreview(false);
+        setIsLoading(false);
       }
     };
 
-    fetchAllImages();
+    fetchImages();
   }, [displayId, imageType]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -151,10 +193,13 @@ function ImageUploader({
     setUploadError(null);
 
     try {
-      // Validate file types
       const validFiles = Array.from(files).filter((file) => {
         if (!file.type.startsWith("image/")) {
           setUploadError(`${file.name} is not an image file`);
+          return false;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+          setUploadError(`${file.name} is too large (max 10MB)`);
           return false;
         }
         return true;
@@ -165,14 +210,11 @@ function ImageUploader({
         return;
       }
 
-      // Upload to server with all required parameters
       const formData = new FormData();
       validFiles.forEach((file) => formData.append("images", file));
-      formData.append("id", displayId || "1");
+      formData.append("id", displayId);
       formData.append("environment", environment);
       formData.append("imageId", imageType);
-
-      console.log("Uploading to:", environment, "imageType:", imageType);
 
       const response = await fetch("/api/media/upload", {
         method: "POST",
@@ -185,9 +227,7 @@ function ImageUploader({
       }
 
       const data = await response.json();
-      console.log("Upload successful:", data);
 
-      // Update the images
       if (maxImages === 1) {
         onChange(data.urls.slice(0, 1));
       } else {
@@ -195,39 +235,20 @@ function ImageUploader({
         onChange(combined);
       }
 
-      // Refresh the uploaded images list for the current environment
-      if (displayId && imageType) {
-        const imagesResponse = await fetch(`/api/media`);
-        if (imagesResponse.ok) {
-          const allMedia = await imagesResponse.json();
-
-          // Filter for production images
-          const productionFiltered = allMedia
-            .filter(
-              (item: any) =>
-                item.environment === "production" &&
-                item.imageId === imageType &&
-                item.userId === displayId
-            )
-            .map((item: any) => item.fileUrl);
-
-          // Filter for preview images
-          const previewFiltered = allMedia
-            .filter(
-              (item: any) =>
-                item.environment === "preview" &&
-                item.imageId === imageType &&
-                item.userId === displayId
-            )
-            .map((item: any) => item.fileUrl);
-
-          setMediaUploadedImages([...productionFiltered, ...previewFiltered]);
-
-          console.log("Refreshed image lists:", {
-            production: productionFiltered.length,
-            preview: previewFiltered.length,
-          });
-        }
+      // Refresh media library
+      const imagesResponse = await fetch(`/api/media`);
+      if (imagesResponse.ok) {
+        const allMedia = await imagesResponse.json();
+        const newImages = allMedia
+          .filter(
+            (item: any) =>
+              (item.environment === "production" ||
+                item.environment === "preview") &&
+              item.imageId === imageType &&
+              item.userId === displayId
+          )
+          .map((item: any) => item.fileUrl);
+        setMediaUploadedImages(newImages);
       }
     } catch (error) {
       console.error("Upload error:", error);
@@ -248,10 +269,8 @@ function ImageUploader({
     if (!images.includes(img)) {
       if (maxImages === 1) {
         onChange([img]);
-      } else {
-        if (images.length < maxImages) {
-          onChange([...images, img]);
-        }
+      } else if (images.length < maxImages) {
+        onChange([...images, img]);
       }
     }
   };
@@ -260,7 +279,6 @@ function ImageUploader({
 
   return (
     <div className="space-y-3">
-      {/* Upload Button */}
       {canUploadMore && (
         <div>
           <input
@@ -298,14 +316,12 @@ function ImageUploader({
         </div>
       )}
 
-      {/* Error Message */}
       {uploadError && (
         <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
           <p className="text-sm text-red-400">{uploadError}</p>
         </div>
       )}
 
-      {/* Currently Selected Images Grid */}
       {images.length > 0 && (
         <div>
           <label className="text-xs text-gray-400 font-medium block mb-2">
@@ -332,69 +348,64 @@ function ImageUploader({
         </div>
       )}
 
-      {/* Images Carousel */}
-
-      <div>
-        {/* Images Carousel - Only show if there are images or loading */}
-        {(isLoadingProduction || MediaUploadedImages.length > 0) && (
-          <div className="mt-4 pt-4 border-t border-gray-700">
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-medium flex items-center gap-2">
-                <span className="inline-block w-2 h-2 bg-green-500 rounded-full"></span>
-                <span className="text-green-400">
-                  Media uploaded Images ({MediaUploadedImages.length})
-                </span>
-              </label>
-            </div>
-
-            {isLoadingProduction ? (
-              <div className="text-center py-6">
-                <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-green-400 border-t-transparent"></div>
-                <p className="text-xs text-gray-400 mt-2">
-                  Loading media uploaded images...
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto custom-scrollbar">
-                {MediaUploadedImages.map((img, idx) => (
-                  <div
-                    key={idx}
-                    className="relative group cursor-pointer"
-                    onClick={() => handleImageClick(img)}
-                  >
-                    <img
-                      src={img}
-                      alt={`Production ${idx + 1}`}
-                      className={`w-full h-20 object-cover rounded border-2 transition-colors ${
-                        images.includes(img)
-                          ? "border-green-500"
-                          : "border-gray-700 hover:border-green-400"
-                      }`}
-                    />
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center">
-                      <span className="text-white text-xs font-medium">
-                        {images.includes(img) ? "✓ Selected" : "Click to use"}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+      {(isLoading || mediaUploadedImages.length > 0) && (
+        <div className="mt-4 pt-4 border-t border-gray-700">
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs font-medium flex items-center gap-2">
+              <span className="inline-block w-2 h-2 bg-green-500 rounded-full"></span>
+              <span className="text-green-400">
+                Media Library ({mediaUploadedImages.length})
+              </span>
+            </label>
           </div>
-        )}
-      </div>
+
+          {isLoading ? (
+            <div className="text-center py-6">
+              <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-green-400 border-t-transparent"></div>
+              <p className="text-xs text-gray-400 mt-2">
+                Loading media library...
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto custom-scrollbar">
+              {mediaUploadedImages.map((img, idx) => (
+                <div
+                  key={idx}
+                  className="relative group cursor-pointer"
+                  onClick={() => handleImageClick(img)}
+                >
+                  <img
+                    src={img}
+                    alt={`Media ${idx + 1}`}
+                    className={`w-full h-20 object-cover rounded border-2 transition-colors ${
+                      images.includes(img)
+                        ? "border-green-500"
+                        : "border-gray-700 hover:border-green-400"
+                    }`}
+                  />
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center">
+                    <span className="text-white text-xs font-medium">
+                      {images.includes(img) ? "✓ Selected" : "Click to use"}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
+// Main Editor Component
 export default function MasjidEditorPanel({
   config,
   onConfigChange,
-  displayId,
+  displayId = "1",
   environment = "preview",
 }: MasjidEditorPanelProps) {
-  // Default configuration matching preview page expectations
-  const defaultConfig = {
+  const defaultConfig: MasjidConfig = {
     template: "masjid-classic",
     prayerTimes: {
       fajr: "05:30",
@@ -437,67 +448,179 @@ export default function MasjidEditorPanel({
     layout: "vertical",
   };
 
-  const [customization, setCustomization] = useState(() => {
-    if (!config) return defaultConfig;
+  const [customization, setCustomization] =
+    useState<MasjidConfig>(defaultConfig);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(true);
 
-    const colorTheme = config?.colorTheme ?? null;
-    const colors = colorTheme || config?.colors || defaultConfig.colors;
-
-    return {
-      ...defaultConfig,
-      ...(config || {}),
-      colors: {
-        ...defaultConfig.colors,
-        ...(colors || {}),
-      },
-      prayerTimes: {
-        ...defaultConfig.prayerTimes,
-        ...(config?.prayerTimes || {}),
-      },
-      iqamahOffsets: {
-        ...defaultConfig.iqamahOffsets,
-        ...(config?.iqamahOffsets || {}),
-      },
-      backgroundGradient: {
-        ...defaultConfig.backgroundGradient,
-        ...(config?.backgroundGradient || {}),
-      },
-    };
-  });
-
+  // Fetch initial config from Supabase when displayId changes
   useEffect(() => {
-    if (!config) return;
+    const fetchConfig = async () => {
+      if (!displayId) {
+        console.log("No displayId provided, using default config");
+        setIsLoadingConfig(false);
+        return;
+      }
 
-    const colors = config.colorTheme || config.colors || defaultConfig.colors;
-    setCustomization((prev) => ({
-      ...defaultConfig,
-      ...config,
-      colors: { ...defaultConfig.colors, ...colors },
-      prayerTimes: {
-        ...defaultConfig.prayerTimes,
-        ...(config.prayerTimes || {}),
-      },
-      iqamahOffsets: {
-        ...defaultConfig.iqamahOffsets,
-        ...(config.iqamahOffsets || {}),
-      },
-      backgroundGradient: {
-        ...defaultConfig.backgroundGradient,
-        ...(config.backgroundGradient || {}),
-      },
-    }));
-  }, [config]);
+      console.log("Fetching config for display:", displayId);
+      setIsLoadingConfig(true);
 
-  const updateConfig = (updates: any) => {
+      try {
+        const response = await fetch(`/api/displays/${displayId}/config`);
+        console.log("Config fetch response status:", response.status);
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log("Config fetch result:", result);
+
+          if (result.success && result.data?.config) {
+            const savedConfig = result.data.config;
+            console.log("Saved config found:", savedConfig);
+
+            // Merge with defaults, handling legacy colorTheme
+            const colors =
+              savedConfig.colorTheme ||
+              savedConfig.colors ||
+              defaultConfig.colors;
+
+            const mergedConfig: MasjidConfig = {
+              ...defaultConfig,
+              ...savedConfig,
+              colors: {
+                ...defaultConfig.colors,
+                ...colors,
+              },
+              prayerTimes: {
+                ...defaultConfig.prayerTimes,
+                ...(savedConfig.prayerTimes || {}),
+              },
+              iqamahOffsets: {
+                ...defaultConfig.iqamahOffsets,
+                ...(savedConfig.iqamahOffsets || {}),
+              },
+              backgroundGradient: {
+                ...defaultConfig.backgroundGradient,
+                ...(savedConfig.backgroundGradient || {}),
+              },
+              announcements: Array.isArray(savedConfig.announcements)
+                ? savedConfig.announcements.map((ann: any) =>
+                    typeof ann === "string" ? { text: ann, duration: 5 } : ann
+                  )
+                : defaultConfig.announcements,
+            };
+
+            console.log("Merged config:", mergedConfig);
+            setCustomization(mergedConfig);
+            onConfigChange(mergedConfig);
+          } else {
+            console.log("No saved config found in response, using defaults");
+            setCustomization(defaultConfig);
+            onConfigChange(defaultConfig);
+          }
+        } else {
+          console.log("Config fetch failed, using defaults");
+          setCustomization(defaultConfig);
+          onConfigChange(defaultConfig);
+        }
+      } catch (error) {
+        console.error("Error fetching config:", error);
+        setCustomization(defaultConfig);
+        onConfigChange(defaultConfig);
+      } finally {
+        setIsLoadingConfig(false);
+      }
+    };
+
+    fetchConfig();
+  }, [displayId]); // Only depend on displayId
+
+  // Update from prop config if provided (for real-time preview)
+  useEffect(() => {
+    if (config && !isLoadingConfig) {
+      console.log("Updating from prop config:", config);
+      const mergedConfig: MasjidConfig = {
+        ...customization,
+        ...config,
+        colors: {
+          ...customization.colors,
+          ...(config.colors || {}),
+        },
+        prayerTimes: {
+          ...customization.prayerTimes,
+          ...(config.prayerTimes || {}),
+        },
+        iqamahOffsets: {
+          ...customization.iqamahOffsets,
+          ...(config.iqamahOffsets || {}),
+        },
+      };
+      setCustomization(mergedConfig);
+    }
+  }, [config, isLoadingConfig]);
+
+  const updateConfig = (updates: Partial<MasjidConfig>) => {
     const newConfig = { ...customization, ...updates };
 
+    // Ensure colorTheme is kept in sync for legacy support
     if (updates.colors) {
       newConfig.colorTheme = updates.colors;
     }
 
+    console.log("Updating config:", updates);
     setCustomization(newConfig);
     onConfigChange(newConfig);
   };
+
+  const addAnnouncement = () => {
+    const newAnnouncements = [
+      ...customization.announcements,
+      { text: "", duration: 5 },
+    ];
+    updateConfig({ announcements: newAnnouncements });
+  };
+
+  const updateAnnouncement = (
+    index: number,
+    field: keyof Announcement,
+    value: any
+  ) => {
+    const updated = [...customization.announcements];
+    updated[index] = { ...updated[index], [field]: value };
+    updateConfig({ announcements: updated });
+  };
+
+  const removeAnnouncement = (index: number) => {
+    const updated = customization.announcements.filter((_, i) => i !== index);
+    updateConfig({ announcements: updated });
+  };
+
+  const updatePrayerTime = (prayer: keyof PrayerTimes, time: string) => {
+    updateConfig({
+      prayerTimes: {
+        ...customization.prayerTimes,
+        [prayer]: time,
+      },
+    });
+  };
+
+  const updateIqamahOffset = (prayer: keyof IqamahOffsets, offset: number) => {
+    updateConfig({
+      iqamahOffsets: {
+        ...customization.iqamahOffsets,
+        [prayer]: offset,
+      },
+    });
+  };
+
+  if (isLoadingConfig) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-pink-500 border-t-transparent mb-3"></div>
+          <p className="text-sm text-gray-400">Loading configuration...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-0">
@@ -517,7 +640,6 @@ export default function MasjidEditorPanel({
         }
       `}</style>
 
-      {/* Branding Section */}
       <CollapsibleSection title="Branding" defaultOpen={true}>
         <div className="space-y-4">
           <div>
@@ -546,7 +668,6 @@ export default function MasjidEditorPanel({
         </div>
       </CollapsibleSection>
 
-      {/* Layout Section */}
       <CollapsibleSection title="Layout">
         <div className="space-y-2">
           <label className="text-sm text-gray-300">Display Layout</label>
@@ -558,7 +679,11 @@ export default function MasjidEditorPanel({
             ].map((layout) => (
               <button
                 key={layout.value}
-                onClick={() => updateConfig({ layout: layout.value })}
+                onClick={() =>
+                  updateConfig({
+                    layout: layout.value as MasjidConfig["layout"],
+                  })
+                }
                 className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
                   customization.layout === layout.value
                     ? "border-pink-500 bg-pink-500/20 text-pink-400"
@@ -573,7 +698,6 @@ export default function MasjidEditorPanel({
         </div>
       </CollapsibleSection>
 
-      {/* Prayer Times */}
       <CollapsibleSection title="Prayer Times">
         <div className="space-y-4">
           {Object.entries(customization.prayerTimes).map(([prayer, time]) => (
@@ -585,14 +709,12 @@ export default function MasjidEditorPanel({
                 <div>
                   <input
                     type="time"
-                    value={time as string}
+                    value={time}
                     onChange={(e) =>
-                      updateConfig({
-                        prayerTimes: {
-                          ...customization.prayerTimes,
-                          [prayer]: e.target.value,
-                        },
-                      })
+                      updatePrayerTime(
+                        prayer as keyof PrayerTimes,
+                        e.target.value
+                      )
                     }
                     className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-gray-100 focus:outline-none focus:ring-2 focus:ring-pink-500"
                   />
@@ -604,27 +726,19 @@ export default function MasjidEditorPanel({
                     min="0"
                     max="60"
                     value={
-                      customization.iqamahOffsets[
-                        prayer as keyof typeof customization.iqamahOffsets
-                      ]
+                      customization.iqamahOffsets[prayer as keyof IqamahOffsets]
                     }
                     onChange={(e) =>
-                      updateConfig({
-                        iqamahOffsets: {
-                          ...customization.iqamahOffsets,
-                          [prayer]: parseInt(e.target.value) || 0,
-                        },
-                      })
+                      updateIqamahOffset(
+                        prayer as keyof IqamahOffsets,
+                        parseInt(e.target.value) || 0
+                      )
                     }
                     className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-gray-100 text-center focus:outline-none focus:ring-2 focus:ring-pink-500"
                   />
                   <p className="text-xs text-gray-400 mt-1">
                     +
-                    {
-                      customization.iqamahOffsets[
-                        prayer as keyof typeof customization.iqamahOffsets
-                      ]
-                    }{" "}
+                    {customization.iqamahOffsets[prayer as keyof IqamahOffsets]}{" "}
                     min Iqamah
                   </p>
                 </div>
@@ -634,10 +748,9 @@ export default function MasjidEditorPanel({
         </div>
       </CollapsibleSection>
 
-      {/* Announcements */}
       <CollapsibleSection title="Announcements">
         <div className="space-y-3">
-          {customization.announcements.map((announcement: any, idx: number) => (
+          {customization.announcements.map((announcement, idx) => (
             <div
               key={idx}
               className="space-y-2 p-3 bg-gray-800/50 rounded-lg border border-gray-700"
@@ -647,65 +760,44 @@ export default function MasjidEditorPanel({
                   Announcement {idx + 1}
                 </label>
                 <button
-                  onClick={() =>
-                    updateConfig({
-                      announcements: customization.announcements.filter(
-                        (_: any, i: number) => i !== idx
-                      ),
-                    })
-                  }
+                  onClick={() => removeAnnouncement(idx)}
                   className="text-red-400 hover:text-red-300 transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
               <textarea
-                value={announcement.text || announcement}
-                onChange={(e) => {
-                  const updated = [...customization.announcements];
-                  updated[idx] =
-                    typeof announcement === "string"
-                      ? e.target.value
-                      : { ...updated[idx], text: e.target.value };
-                  updateConfig({ announcements: updated });
-                }}
+                value={announcement.text}
+                onChange={(e) =>
+                  updateAnnouncement(idx, "text", e.target.value)
+                }
                 className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-gray-100 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-pink-500"
                 rows={2}
                 placeholder="Enter announcement..."
               />
-              {typeof announcement === "object" && (
-                <div className="flex items-center gap-2">
-                  <label className="text-xs text-gray-400">
-                    Duration (seconds):
-                  </label>
-                  <input
-                    type="number"
-                    min="3"
-                    max="60"
-                    value={announcement.duration || 5}
-                    onChange={(e) => {
-                      const updated = [...customization.announcements];
-                      updated[idx] = {
-                        ...updated[idx],
-                        duration: parseInt(e.target.value) || 5,
-                      };
-                      updateConfig({ announcements: updated });
-                    }}
-                    className="w-20 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  />
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-gray-400">
+                  Duration (seconds):
+                </label>
+                <input
+                  type="number"
+                  min="3"
+                  max="60"
+                  value={announcement.duration}
+                  onChange={(e) =>
+                    updateAnnouncement(
+                      idx,
+                      "duration",
+                      parseInt(e.target.value) || 5
+                    )
+                  }
+                  className="w-20 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                />
+              </div>
             </div>
           ))}
           <button
-            onClick={() =>
-              updateConfig({
-                announcements: [
-                  ...customization.announcements,
-                  { text: "", duration: 5 },
-                ],
-              })
-            }
+            onClick={addAnnouncement}
             className="w-full flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-700 rounded-lg hover:border-gray-600 text-gray-400 hover:text-gray-300 transition-colors"
           >
             <Plus className="w-4 h-4" />
@@ -714,7 +806,6 @@ export default function MasjidEditorPanel({
         </div>
       </CollapsibleSection>
 
-      {/* Colors & Styling */}
       <CollapsibleSection title="Colors & Styling">
         <div className="space-y-4">
           <div>
@@ -811,7 +902,12 @@ export default function MasjidEditorPanel({
             </label>
             <select
               value={customization.animationSpeed}
-              onChange={(e) => updateConfig({ animationSpeed: e.target.value })}
+              onChange={(e) =>
+                updateConfig({
+                  animationSpeed: e.target
+                    .value as MasjidConfig["animationSpeed"],
+                })
+              }
               className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-gray-100 focus:outline-none focus:ring-2 focus:ring-pink-500"
             >
               <option value="slow">Slow</option>
@@ -822,7 +918,6 @@ export default function MasjidEditorPanel({
         </div>
       </CollapsibleSection>
 
-      {/* Background */}
       <CollapsibleSection title="Background">
         <div className="space-y-4">
           <div>
@@ -831,7 +926,12 @@ export default function MasjidEditorPanel({
             </label>
             <select
               value={customization.backgroundType}
-              onChange={(e) => updateConfig({ backgroundType: e.target.value })}
+              onChange={(e) =>
+                updateConfig({
+                  backgroundType: e.target
+                    .value as MasjidConfig["backgroundType"],
+                })
+              }
               className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-gray-100 focus:outline-none focus:ring-2 focus:ring-pink-500"
             >
               <option value="solid">Solid Color</option>
@@ -946,7 +1046,6 @@ export default function MasjidEditorPanel({
         </div>
       </CollapsibleSection>
 
-      {/* Display Options */}
       <CollapsibleSection title="Display Options">
         <div className="space-y-3">
           {[
@@ -954,6 +1053,21 @@ export default function MasjidEditorPanel({
               key: "showHijriDate",
               label: "Show Hijri Date",
               desc: "Display Islamic calendar",
+            },
+            {
+              key: "showNextPrayer",
+              label: "Show Next Prayer",
+              desc: "Display next prayer countdown",
+            },
+            {
+              key: "showCurrentTime",
+              label: "Show Current Time",
+              desc: "Display current time",
+            },
+            {
+              key: "showWeather",
+              label: "Show Weather",
+              desc: "Display weather information",
             },
           ].map((option) => (
             <label
@@ -967,14 +1081,12 @@ export default function MasjidEditorPanel({
               <input
                 type="checkbox"
                 checked={
-                  customization[
-                    option.key as keyof typeof customization
-                  ] as boolean
+                  customization[option.key as keyof MasjidConfig] as boolean
                 }
                 onChange={(e) =>
                   updateConfig({ [option.key]: e.target.checked })
                 }
-                className="w-5 h-5 rounded bg-gray-800 border-gray-700"
+                className="w-5 h-5 rounded bg-gray-800 border-gray-700 text-pink-500 focus:ring-pink-500"
               />
             </label>
           ))}
