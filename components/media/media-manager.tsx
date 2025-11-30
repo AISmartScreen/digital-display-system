@@ -190,15 +190,17 @@ function MediaGallery({
         <h2 className="text-lg font-semibold text-slate-50">
           Your Files ({items.length})
         </h2>
-        <Button
-          onClick={handleClearAllClick}
-          variant="ghost"
-          size="sm"
-          className="bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:text-red-300"
-        >
-          <Trash2 className="w-4 h-4 mr-2" />
-          Clear All
-        </Button>
+        {items.length > 0 && (
+          <Button
+            onClick={handleClearAllClick}
+            variant="ghost"
+            size="sm"
+            className="bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:text-red-300"
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Clear All
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -296,6 +298,7 @@ export function MediaManager() {
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [isLoadingMedia, setIsLoadingMedia] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [showCriteriaForm, setShowCriteriaForm] = useState(false);
@@ -350,12 +353,22 @@ export function MediaManager() {
   const fetchMedia = async () => {
     if (!currentUser) return;
 
+    setIsLoadingMedia(true);
     try {
-      const response = await fetch("/api/media");
+      // Pass userId as query parameter for server-side filtering
+      const response = await fetch(
+        `/api/media?userId=${encodeURIComponent(currentUser.id)}`
+      );
       const data = await response.json();
+
+      console.log("Fetched user media:", data.length, "items");
+
       setMediaItems(data);
-    } catch {
-      console.error("Failed to fetch media");
+    } catch (err) {
+      console.error("Failed to fetch media:", err);
+      setError("Failed to load media files");
+    } finally {
+      setIsLoadingMedia(false);
     }
   };
 
@@ -392,24 +405,10 @@ export function MediaManager() {
 
       const data = await response.json();
 
-      const newMediaItems = data.blobs.map((blob: any) => ({
-        id: blob.pathname,
-        fileName: blob.pathname.split("/").pop(),
-        fileType: blob.pathname.match(/\.(jpg|jpeg|png|gif|webp)$/i)
-          ? "image"
-          : "video",
-        fileUrl: blob.url,
-        fileSize: 0,
-        uploadedAt: new Date().toISOString(),
-        userId: blob.id,
-        environment: blob.environment,
-        imageId: blob.imageId,
-      }));
-
-      setMediaItems([...newMediaItems, ...mediaItems]);
       setMessage(`Successfully uploaded ${files.length} file(s)`);
       setTimeout(() => setMessage(""), 3000);
 
+      // Refresh media list to get updated files
       fetchMedia();
     } catch (err) {
       setError(
@@ -563,7 +562,9 @@ export function MediaManager() {
             <div className="w-32 bg-slate-700 rounded-full h-2">
               <div
                 className="bg-pink-500 h-2 rounded-full transition-all"
-                style={{ width: `${(totalSize / maxSize) * 100}%` }}
+                style={{
+                  width: `${Math.min((totalSize / maxSize) * 100, 100)}%`,
+                }}
               />
             </div>
           </div>
@@ -665,12 +666,21 @@ export function MediaManager() {
         </div>
 
         <div>
-          <MediaGallery
-            items={mediaItems}
-            onDelete={handleDelete}
-            onClearAll={handleClearAll}
-            isDeleting={isDeleting}
-          />
+          {isLoadingMedia ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="flex flex-col items-center gap-4">
+                <Loader2 className="w-8 h-8 text-slate-400 animate-spin" />
+                <p className="text-slate-400">Loading your media files...</p>
+              </div>
+            </div>
+          ) : (
+            <MediaGallery
+              items={mediaItems}
+              onDelete={handleDelete}
+              onClearAll={handleClearAll}
+              isDeleting={isDeleting}
+            />
+          )}
         </div>
       </main>
     </div>

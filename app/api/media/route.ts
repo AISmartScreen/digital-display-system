@@ -2,8 +2,12 @@
 import { list } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Get userId from query params (optional - for filtering on server side)
+    const { searchParams } = new URL(request.url);
+    const filterUserId = searchParams.get('userId');
+
     const { blobs } = await list();
     
     const mediaItems = blobs.map((blob) => {
@@ -23,7 +27,14 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json(mediaItems);
+    // Filter by userId if provided
+    const filteredItems = filterUserId 
+      ? mediaItems.filter(item => item.userId === filterUserId)
+      : mediaItems;
+
+    console.log(`Total blobs: ${mediaItems.length}, Filtered for user ${filterUserId}: ${filteredItems.length}`);
+
+    return NextResponse.json(filteredItems);
   } catch (error) {
     console.error('Fetch error:', error);
     return NextResponse.json(
