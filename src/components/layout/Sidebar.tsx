@@ -27,8 +27,8 @@ const adminOnlyNavItems = [
 ];
 
 const bottomItems = [
-  { icon: Bell, label: "Notifications", href: "/notifications" },
-  { icon: Settings, label: "Settings", href: "/settings" },
+  // { icon: Bell, label: "Notifications", href: "/notifications" },
+  // { icon: Settings, label: "Settings", href: "/settings" },
 ];
 
 export function Sidebar() {
