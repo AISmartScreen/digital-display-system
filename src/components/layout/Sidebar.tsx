@@ -14,21 +14,23 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+const BaseURL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+
 const commonNavItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-  // { icon: Monitor, label: "Displays", href: "/displays" },
-  { icon: Image, label: "Media Library", href: "/media" },
-  // { icon: Palette, label: "Templates", href: "/templates" },
+  { icon: LayoutDashboard, label: "Dashboard", href: `${BaseURL}/dashboard` },
+  // { icon: Monitor, label: "Displays", href: `${BaseURL}/displays` },
+  { icon: Image, label: "Media Library", href: `${BaseURL}/media` },
+  // { icon: Palette, label: "Templates", href: `${BaseURL}/templates` },
 ];
 
 const adminOnlyNavItems = [
-  { icon: Users, label: "Clients", href: "admin/clients" },
-  { icon: Monitor, label: "Displays", href: "admin/displays" },
+  { icon: Users, label: "Clients", href: `${BaseURL}/admin/clients` },
+  { icon: Monitor, label: "Displays", href: `${BaseURL}/admin/displays` },
 ];
 
 const bottomItems = [
-  // { icon: Bell, label: "Notifications", href: "/notifications" },
-  // { icon: Settings, label: "Settings", href: "/settings" },
+  // { icon: Bell, label: "Notifications", href: `${BaseURL}/notifications` },
+  // { icon: Settings, label: "Settings", href: `${BaseURL}/settings` },
 ];
 
 export function Sidebar() {
