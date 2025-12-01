@@ -1,4 +1,4 @@
-// app/api/media/upload/route.ts
+// app/api/media/uploadMedia/route.ts
 import { put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 
@@ -12,15 +12,15 @@ export async function POST(request: Request) {
       files = formData.getAll('images') as File[];
     }
     
-    const userId = formData.get('id') as string;
-    const environment = (formData.get('environment') as string) || 'preview';
-    const imageId = (formData.get('imageId') as string) || 'default';
+    const userId = formData.get('userId') as string;
+    const displayId = formData.get('displayId') as string;
+    const type = (formData.get('type') as string) || 'default';
     
     console.log('Upload request:', {
       filesCount: files.length,
       userId,
-      environment,
-      imageId,
+      displayId,
+      type,
       formDataKeys: Array.from(formData.keys())
     });
     
@@ -38,49 +38,45 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validate environment
-    if (environment !== 'preview' && environment !== 'production') {
+    if (!displayId) {
       return NextResponse.json(
-        { error: 'Environment must be either "preview" or "production"' },
+        { error: 'Display ID is required' },
         { status: 400 }
       );
     }
 
-    // 1 day in seconds = 24 * 60 * 60 = 86400
-    const ONE_DAY_IN_SECONDS = 86400;
-
     const uploadPromises = files.map(async (file) => {
       // Generate unique filename with timestamp
       const timestamp = Date.now();
-      // Structure: userId/environment/imageId/timestamp-filename
-      const filename = `${userId}/${environment}/${imageId}/${timestamp}-${file.name}`;
+      // Structure: userId/displayId/type/timestamp-filename
+      const filename = `${userId}/${displayId}/${type}/${timestamp}-${file.name}`;
       
-      // Configure blob options based on environment
+      console.log('Uploading file:', filename);
+      
+      // Configure blob options
       const blobOptions: any = {
         access: 'public',
         addRandomSuffix: true,
         token: process.env.BLOB_READ_WRITE_TOKEN,
       };
-
-      // Only add TTL for preview environment
-      if (environment === 'preview') {
-        blobOptions.cacheControlMaxAge = ONE_DAY_IN_SECONDS;
-      }
-      // Production has no TTL - stored forever
       
       const blob = await put(filename, file, blobOptions);
+      
+      console.log('Upload successful:', blob.url);
       
       return {
         url: blob.url,
         pathname: blob.pathname,
         downloadUrl: blob.downloadUrl,
-        id: userId,
-        environment: environment,
-        imageId: imageId,
+        userId: userId,
+        displayId: displayId,
+        type: type,
       };
     });
 
     const uploadedBlobs = await Promise.all(uploadPromises);
+
+    console.log(`Successfully uploaded ${uploadedBlobs.length} files`);
 
     return NextResponse.json({
       success: true,
@@ -91,6 +87,37 @@ export async function POST(request: Request) {
     console.error('Upload error:', error);
     return NextResponse.json(
       { error: 'Upload failed', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+}
+
+// Optional: Add DELETE endpoint to clean up images
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const url = searchParams.get('url');
+    
+    if (!url) {
+      return NextResponse.json(
+        { error: 'URL parameter required' },
+        { status: 400 }
+      );
+    }
+
+    // Import del from @vercel/blob
+    const { del } = await import('@vercel/blob');
+    await del(url, {
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+    });
+
+    console.log('Successfully deleted:', url);
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Delete error:', error);
+    return NextResponse.json(
+      { error: 'Delete failed', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

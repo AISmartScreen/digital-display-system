@@ -7,23 +7,23 @@ interface UploadedBlob {
   url: string;
   pathname: string;
   downloadUrl: string;
-  id: string;
-  environment: string;
-  imageId: string;
+  userId: string;
+  displayId: string;
+  type: string;
 }
 
 interface UploadHandlerProps {
-  id: string;
-  environment: "preview" | "production";
-  imageId: string;
+  userId: string;
+  displayId: string;
+  type: string;
   onUploadComplete?: (blobs: UploadedBlob[]) => void;
   onUploadError?: (error: string) => void;
 }
 
 export function UploadHandler({
-  id,
-  environment,
-  imageId,
+  userId,
+  displayId,
+  type,
   onUploadComplete,
   onUploadError,
 }: UploadHandlerProps) {
@@ -41,9 +41,9 @@ export function UploadHandler({
       });
 
       // Add criteria
-      formData.append("id", id);
-      formData.append("environment", environment);
-      formData.append("imageId", imageId);
+      formData.append("userId", userId);
+      formData.append("displayId", displayId);
+      formData.append("type", type);
 
       const response = await fetch("/api/media/upload", {
         method: "POST",
@@ -77,9 +77,9 @@ export function UploadHandler({
     <UploadZone
       onFileSelect={handleFileSelect}
       isUploading={isUploading}
-      id={id}
-      environment={environment}
-      imageId={imageId}
+      userId={userId}
+      displayId={displayId}
+      type={type}
     />
   );
 }

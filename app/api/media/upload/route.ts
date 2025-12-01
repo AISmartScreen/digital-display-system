@@ -12,15 +12,15 @@ export async function POST(request: Request) {
       files = formData.getAll('files') as File[];
     }
     
-    const userId = formData.get('id') as string;
-    const environment = (formData.get('environment') as string) || 'preview';
-    const imageId = (formData.get('imageId') as string) || 'default';
+    const userId = formData.get('userId') as string;
+    const displayId = formData.get('displayId') as string;
+    const type = (formData.get('type') as string) || 'default';
     
     console.log('Upload request:', {
       filesCount: files.length,
       userId,
-      environment,
-      imageId,
+      displayId,
+      type,
       formDataKeys: Array.from(formData.keys())
     });
     
@@ -38,16 +38,12 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validate environment
-    if (environment !== 'preview' && environment !== 'production') {
+    if (!displayId) {
       return NextResponse.json(
-        { error: 'Environment must be either "preview" or "production"' },
+        { error: 'Display ID is required' },
         { status: 400 }
       );
     }
-
-    // 1 day in seconds = 24 * 60 * 60 = 86400
-    const ONE_DAY_IN_SECONDS = 86400;
 
     const uploadPromises = files.map(async (file) => {
       // Validate file type
@@ -57,26 +53,17 @@ export async function POST(request: Request) {
 
       // Generate unique filename with timestamp
       const timestamp = Date.now();
-      // Structure: userId/environment/imageId/timestamp-filename
-      const filename = `${userId}/${environment}/${imageId}/${timestamp}-${file.name}`;
+      // Structure: userId/displayId/type/timestamp-filename
+      const filename = `${userId}/${displayId}/${type}/${timestamp}-${file.name}`;
       
       console.log('Uploading file:', filename);
       
-      // Configure blob options based on environment
+      // Configure blob options
       const blobOptions: any = {
         access: 'public',
         addRandomSuffix: true,
         token: process.env.BLOB_READ_WRITE_TOKEN,
       };
-
-      // Only add TTL for preview environment
-      if (environment === 'preview') {
-        blobOptions.cacheControlMaxAge = ONE_DAY_IN_SECONDS;
-        console.log('Preview mode: Setting 24-hour TTL');
-      } else {
-        console.log('Production mode: No TTL - permanent storage');
-      }
-      // Production has no TTL - stored forever
       
       const blob = await put(filename, file, blobOptions);
       
@@ -86,9 +73,9 @@ export async function POST(request: Request) {
         url: blob.url,
         pathname: blob.pathname,
         downloadUrl: blob.downloadUrl,
-        id: userId,
-        environment: environment,
-        imageId: imageId,
+        userId: userId,
+        displayId: displayId,
+        type: type,
       };
     });
 

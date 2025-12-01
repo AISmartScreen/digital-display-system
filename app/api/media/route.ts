@@ -22,12 +22,12 @@ export async function GET(request: Request) {
         fileSize: blob.size,
         uploadedAt: blob.uploadedAt,
         userId: pathParts[0] || '',
-        environment: pathParts[1] || '',
-        imageId: pathParts[2] || ''
+        displayId: pathParts[1] || '',
+        type: pathParts[2] || ''
       };
     });
 
-    // Filter by userId if provided
+    // Filter by userId if provided - gets ALL images for that user regardless of display
     const filteredItems = filterUserId 
       ? mediaItems.filter(item => item.userId === filterUserId)
       : mediaItems;

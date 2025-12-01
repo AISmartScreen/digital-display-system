@@ -9,6 +9,7 @@ interface UploadZoneProps {
   onFileSelect: (files: File[]) => void;
   isUploading?: boolean;
   id: string;
+
   environment: "preview" | "production";
   imageId: string;
 }

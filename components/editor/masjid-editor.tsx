@@ -68,6 +68,7 @@ interface MasjidEditorPanelProps {
   displayName?: string;
   templateType?: "masjid" | "hospital" | "corporate" | "restaurant" | "retail";
   environment?: "preview" | "production";
+  userId?: string;
 }
 
 interface CollapsibleSectionProps {
@@ -136,6 +137,7 @@ function ImageUploader({
   images,
   onChange,
   maxImages = 10,
+  userId = "4b30b998-ec73-469a-b800-9c57fcb1fe90",
   displayId = "1",
   imageType = "background",
   environment = "preview",
@@ -143,6 +145,7 @@ function ImageUploader({
   images: string[];
   onChange: (imgs: string[]) => void;
   maxImages?: number;
+  userId?: string;
   displayId?: string;
   imageType: "logo" | "background" | "slideshow";
   environment?: "preview" | "production";
@@ -155,7 +158,7 @@ function ImageUploader({
 
   useEffect(() => {
     const fetchImages = async () => {
-      if (!displayId || !imageType) return;
+      if (!userId || !displayId || !imageType) return;
 
       setIsLoading(true);
       try {
@@ -168,11 +171,7 @@ function ImageUploader({
         const allMedia = await response.json();
         const filteredImages = allMedia
           .filter(
-            (item: any) =>
-              (item.environment === "production" ||
-                item.environment === "preview") &&
-              item.imageId === imageType &&
-              item.userId === displayId
+            (item: any) => item.userId === userId && item.type === imageType // Only filter by userId and type
           )
           .map((item: any) => item.fileUrl);
 
@@ -185,11 +184,21 @@ function ImageUploader({
     };
 
     fetchImages();
-  }, [displayId, imageType]);
+  }, [userId, displayId, imageType]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
+
+    if (!userId) {
+      setUploadError("User ID is required for upload");
+      return;
+    }
+
+    if (!displayId) {
+      setUploadError("Display ID is required for upload");
+      return;
+    }
 
     setIsUploading(true);
     setUploadError(null);
@@ -214,9 +223,9 @@ function ImageUploader({
 
       const formData = new FormData();
       validFiles.forEach((file) => formData.append("images", file));
-      formData.append("id", displayId);
-      formData.append("environment", environment);
-      formData.append("imageId", imageType);
+      formData.append("userId", userId);
+      formData.append("displayId", displayId);
+      formData.append("type", imageType);
 
       const response = await fetch("/api/media/upload", {
         method: "POST",
@@ -244,10 +253,9 @@ function ImageUploader({
         const newImages = allMedia
           .filter(
             (item: any) =>
-              (item.environment === "production" ||
-                item.environment === "preview") &&
-              item.imageId === imageType &&
-              item.userId === displayId
+              item.userId === userId &&
+              item.displayId === displayId &&
+              item.type === imageType
           )
           .map((item: any) => item.fileUrl);
         setMediaUploadedImages(newImages);
@@ -294,7 +302,7 @@ function ImageUploader({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
+            disabled={isUploading || !userId || !displayId}
             className="w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-700 rounded-lg hover:border-gray-600 hover:bg-gray-800/30 text-gray-400 hover:text-gray-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Upload className="w-5 h-5" />
@@ -408,6 +416,7 @@ export default function MasjidEditorPanel({
   environment = "preview",
   displayName = "Masjid Display",
   templateType = "masjid",
+  userId,
 }: MasjidEditorPanelProps) {
   const defaultConfig: MasjidConfig = {
     template: "masjid-classic",
@@ -455,6 +464,33 @@ export default function MasjidEditorPanel({
   const [customization, setCustomization] =
     useState<MasjidConfig>(defaultConfig);
   const [isLoadingConfig, setIsLoadingConfig] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | undefined>(
+    userId
+  );
+
+  // Fetch user ID if not provided
+  useEffect(() => {
+    const fetchUserId = async () => {
+      if (userId) {
+        setCurrentUserId(userId);
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/auth/me");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.user?.id) {
+            setCurrentUserId(data.user.id);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user ID:", error);
+      }
+    };
+
+    fetchUserId();
+  }, [userId]);
 
   // Fetch initial config from Supabase when displayId changes
   useEffect(() => {
@@ -536,7 +572,7 @@ export default function MasjidEditorPanel({
     };
 
     fetchConfig();
-  }, [displayId]); // Only depend on displayId
+  }, [displayId]);
 
   // Update from prop config if provided (for real-time preview)
   useEffect(() => {
@@ -646,7 +682,6 @@ export default function MasjidEditorPanel({
       `}</style>
 
       <CollapsibleSection title="Branding" defaultOpen={true}>
-        {/* <pre className="text-xs">{JSON.stringify(customization, null, 2)}</pre> */}
         <div className="space-y-4">
           <div>
             <label className="text-sm text-gray-300 block mb-2">
@@ -666,6 +701,7 @@ export default function MasjidEditorPanel({
               images={customization.logo ? [customization.logo] : []}
               onChange={(imgs) => updateConfig({ logo: imgs[0] || "" })}
               maxImages={1}
+              userId={currentUserId}
               displayId={displayId}
               imageType="logo"
               environment={environment}
