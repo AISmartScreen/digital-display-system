@@ -1,19 +1,27 @@
+// app/api/displays/route.ts
 import { type NextRequest, NextResponse } from "next/server"
 import { v4 as uuidv4 } from "uuid"
 import { supabase } from "@/lib/supabase"
 import { cookies } from "next/headers"
+import { verifyToken } from "@/lib/auth"
 
 export async function GET(request: NextRequest) {
   try {
-    // Get user ID from session cookie
+    // Use the same authentication method as /api/auth/me
     const cookieStore = await cookies()
-    const userCookie = cookieStore.get("user")
+    const token = cookieStore.get("auth_token")?.value
     
-    if (!userCookie) {
+    if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const user = JSON.parse(userCookie.value)
+    // Verify the token and get user info
+    const user = await verifyToken(token)
+    
+    if (!user) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 })
+    }
+
     const userId = user.id
 
     // Fetch displays for the authenticated user
@@ -37,15 +45,21 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // Get user ID from session cookie
+    // Use the same authentication method as /api/auth/me
     const cookieStore = await cookies()
-    const userCookie = cookieStore.get("user")
+    const token = cookieStore.get("auth_token")?.value
     
-    if (!userCookie) {
+    if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const user = JSON.parse(userCookie.value)
+    // Verify the token and get user info
+    const user = await verifyToken(token)
+    
+    if (!user) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 })
+    }
+
     const userId = user.id
 
     const { displayName, templateType, config } = await request.json()

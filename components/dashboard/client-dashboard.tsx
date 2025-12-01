@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { DisplayCard } from "./display-card";
 import { Plus, LogOut, Settings, BarChart3, Zap } from "lucide-react";
+import DisplayStats from "@/components/dashboard/kpi";
 
 // Mock data
 const mockDisplays = [
@@ -49,15 +50,6 @@ export function ClientDashboard() {
     window.location.href = `/displays/${id}/live`;
   };
 
-  const stats = [
-    { label: "Total Displays", value: displays.length, icon: BarChart3 },
-    {
-      label: "Active",
-      value: displays.filter((d) => d.status === "active").length,
-      icon: Zap,
-    },
-  ];
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       {/* Header */}
@@ -94,27 +86,7 @@ export function ClientDashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          {stats.map((stat) => {
-            const Icon = stat.icon;
-            return (
-              <Card key={stat.label} className="bg-slate-800 border-slate-700">
-                <div className="p-6 flex items-center justify-between">
-                  <div>
-                    <p className="text-slate-400 text-sm">{stat.label}</p>
-                    <p className="text-3xl font-bold text-slate-50 mt-2">
-                      {stat.value}
-                    </p>
-                  </div>
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-orange-500/10">
-                    <Icon className="w-6 h-6 text-orange-500" />
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
+        <DisplayStats />
 
         {/* Displays Section */}
         <div className="space-y-6">
