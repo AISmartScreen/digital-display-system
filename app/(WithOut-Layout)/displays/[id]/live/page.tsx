@@ -1,78 +1,67 @@
-// app/(WithOut-Layout)/displays/[id]/preview/page.tsx
-
+// app/displays/[id]/live/page.tsx
 "use client";
 
-import type React from "react";
-
-import { useSearchParams, useParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { use, useEffect, useState } from "react";
+import { Loader2, AlertCircle, Power } from "lucide-react";
 import { MasjidTemplate } from "@/components/templates/masjid-template";
 import { HospitalTemplate } from "@/components/templates/hospital-template";
 import { CorporateTemplate } from "@/components/templates/corporate-template";
-import { Power, AlertCircle } from "lucide-react";
+import type React from "react";
 
-export default function PreviewPage() {
-  const searchParams = useSearchParams();
-  const params = useParams();
-  const displayId = params.id as string;
-  const configString = searchParams.get("config");
+interface LivePageProps {
+  params: Promise<{
+    id: string;
+  }>;
+}
+
+export default function LivePage({ params }: LivePageProps) {
+  const { id } = use(params);
   const [customization, setCustomization] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
   const [isDisabled, setIsDisabled] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [displayName, setDisplayName] = useState<string>("");
 
-  // Check if display is disabled by fetching from API
+  // Fetch config from database
   useEffect(() => {
-    const checkDisplayStatus = async () => {
-      if (!displayId) {
-        setIsLoading(false);
-        return;
-      }
-
+    const fetchConfig = async () => {
       try {
-        const response = await fetch(`/api/displays/${displayId}/config`);
+        setIsLoading(true);
+        setError(null);
 
-        if (response.ok) {
-          const result = await response.json();
+        const response = await fetch(`/api/displays/${id}/config`);
 
-          if (result.success && result.data) {
-            const status = result.data.status;
-            const name = result.data.name;
-
-            setDisplayName(name || "Display");
-
-            // Check if display is disabled
-            if (status === "disabled") {
-              setIsDisabled(true);
-              setIsLoading(false);
-              return;
-            }
-          }
+        if (!response.ok) {
+          throw new Error("Failed to fetch display configuration");
         }
-      } catch (error) {
-        console.error("Error checking display status:", error);
-      }
 
-      setIsDisabled(false);
-      setIsLoading(false);
-    };
+        const result = await response.json();
 
-    checkDisplayStatus();
-  }, [displayId]);
+        if (!result.success || !result.data) {
+          throw new Error("Invalid configuration data");
+        }
 
-  useEffect(() => {
-    if (configString && !isDisabled) {
-      try {
-        const decoded = JSON.parse(decodeURIComponent(configString));
+        const config = result.data.config;
+        const status = result.data.status;
+        const name = result.data.name;
+
+        // Check if display is disabled
+        if (status === "disabled") {
+          setIsDisabled(true);
+          setDisplayName(name || "Display");
+          setIsLoading(false);
+          return;
+        }
+
+        setIsDisabled(false);
 
         // Normalize color configuration - prioritize colorTheme over colors
-        // colorTheme is the source of truth for actual display colors
-        if (decoded.colorTheme) {
-          decoded.colors = decoded.colorTheme;
-        } else if (!decoded.colors) {
+        if (config.colorTheme) {
+          config.colors = config.colorTheme;
+        } else if (!config.colors) {
           // Fallback to default colors if neither exists
-          decoded.colors = {
+          config.colors = {
             primary: "#10b981",
             secondary: "#059669",
             text: "#ffffff",
@@ -80,12 +69,22 @@ export default function PreviewPage() {
           };
         }
 
-        setCustomization(decoded);
-      } catch (e) {
-        console.error("Error parsing config:", e);
+        setCustomization(config);
+      } catch (err) {
+        console.error("Error fetching config:", err);
+        setError(err instanceof Error ? err.message : "Failed to load display");
+      } finally {
+        setIsLoading(false);
       }
-    }
-  }, [configString, isDisabled]);
+    };
+
+    fetchConfig();
+
+    // Optional: Set up polling to check for config updates every 30 seconds
+    const interval = setInterval(fetchConfig, 30000);
+
+    return () => clearInterval(interval);
+  }, [id]);
 
   // Perfect scaling with correct 16:9 landscape preview
   useEffect(() => {
@@ -109,10 +108,10 @@ export default function PreviewPage() {
 
   if (isLoading) {
     return (
-      <div className="w-screen h-screen bg-black flex items-center justify-center">
+      <div className="h-screen w-screen flex items-center justify-center bg-black">
         <div className="text-center space-y-4">
-          <div className="w-12 h-12 border-4 border-pink-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-white text-lg">Loading preview...</p>
+          <Loader2 className="w-12 h-12 animate-spin mx-auto text-pink-400" />
+          <p className="text-white text-lg">Loading display...</p>
         </div>
       </div>
     );
@@ -125,16 +124,16 @@ export default function PreviewPage() {
         <div className="text-center space-y-6 max-w-2xl px-8">
           {/* Icon */}
           <div className="relative inline-flex">
-            <div className="absolute inset-0 bg-amber-900/30 rounded-full blur-2xl"></div>
-            <div className="relative w-32 h-32 bg-amber-900/20 rounded-full flex items-center justify-center border-4 border-amber-700/50">
-              <Power className="w-16 h-16 text-amber-600" />
+            <div className="absolute inset-0 bg-gray-800 rounded-full blur-2xl opacity-50"></div>
+            <div className="relative w-32 h-32 bg-gray-800 rounded-full flex items-center justify-center border-4 border-gray-700">
+              <Power className="w-16 h-16 text-gray-600" />
             </div>
           </div>
 
           {/* Title */}
           <div>
             <h1 className="text-4xl font-bold text-white mb-3">
-              Preview Unavailable
+              Display Disabled
             </h1>
             <p className="text-xl text-gray-400">
               {displayName || "This display"}
@@ -142,38 +141,37 @@ export default function PreviewPage() {
           </div>
 
           {/* Message */}
-          <div className="bg-amber-900/10 backdrop-blur-sm border border-amber-700/30 rounded-2xl p-6">
-            <div className="flex items-start gap-4">
-              <AlertCircle className="w-6 h-6 text-amber-500 flex-shrink-0 mt-0.5" />
-              <div className="text-left">
-                <p className="text-amber-200/90 text-lg leading-relaxed mb-2">
-                  This display is currently disabled and cannot be previewed.
-                </p>
-                <p className="text-amber-300/60 text-sm">
-                  Enable the display from the admin dashboard to view the
-                  preview.
-                </p>
-              </div>
-            </div>
+          <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-6">
+            <p className="text-gray-300 text-lg leading-relaxed">
+              This display has been temporarily disabled and is not currently
+              active. Please enable it from the admin dashboard to resume
+              broadcasting.
+            </p>
           </div>
 
           {/* Status indicator */}
-          <div className="flex items-center justify-center gap-3 text-amber-600">
-            <div className="w-2 h-2 bg-amber-600 rounded-full"></div>
+          <div className="flex items-center justify-center gap-3 text-gray-500">
+            <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
             <span className="text-sm font-medium uppercase tracking-wider">
-              Display Status: Disabled
+              Status: Disabled
             </span>
-            <div className="w-2 h-2 bg-amber-600 rounded-full"></div>
+            <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
           </div>
         </div>
       </div>
     );
   }
 
-  if (!customization) {
+  if (error || !customization) {
     return (
-      <div className="w-screen h-screen bg-black flex items-center justify-center text-white">
-        Loading...
+      <div className="h-screen w-screen flex items-center justify-center bg-black">
+        <div className="text-center space-y-4 max-w-md px-6">
+          <AlertCircle className="w-16 h-16 mx-auto text-red-400" />
+          <h2 className="text-white text-2xl font-bold">
+            Error Loading Display
+          </h2>
+          <p className="text-gray-400">{error || "Configuration not found"}</p>
+        </div>
       </div>
     );
   }
