@@ -98,6 +98,9 @@ export default function PreviewPage() {
       case "hospital-modern":
         return (
           <HospitalTemplate
+            displayId={customization.displayId}
+            displayName={customization.displayName}
+            templateType={customization.templateType}
             customization={customization}
             backgroundStyle={getBackgroundStyle()}
           />

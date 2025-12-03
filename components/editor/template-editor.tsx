@@ -136,7 +136,13 @@ export function TemplateEditor({
         );
       case "hospital":
         return (
-          <HospitalEditor config={config} onConfigChange={handleConfigChange} />
+          <HospitalEditor
+            displayId={displayId}
+            displayName={displayName}
+            templateType={templateType}
+            config={config}
+            onConfigChange={handleConfigChange}
+          />
         );
       case "corporate":
         return (

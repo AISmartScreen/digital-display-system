@@ -4,7 +4,7 @@
 import { use, useEffect, useState } from "react";
 import { Loader2, AlertCircle, Power } from "lucide-react";
 import { MasjidTemplate } from "@/components/templates/masjid-template";
-import HospitalTemplate from "@/components/templates/hospital-template";
+import { HospitalTemplate } from "@/components/templates/hospital-template";
 import { CorporateTemplate } from "@/components/templates/corporate-template";
 import type React from "react";
 
@@ -220,12 +220,13 @@ export default function LivePage({ params }: LivePageProps) {
         );
       case "hospital-modern":
         return (
-          <div className="bg-white">
-            <HospitalTemplate
-              customization={customization}
-              backgroundStyle={getBackgroundStyle()}
-            />
-          </div>
+          <HospitalTemplate
+            displayId={customization.displayId}
+            displayName={customization.displayName}
+            templateType={customization.templateType}
+            customization={customization}
+            backgroundStyle={getBackgroundStyle()}
+          />
         );
       case "corporate-dashboard":
         return (
