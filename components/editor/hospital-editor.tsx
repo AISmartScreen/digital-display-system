@@ -30,7 +30,7 @@ function ImageUploader({
   maxImages?: number;
   userId?: string;
   displayId?: string;
-  imageType: "logo" | "background" | "slideshow";
+  imageType: "logo" | "background" | "slideshow" | "doctor";
   environment?: "preview" | "production";
 }) {
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -197,6 +197,8 @@ function ImageUploader({
                       ? "Logo"
                       : imageType === "background"
                       ? "Background"
+                      : imageType === "doctor"
+                      ? "Doctor Photo"
                       : "Images"
                   }`}
             </span>
@@ -362,6 +364,12 @@ export function HospitalEditor({
   const emergencyContact = config.emergencyContact || "911";
   const doctorSchedules = config.doctorSchedules || [];
   const doctors = config.doctors || [];
+  const layout = config.layout || "two-column";
+  const showDateTime = config.showDateTime !== false;
+  const showDoctorCarousel = config.showDoctorCarousel !== false;
+  const showSchedule = config.showSchedule !== false;
+  const headerStyle = config.headerStyle || "gradient";
+  const announcements = config.announcements || [];
 
   // Handle basic field updates
   const handleFieldChange = (field: string, value: any) => {
@@ -419,8 +427,79 @@ export function HospitalEditor({
     onConfigChange({ ...config, doctors: updated });
   };
 
+  // Announcements Management
+  const handleAddAnnouncement = () => {
+    onConfigChange({
+      ...config,
+      announcements: [
+        ...announcements,
+        { text: "", duration: 5, priority: "normal" },
+      ],
+    });
+  };
+
+  const handleUpdateAnnouncement = (idx: number, field: string, value: any) => {
+    const updated = [...announcements];
+    updated[idx] = { ...updated[idx], [field]: value };
+    onConfigChange({ ...config, announcements: updated });
+  };
+
+  const handleRemoveAnnouncement = (idx: number) => {
+    const updated = announcements.filter((_: any, i: number) => i !== idx);
+    onConfigChange({ ...config, announcements: updated });
+  };
+
   return (
     <div className="space-y-8">
+      {/* Layout Selection */}
+      <div>
+        <h3 className="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
+          <span className="text-lg">📐</span> Layout Style
+        </h3>
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            {
+              value: "two-column",
+              label: "Two Column",
+              icon: "▦",
+              desc: "Doctor & Schedule",
+            },
+            {
+              value: "single-focus",
+              label: "Single Focus",
+              icon: "▢",
+              desc: "Large Doctor Display",
+            },
+            {
+              value: "schedule-focus",
+              label: "Schedule Focus",
+              icon: "📅",
+              desc: "Full Schedule View",
+            },
+          ].map((layoutOption) => (
+            <button
+              key={layoutOption.value}
+              onClick={() => handleFieldChange("layout", layoutOption.value)}
+              className={`p-4 rounded-lg border-2 transition-all ${
+                layout === layoutOption.value
+                  ? "border-cyan-500 bg-cyan-500/20"
+                  : "border-slate-600 hover:border-slate-500"
+              }`}
+            >
+              <div className="text-3xl mb-2">{layoutOption.icon}</div>
+              <div className="text-sm font-medium text-slate-200">
+                {layoutOption.label}
+              </div>
+              <div className="text-xs text-slate-400 mt-1">
+                {layoutOption.desc}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <hr className="border-slate-700" />
+
       {/* Hospital Branding */}
       <div>
         <h3 className="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
@@ -465,6 +544,82 @@ export function HospitalEditor({
               environment={environment}
             />
           </div>
+        </div>
+      </div>
+
+      <hr className="border-slate-700" />
+
+      {/* Header Style */}
+      <div>
+        <h3 className="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
+          <span className="text-lg">🎯</span> Header Style
+        </h3>
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { value: "gradient", label: "Gradient", icon: "🌈" },
+            { value: "solid", label: "Solid", icon: "▬" },
+          ].map((style) => (
+            <button
+              key={style.value}
+              onClick={() => handleFieldChange("headerStyle", style.value)}
+              className={`p-3 rounded-lg border-2 transition-all ${
+                headerStyle === style.value
+                  ? "border-cyan-500 bg-cyan-500/20"
+                  : "border-slate-600 hover:border-slate-500"
+              }`}
+            >
+              <div className="text-2xl mb-1">{style.icon}</div>
+              <div className="text-sm font-medium text-slate-200">
+                {style.label}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <hr className="border-slate-700" />
+
+      {/* Display Options */}
+      <div>
+        <h3 className="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
+          <span className="text-lg">👁️</span> Display Options
+        </h3>
+        <div className="space-y-3">
+          {[
+            {
+              key: "showDateTime",
+              label: "Show Date & Time",
+              desc: "Display current date and time in header",
+            },
+            {
+              key: "showDoctorCarousel",
+              label: "Show Doctor Carousel",
+              desc: "Display rotating featured doctors",
+            },
+            {
+              key: "showSchedule",
+              label: "Show Schedule",
+              desc: "Display today's doctor schedule",
+            },
+          ].map((option) => (
+            <label
+              key={option.key}
+              className="flex items-center justify-between cursor-pointer p-3 hover:bg-slate-700/30 rounded transition-colors"
+            >
+              <div>
+                <div className="text-sm text-slate-200">{option.label}</div>
+                <div className="text-xs text-slate-400">{option.desc}</div>
+              </div>
+              <input
+                type="checkbox"
+                checked={config[option.key] !== false}
+                onChange={(e) =>
+                  handleFieldChange(option.key, e.target.checked)
+                }
+                className="w-5 h-5 rounded bg-slate-800 border-slate-600 text-cyan-500 focus:ring-cyan-500"
+              />
+            </label>
+          ))}
         </div>
       </div>
 
@@ -595,6 +750,91 @@ export function HospitalEditor({
               className="bg-slate-700 border-slate-600 text-slate-50"
             />
           </div>
+        </div>
+      </div>
+
+      <hr className="border-slate-700" />
+
+      {/* Announcements */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+            <span className="text-lg">📢</span> Announcements
+          </h3>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleAddAnnouncement}
+            className="border-slate-600 text-slate-300 h-7 bg-transparent hover:bg-slate-700"
+          >
+            <Plus className="w-3 h-3 mr-1" />
+            Add
+          </Button>
+        </div>
+        <div className="space-y-3">
+          {announcements.map((announcement: any, idx: number) => (
+            <div key={idx} className="bg-slate-700/50 p-3 rounded space-y-2">
+              <textarea
+                value={announcement.text}
+                onChange={(e) =>
+                  handleUpdateAnnouncement(idx, "text", e.target.value)
+                }
+                placeholder="Enter announcement text..."
+                className="w-full bg-slate-700 border-slate-600 text-slate-50 text-sm rounded px-3 py-2 resize-none"
+                rows={2}
+              />
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <label className="text-xs text-slate-400 block mb-1">
+                    Duration (seconds)
+                  </label>
+                  <Input
+                    type="number"
+                    min="3"
+                    max="60"
+                    value={announcement.duration}
+                    onChange={(e) =>
+                      handleUpdateAnnouncement(
+                        idx,
+                        "duration",
+                        parseInt(e.target.value) || 5
+                      )
+                    }
+                    className="bg-slate-700 border-slate-600 text-slate-50 text-sm"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs text-slate-400 block mb-1">
+                    Priority
+                  </label>
+                  <select
+                    value={announcement.priority || "normal"}
+                    onChange={(e) =>
+                      handleUpdateAnnouncement(idx, "priority", e.target.value)
+                    }
+                    className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-slate-50 text-sm"
+                  >
+                    <option value="low">Low</option>
+                    <option value="normal">Normal</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => handleRemoveAnnouncement(idx)}
+                  className="text-red-400 hover:bg-red-500/10 mt-5"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </Button>
+              </div>
+            </div>
+          ))}
+          {announcements.length === 0 && (
+            <div className="text-center py-6 text-slate-500 text-sm">
+              No announcements added yet.
+            </div>
+          )}
         </div>
       </div>
 
