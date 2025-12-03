@@ -9,12 +9,15 @@ import {
   Heart,
   Award,
   Users,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 export default function HospitalDigitalSignage() {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [currentSlide, setCurrentSlide] = useState(0);
+  const [currentDoctor, setCurrentDoctor] = useState(0);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
+  const [currentRightSlide, setCurrentRightSlide] = useState(0);
 
   // ========== CUSTOMIZATION SETTINGS ==========
   const settings = {
@@ -104,15 +107,22 @@ export default function HospitalDigitalSignage() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % 4);
-    }, settings.slideInterval);
+      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+    }, 7000);
     return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
-    }, 7000);
+      setCurrentDoctor((prev) => (prev + 1) % doctors.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentRightSlide((prev) => (prev + 1) % 3);
+    }, settings.slideInterval);
     return () => clearInterval(interval);
   }, []);
 
@@ -131,6 +141,14 @@ export default function HospitalDigitalSignage() {
       day: "numeric",
       year: "numeric",
     });
+  };
+
+  const nextDoctor = () => {
+    setCurrentDoctor((prev) => (prev + 1) % doctors.length);
+  };
+
+  const prevDoctor = () => {
+    setCurrentDoctor((prev) => (prev - 1 + doctors.length) % doctors.length);
   };
 
   return (
@@ -191,222 +209,107 @@ export default function HospitalDigitalSignage() {
 
         {/* Main Content Area */}
         <div className="flex-1 grid grid-cols-3 gap-6 p-6 overflow-hidden min-h-0">
-          {/* Left Panel - Dynamic Content Slides */}
-          <div className="flex flex-col overflow-hidden">
-            {/* Slide 1: Services */}
-            {currentSlide === 0 && (
-              <div className="h-full flex flex-col animate-in fade-in duration-1000">
-                <div
-                  className="bg-black/40 backdrop-blur-md rounded-2xl p-6 border-2 shadow-2xl mb-4"
-                  style={{ borderColor: settings.primaryColor + "60" }}
-                >
-                  <div className="flex items-center gap-3 mb-2">
-                    <Stethoscope
-                      className="w-7 h-7"
-                      style={{ color: settings.primaryColor }}
-                    />
-                    <h2 className="text-2xl font-bold text-white">
-                      Our Services
-                    </h2>
-                  </div>
-                </div>
-
-                <div className="flex-1 grid grid-rows-4 gap-4">
-                  {services.map((service, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-black/30 backdrop-blur-sm rounded-xl p-5 border border-white/20 hover:border-white/40 hover:bg-black/40 transition-all shadow-xl"
-                    >
-                      <div className="flex items-center gap-4">
-                        <service.icon
-                          className="w-10 h-10"
-                          style={{ color: settings.accentColor }}
-                        />
-                        <div>
-                          <h3 className="text-xl font-bold text-white mb-1">
-                            {service.name}
-                          </h3>
-                          <p className="text-sm text-gray-300">
-                            {service.desc}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Slide 2: Stats */}
-            {currentSlide === 1 && (
-              <div className="h-full flex flex-col animate-in fade-in duration-1000">
-                <div
-                  className="bg-black/40 backdrop-blur-md rounded-2xl p-6 border-2 shadow-2xl mb-4"
-                  style={{ borderColor: settings.primaryColor + "60" }}
-                >
-                  <div className="flex items-center gap-3 mb-2">
-                    <Award
-                      className="w-7 h-7"
-                      style={{ color: settings.primaryColor }}
-                    />
-                    <h2 className="text-2xl font-bold text-white">
-                      Our Excellence
-                    </h2>
-                  </div>
-                </div>
-
-                <div className="flex-1 grid grid-rows-4 gap-4">
-                  {stats.map((stat, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-black/30 backdrop-blur-sm rounded-xl p-6 border border-white/20 text-center shadow-xl"
-                    >
-                      <div
-                        className="text-4xl font-bold mb-1"
-                        style={{ color: settings.primaryColor }}
-                      >
-                        {stat.number}
-                      </div>
-                      <div className="text-sm text-gray-300">{stat.label}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Slide 3: Testimonial */}
-            {currentSlide === 2 && (
-              <div className="h-full flex flex-col justify-center animate-in fade-in duration-1000">
-                <div
-                  className="bg-black/40 backdrop-blur-md rounded-2xl p-6 border-2 shadow-2xl mb-4"
-                  style={{ borderColor: settings.primaryColor + "60" }}
-                >
-                  <div className="flex items-center gap-3 mb-2">
-                    <Users
-                      className="w-7 h-7"
-                      style={{ color: settings.primaryColor }}
-                    />
-                    <h2 className="text-2xl font-bold text-white">
-                      Patient Testimonials
-                    </h2>
-                  </div>
-                </div>
-
-                <div className="bg-black/30 backdrop-blur-sm rounded-xl p-8 border border-white/20 shadow-xl">
-                  <div className="flex gap-2 mb-4">
-                    {[...Array(testimonials[currentTestimonial].rating)].map(
-                      (_, i) => (
-                        <span
-                          key={i}
-                          className="text-3xl"
-                          style={{ color: settings.accentColor }}
-                        >
-                          ★
-                        </span>
-                      )
-                    )}
-                  </div>
-                  <p className="text-xl text-gray-200 leading-relaxed mb-6 italic">
-                    "{testimonials[currentTestimonial].text}"
-                  </p>
-                  <p
-                    className="text-lg font-bold"
-                    style={{ color: settings.primaryColor }}
-                  >
-                    — {testimonials[currentTestimonial].author}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Slide 4: Doctors */}
-            {currentSlide === 3 && (
-              <div className="h-full flex flex-col animate-in fade-in duration-1000">
-                <div
-                  className="bg-black/40 backdrop-blur-md rounded-2xl p-6 border-2 shadow-2xl mb-4"
-                  style={{ borderColor: settings.primaryColor + "60" }}
-                >
-                  <div className="flex items-center gap-3 mb-2">
-                    <User
-                      className="w-7 h-7"
-                      style={{ color: settings.primaryColor }}
-                    />
-                    <h2 className="text-2xl font-bold text-white">
-                      Our Doctors
-                    </h2>
-                  </div>
-                </div>
-
-                <div className="flex-1 space-y-4 overflow-y-auto">
-                  {doctors.map((doctor, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-black/30 backdrop-blur-sm rounded-xl p-5 border border-white/20 hover:border-white/40 hover:bg-black/40 transition-all shadow-xl"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="relative w-20 h-20 flex-shrink-0">
-                          <div
-                            className="absolute -inset-1 rounded-full opacity-40"
-                            style={{
-                              background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
-                              filter: "blur(8px)",
-                            }}
-                          ></div>
-                          <div
-                            className="relative w-full h-full rounded-full p-1 shadow-xl"
-                            style={{
-                              background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
-                            }}
-                          >
-                            <img
-                              src={doctor.image}
-                              alt={doctor.name}
-                              className="w-full h-full rounded-full object-cover"
-                            />
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-xl font-bold text-white mb-1">
-                            {doctor.name}
-                          </h3>
-                          <div
-                            className="inline-block px-3 py-1 rounded-full text-sm font-bold text-white mb-2"
-                            style={{
-                              background: `linear-gradient(135deg, ${settings.secondaryColor}, ${settings.primaryColor})`,
-                            }}
-                          >
-                            {doctor.specialty}
-                          </div>
-                          <div className="text-sm text-gray-300 space-y-1">
-                            <div>⏱️ {doctor.experience}</div>
-                            <div>📅 {doctor.available}</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Slide Indicators */}
-            <div className="flex justify-center gap-2 mt-4">
-              {[0, 1, 2, 3].map((idx) => (
-                <div
-                  key={idx}
-                  className="h-2 rounded-full transition-all duration-500"
-                  style={{
-                    width: idx === currentSlide ? "2.5rem" : "0.5rem",
-                    backgroundColor:
-                      idx === currentSlide ? settings.primaryColor : "#64748b",
-                  }}
+          {/* Left Panel - Doctor Carousel Only */}
+          <div className="flex flex-col justify-center">
+            <div
+              className="bg-black/40 backdrop-blur-md rounded-2xl p-6 border-2 shadow-2xl mb-6"
+              style={{ borderColor: settings.primaryColor + "60" }}
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <User
+                  className="w-7 h-7"
+                  style={{ color: settings.primaryColor }}
                 />
-              ))}
+                <h2 className="text-2xl font-bold text-white">
+                  Meet Our Doctors
+                </h2>
+              </div>
+            </div>
+
+            {/* Main Doctor Card */}
+            <div className="bg-black/40 backdrop-blur-md rounded-3xl p-8 border-2 border-white/30 shadow-2xl">
+              <div className="flex flex-col items-center">
+                {/* Large Doctor Image */}
+                <div className="relative w-64 h-64 mb-6">
+                  <div
+                    className="absolute -inset-2 rounded-full opacity-50 animate-pulse"
+                    style={{
+                      background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
+                      filter: "blur(20px)",
+                    }}
+                  ></div>
+                  <div
+                    className="relative w-full h-full rounded-full p-2 shadow-2xl"
+                    style={{
+                      background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
+                    }}
+                  >
+                    <img
+                      src={doctors[currentDoctor].image}
+                      alt={doctors[currentDoctor].name}
+                      className="w-full h-full rounded-full object-cover"
+                    />
+                  </div>
+                </div>
+
+                {/* Doctor Info */}
+                <h3 className="text-3xl font-bold text-white mb-3">
+                  {doctors[currentDoctor].name}
+                </h3>
+                <div
+                  className="inline-block px-6 py-2 rounded-full text-lg font-bold text-white mb-4"
+                  style={{
+                    background: `linear-gradient(135deg, ${settings.secondaryColor}, ${settings.primaryColor})`,
+                  }}
+                >
+                  {doctors[currentDoctor].specialty}
+                </div>
+                <div className="text-base text-gray-300 space-y-2 text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-xl">⏱️</span>
+                    <span>{doctors[currentDoctor].experience}</span>
+                  </div>
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-xl">📅</span>
+                    <span>{doctors[currentDoctor].available}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Navigation Arrows */}
+              <div className="flex items-center justify-center gap-6 mt-6">
+                <button
+                  onClick={prevDoctor}
+                  className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all border border-white/30 hover:border-white/50"
+                >
+                  <ChevronLeft className="w-6 h-6 text-white" />
+                </button>
+                <div className="flex gap-2">
+                  {doctors.map((_, idx) => (
+                    <div
+                      key={idx}
+                      className="w-2 h-2 rounded-full transition-all"
+                      style={{
+                        backgroundColor:
+                          idx === currentDoctor
+                            ? settings.primaryColor
+                            : "#64748b",
+                      }}
+                    />
+                  ))}
+                </div>
+                <button
+                  onClick={nextDoctor}
+                  className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all border border-white/30 hover:border-white/50"
+                >
+                  <ChevronRight className="w-6 h-6 text-white" />
+                </button>
+              </div>
             </div>
           </div>
 
           {/* Center Panel - Token & Emergency */}
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col justify-center gap-6">
             {/* Token Number Display */}
             <div
               className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border-2 shadow-2xl text-center"
@@ -473,78 +376,183 @@ export default function HospitalDigitalSignage() {
             </div>
           </div>
 
-          {/* Right Panel - Contact Info */}
-          <div className="flex flex-col gap-4 overflow-y-auto">
+          {/* Right Panel - Contact Info with Services/Excellence Carousel */}
+          <div className="flex flex-col overflow-hidden">
+            {/* Contact Info Header */}
             <div
-              className="bg-black/40 backdrop-blur-md rounded-2xl p-6 border-2 shadow-2xl"
+              className="bg-black/40 backdrop-blur-md rounded-2xl p-6 border-2 shadow-2xl mb-4"
               style={{ borderColor: settings.primaryColor + "60" }}
             >
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center gap-3 mb-2">
                 <MapPin
                   className="w-7 h-7"
                   style={{ color: settings.primaryColor }}
                 />
                 <h2 className="text-2xl font-bold text-white">
-                  Contact Information
+                  Contact & Information
                 </h2>
               </div>
             </div>
 
-            {/* Contact Details */}
-            <div className="space-y-4">
-              <div className="bg-black/30 backdrop-blur-sm rounded-xl p-5 border border-white/20 shadow-xl">
-                <div
-                  className="text-base font-semibold mb-2 flex items-center gap-2"
-                  style={{ color: settings.accentColor }}
-                >
-                  <span className="text-2xl">📞</span>
-                  <span>Phone</span>
-                </div>
-                <div className="text-xl font-bold text-white">
-                  {settings.phone}
-                </div>
-              </div>
+            {/* Carousel Content */}
+            <div className="flex-1 flex flex-col min-h-0">
+              {/* Slide 1: Contact Details */}
+              {currentRightSlide === 0 && (
+                <div className="flex-1 flex flex-col justify-center animate-in fade-in duration-1000">
+                  <div className="space-y-4">
+                    <div className="bg-black/30 backdrop-blur-sm rounded-xl p-5 border border-white/20 shadow-xl">
+                      <div
+                        className="text-base font-semibold mb-2 flex items-center gap-2"
+                        style={{ color: settings.accentColor }}
+                      >
+                        <span className="text-2xl">📞</span>
+                        <span>Phone</span>
+                      </div>
+                      <div className="text-xl font-bold text-white">
+                        {settings.phone}
+                      </div>
+                    </div>
 
-              <div className="bg-black/30 backdrop-blur-sm rounded-xl p-5 border border-white/20 shadow-xl">
-                <div
-                  className="text-base font-semibold mb-2 flex items-center gap-2"
-                  style={{ color: settings.accentColor }}
-                >
-                  <span className="text-2xl">🌐</span>
-                  <span>Website</span>
-                </div>
-                <div className="text-xl font-bold text-white">
-                  {settings.website}
-                </div>
-              </div>
+                    <div className="bg-black/30 backdrop-blur-sm rounded-xl p-5 border border-white/20 shadow-xl">
+                      <div
+                        className="text-base font-semibold mb-2 flex items-center gap-2"
+                        style={{ color: settings.accentColor }}
+                      >
+                        <span className="text-2xl">🌐</span>
+                        <span>Website</span>
+                      </div>
+                      <div className="text-xl font-bold text-white">
+                        {settings.website}
+                      </div>
+                    </div>
 
-              <div className="bg-black/30 backdrop-blur-sm rounded-xl p-5 border border-white/20 shadow-xl">
-                <div
-                  className="text-base font-semibold mb-2 flex items-center gap-2"
-                  style={{ color: settings.accentColor }}
-                >
-                  <span className="text-2xl">📍</span>
-                  <span>Address</span>
-                </div>
-                <div className="text-base text-gray-300 leading-relaxed">
-                  {settings.address}
-                </div>
-              </div>
+                    <div className="bg-black/30 backdrop-blur-sm rounded-xl p-5 border border-white/20 shadow-xl">
+                      <div
+                        className="text-base font-semibold mb-2 flex items-center gap-2"
+                        style={{ color: settings.accentColor }}
+                      >
+                        <span className="text-2xl">📍</span>
+                        <span>Address</span>
+                      </div>
+                      <div className="text-base text-gray-300 leading-relaxed">
+                        {settings.address}
+                      </div>
+                    </div>
 
-              <div className="bg-black/30 backdrop-blur-sm rounded-xl p-5 border border-white/20 shadow-xl">
+                    <div className="bg-black/30 backdrop-blur-sm rounded-xl p-5 border border-white/20 shadow-xl">
+                      <div
+                        className="text-base font-semibold mb-2 flex items-center gap-2"
+                        style={{ color: settings.accentColor }}
+                      >
+                        <span className="text-2xl">⏰</span>
+                        <span>Hours</span>
+                      </div>
+                      <div className="text-sm text-gray-300 space-y-1">
+                        <div>Monday - Friday: 8 AM - 8 PM</div>
+                        <div>Saturday: 9 AM - 5 PM</div>
+                        <div>Sunday: Emergency Only</div>
+                      </div>
+                    </div>
+
+                    {/* Testimonial */}
+                    <div className="bg-black/30 backdrop-blur-sm rounded-xl p-6 border border-white/20 shadow-xl">
+                      <div
+                        className="text-base font-semibold mb-4 flex items-center gap-2"
+                        style={{ color: settings.accentColor }}
+                      >
+                        <Users className="w-5 h-5" />
+                        <span>Patient Testimonial</span>
+                      </div>
+                      <div className="flex gap-1 mb-3">
+                        {[
+                          ...Array(testimonials[currentTestimonial].rating),
+                        ].map((_, i) => (
+                          <span
+                            key={i}
+                            className="text-xl"
+                            style={{ color: settings.accentColor }}
+                          >
+                            ★
+                          </span>
+                        ))}
+                      </div>
+                      <p className="text-sm text-gray-200 leading-relaxed mb-3 italic">
+                        "{testimonials[currentTestimonial].text}"
+                      </p>
+                      <p
+                        className="text-sm font-bold"
+                        style={{ color: settings.primaryColor }}
+                      >
+                        — {testimonials[currentTestimonial].author}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Slide 2: Services */}
+              {currentRightSlide === 1 && (
+                <div className="flex-1 space-y-4 animate-in fade-in duration-1000">
+                  {services.map((service, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-black/30 backdrop-blur-sm rounded-xl p-5 border border-white/20 hover:border-white/40 hover:bg-black/40 transition-all shadow-xl"
+                    >
+                      <div className="flex items-center gap-4">
+                        <service.icon
+                          className="w-10 h-10"
+                          style={{ color: settings.accentColor }}
+                        />
+                        <div>
+                          <h3 className="text-xl font-bold text-white mb-1">
+                            {service.name}
+                          </h3>
+                          <p className="text-sm text-gray-300">
+                            {service.desc}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Slide 3: Excellence Stats */}
+              {currentRightSlide === 2 && (
+                <div className="flex-1 space-y-4 animate-in fade-in duration-1000">
+                  {stats.map((stat, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-black/30 backdrop-blur-sm rounded-xl p-6 border border-white/20 text-center shadow-xl"
+                    >
+                      <div
+                        className="text-4xl font-bold mb-1"
+                        style={{ color: settings.primaryColor }}
+                      >
+                        {stat.number}
+                      </div>
+                      <div className="text-sm text-gray-300">{stat.label}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Slide Indicators */}
+            <div className="flex justify-center gap-2 mt-4">
+              {[0, 1, 2].map((idx) => (
                 <div
-                  className="text-base font-semibold mb-2 flex items-center gap-2"
-                  style={{ color: settings.accentColor }}
-                >
-                  <span className="text-2xl">⏰</span>
-                  <span>Hours</span>
-                </div>
-                <div className="text-sm text-gray-300 space-y-1">
-                  <div>Monday - Friday: 8 AM - 8 PM</div>
-                  <div>Saturday: 9 AM - 5 PM</div>
-                  <div>Sunday: Emergency Only</div>
-                </div>
-              </div>
+                  key={idx}
+                  className="h-2 rounded-full transition-all duration-500"
+                  style={{
+                    width: idx === currentRightSlide ? "2.5rem" : "0.5rem",
+                    backgroundColor:
+                      idx === currentRightSlide
+                        ? settings.primaryColor
+                        : "#64748b",
+                  }}
+                />
+              ))}
             </div>
           </div>
         </div>
