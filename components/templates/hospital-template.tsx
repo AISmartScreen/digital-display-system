@@ -1,13 +1,7 @@
 import React, { useState, useEffect } from "react";
-import {
-  Heart,
-  ChevronLeft,
-  ChevronRight,
-  Award,
-  Calendar,
-  Clock,
-  MapPin,
-} from "lucide-react";
+import { Heart, Award, Calendar } from "lucide-react";
+import AppointmentReminders from "./components/hospital/AppointmentReminders";
+import { ScheduleSlider } from "./components/hospital/ScheduleSlider";
 
 interface HospitalCustomization {
   hospitalName: string;
@@ -22,6 +16,10 @@ interface HospitalCustomization {
   doctorRotationSpeed: number;
   departmentInfo: string;
   emergencyContact: string;
+  leftComponent: "doctors" | "appointments" | "schedules";
+  rightComponent: "doctors" | "appointments" | "schedules";
+  enableSlideshow: boolean;
+  slideshowSpeed: number;
   doctors: Array<{
     name: string;
     specialty: string;
@@ -29,10 +27,21 @@ interface HospitalCustomization {
     image: string;
     available: string;
   }>;
-  doctorSchedules: Array<{
-    name: string;
+  appointments: Array<{
+    id: string;
+    patientName: string;
+    doctorName: string;
     specialty: string;
     time: string;
+    room: string;
+    appointmentDate: Date;
+    priority: "normal" | "urgent" | "follow-up";
+  }>;
+  doctorSchedules: Array<{
+    time: string;
+    patientName: string;
+    doctorName: string;
+    department: string;
     room: string;
   }>;
 }
@@ -42,192 +51,14 @@ interface HospitalTemplateProps {
   backgroundStyle: React.CSSProperties;
 }
 
-// Vertical Schedule Slider Component
-const ScheduleSlider = ({ schedules, settings }: any) => {
-  const [isHovered, setIsHovered] = useState(false);
-
-  if (schedules.length === 0) {
-    return (
-      <div className="text-center text-gray-300 py-8 text-xl">
-        No scheduled appointments today
-      </div>
-    );
-  }
-
-  // Fixed dimensions for consistency
-  const visibleHeight = 520;
-  const itemHeight = 140; // Increased for larger text
-  const needsScroll = schedules.length > 3; // Show scroll if more than 3 items
-
-  // Animation duration based on number of items (slower = smoother)
-  const baseDuration = needsScroll ? schedules.length * 5 : 0; // 5 seconds per item
-  const currentDuration = isHovered ? baseDuration * 3 : baseDuration; // 3x slower on hover
-
-  return (
-    <div
-      className="relative overflow-hidden"
-      style={{ height: `${visibleHeight}px` }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {/* Fade out effect at top - only show when scrolling */}
-      {needsScroll && (
-        <div
-          className="absolute top-0 left-0 right-0 h-32 pointer-events-none z-10"
-          style={{
-            background:
-              "linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%)",
-          }}
-        />
-      )}
-
-      {/* Fade out effect at bottom - only show when scrolling */}
-      {needsScroll && (
-        <div
-          className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none z-10"
-          style={{
-            background:
-              "linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)",
-          }}
-        />
-      )}
-
-      <div
-        className="flex flex-col gap-5"
-        style={{
-          animation: needsScroll
-            ? `slideUp ${currentDuration}s linear infinite`
-            : "none",
-        }}
-      >
-        {/* First set of schedules */}
-        {schedules.map((schedule: any, idx: number) => (
-          <div
-            key={`first-${idx}`}
-            className="relative rounded-2xl p-6 border-2 border-white/30 flex-shrink-0 transition-all duration-300 hover:scale-105 hover:shadow-2xl shadow-lg group"
-            style={{ minHeight: `${itemHeight - 20}px` }}
-          >
-            {/* Subtle glow effect on hover */}
-            <div
-              className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-300 blur-xl"
-              style={{
-                background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
-              }}
-            />
-
-            <div className="relative flex items-center justify-between gap-6">
-              <div className="flex-1 min-w-0">
-                <h4 className="text-2xl font-bold text-white mb-2 truncate">
-                  {schedule.name}
-                </h4>
-                <div
-                  className="inline-block px-5 py-2 rounded-full text-base font-semibold text-white shadow-lg"
-                  style={{
-                    background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
-                  }}
-                >
-                  {schedule.specialty}
-                </div>
-              </div>
-              <div className="text-right flex-shrink-0 space-y-2">
-                <div className="flex items-center justify-end gap-2">
-                  <Clock
-                    className="w-6 h-6"
-                    style={{ color: settings.accentColor }}
-                  />
-                  <div
-                    className="text-2xl font-bold"
-                    style={{ color: settings.accentColor }}
-                  >
-                    {schedule.time}
-                  </div>
-                </div>
-                <div className="flex items-center justify-end gap-2">
-                  <MapPin className="w-5 h-5 text-white" />
-                  <div className="text-xl font-semibold text-white">
-                    Room {schedule.room}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {/* Duplicate set for seamless loop - only when scrolling */}
-        {needsScroll &&
-          schedules.map((schedule: any, idx: number) => (
-            <div
-              key={`second-${idx}`}
-              className="relative rounded-2xl p-6 border-2 border-white/30 flex-shrink-0 transition-all duration-300 hover:scale-105 hover:shadow-2xl shadow-lg group"
-              style={{ minHeight: `${itemHeight - 20}px` }}
-            >
-              {/* Subtle glow effect on hover */}
-              <div
-                className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-300 blur-xl"
-                style={{
-                  background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
-                }}
-              />
-
-              <div className="relative flex items-center justify-between gap-6">
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-2xl font-bold text-white mb-2 truncate">
-                    {schedule.name}
-                  </h4>
-                  <div
-                    className="inline-block px-5 py-2 rounded-full text-base font-semibold text-white shadow-lg"
-                    style={{
-                      background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
-                    }}
-                  >
-                    {schedule.specialty}
-                  </div>
-                </div>
-                <div className="text-right flex-shrink-0 space-y-2">
-                  <div className="flex items-center justify-end gap-2">
-                    <Clock
-                      className="w-6 h-6"
-                      style={{ color: settings.accentColor }}
-                    />
-                    <div
-                      className="text-2xl font-bold"
-                      style={{ color: settings.accentColor }}
-                    >
-                      {schedule.time}
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-end gap-2">
-                    <MapPin className="w-5 h-5 text-white" />
-                    <div className="text-xl font-semibold text-white">
-                      Room {schedule.room}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-      </div>
-
-      <style>{`
-        @keyframes slideUp {
-          0% {
-            transform: translateY(0);
-          }
-          100% {
-            transform: translateY(-50%);
-          }
-        }
-      `}</style>
-    </div>
-  );
-};
-
 export function HospitalTemplate({
   customization,
   backgroundStyle,
 }: HospitalTemplateProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [currentDoctor, setCurrentDoctor] = useState(0);
+  const [currentLeftSlide, setCurrentLeftSlide] = useState(0);
+  const [currentRightSlide, setCurrentRightSlide] = useState(0);
 
   const settings = {
     hospitalName: customization.hospitalName || "MediTech Hospital",
@@ -245,6 +76,10 @@ export function HospitalTemplate({
     doctorRotationSpeed: customization.doctorRotationSpeed || 6000,
     departmentInfo: customization.departmentInfo || "Emergency Department",
     emergencyContact: customization.emergencyContact || "911",
+    leftComponent: customization.leftComponent || "doctors",
+    rightComponent: customization.rightComponent || "appointments",
+    enableSlideshow: customization.enableSlideshow || false,
+    slideshowSpeed: customization.slideshowSpeed || 10000,
   };
 
   const doctors =
@@ -277,40 +112,30 @@ export function HospitalTemplate({
           },
         ];
 
-  const doctorSchedules = customization.doctorSchedules || [];
-
-  const MockSchedules = [
+  const appointments = customization.appointments || [
     {
-      name: "Dr. Sarah Johnson",
+      id: "1",
+      patientName: "John Smith",
+      doctorName: "Dr. Sarah Johnson",
       specialty: "Cardiology",
-      time: "09:00 AM",
-      room: "101",
-    },
-    {
-      name: "Dr. Michael Chen",
-      specialty: "Neurology",
       time: "10:30 AM",
-      room: "202",
-    },
-    {
-      name: "Dr. Emily Rodriguez",
-      specialty: "Pediatrics",
-      time: "11:15 AM",
-      room: "303",
-    },
-    {
-      name: "Dr. Sarah Johnson",
-      specialty: "Cardiology",
-      time: "01:00 PM",
       room: "101",
+      appointmentDate: new Date(Date.now() + 15 * 60000),
+      priority: "urgent" as const,
     },
     {
-      name: "Dr. Michael Chen",
+      id: "2",
+      patientName: "Emma Wilson",
+      doctorName: "Dr. Michael Chen",
       specialty: "Neurology",
-      time: "02:30 PM",
+      time: "11:00 AM",
       room: "202",
+      appointmentDate: new Date(Date.now() + 45 * 60000),
+      priority: "normal" as const,
     },
   ];
+
+  const doctorSchedules = customization.doctorSchedules || [];
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -324,6 +149,26 @@ export function HospitalTemplate({
     }, settings.doctorRotationSpeed);
     return () => clearInterval(interval);
   }, [doctors.length, settings.doctorRotationSpeed]);
+
+  // Slideshow for left component
+  useEffect(() => {
+    if (!settings.enableSlideshow) return;
+    const components = ["doctors", "appointments", "schedules"];
+    const interval = setInterval(() => {
+      setCurrentLeftSlide((prev) => (prev + 1) % components.length);
+    }, settings.slideshowSpeed);
+    return () => clearInterval(interval);
+  }, [settings.enableSlideshow, settings.slideshowSpeed]);
+
+  // Slideshow for right component
+  useEffect(() => {
+    if (!settings.enableSlideshow) return;
+    const components = ["doctors", "appointments", "schedules"];
+    const interval = setInterval(() => {
+      setCurrentRightSlide((prev) => (prev + 1) % components.length);
+    }, settings.slideshowSpeed);
+    return () => clearInterval(interval);
+  }, [settings.enableSlideshow, settings.slideshowSpeed]);
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString("en-US", {
@@ -342,16 +187,6 @@ export function HospitalTemplate({
     });
   };
 
-  const nextDoctor = () => {
-    if (doctors.length === 0) return;
-    setCurrentDoctor((prev) => (prev + 1) % doctors.length);
-  };
-
-  const prevDoctor = () => {
-    if (doctors.length === 0) return;
-    setCurrentDoctor((prev) => (prev - 1 + doctors.length) % doctors.length);
-  };
-
   const dynamicBackgroundStyle = settings.backgroundImage
     ? {
         ...backgroundStyle,
@@ -359,12 +194,147 @@ export function HospitalTemplate({
       }
     : backgroundStyle;
 
+  // Doctor Carousel Component
+  const DoctorCarousel = () => (
+    <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-3xl overflow-hidden border border-white/20 shadow-2xl h-full flex flex-col justify-center">
+      <div className="relative p-8">
+        <div
+          className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 -mr-20 -mt-20"
+          style={{ backgroundColor: settings.primaryColor }}
+        ></div>
+        <div
+          className="absolute bottom-0 left-0 w-32 h-32 rounded-full opacity-10 -ml-16 -mb-16"
+          style={{ backgroundColor: settings.secondaryColor }}
+        ></div>
+
+        <div className="relative z-10">
+          <div className="flex justify-center mb-6">
+            <div className="relative">
+              <div
+                className="absolute -inset-3 rounded-full opacity-50 blur-2xl animate-pulse"
+                style={{
+                  background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
+                }}
+              ></div>
+
+              <div
+                className="relative w-48 h-48 rounded-full p-1.5 shadow-2xl"
+                style={{
+                  background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
+                }}
+              >
+                <img
+                  src={doctors[currentDoctor].image}
+                  alt={doctors[currentDoctor].name}
+                  className="w-full h-full rounded-full object-cover border-4 border-black/20"
+                />
+              </div>
+
+              <div
+                className="absolute bottom-2 right-2 w-12 h-12 rounded-full border-4 border-black/30 flex items-center justify-center shadow-lg"
+                style={{ backgroundColor: "#10b981" }}
+              >
+                <div className="w-4 h-4 bg-white rounded-full animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mb-6">
+            <h3 className="text-3xl font-bold text-white mb-3 tracking-wide">
+              {doctors[currentDoctor].name}
+            </h3>
+            <div
+              className="inline-block px-6 py-2.5 rounded-full text-lg font-bold text-white shadow-lg"
+              style={{
+                background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
+              }}
+            >
+              {doctors[currentDoctor].specialty}
+            </div>
+          </div>
+
+          <div className="space-y-3 max-w-md mx-auto">
+            <div className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-xl py-3 px-5 border border-white/10">
+              <Award
+                className="w-6 h-6 flex-shrink-0"
+                style={{ color: settings.accentColor }}
+              />
+              <span className="font-medium text-white text-lg">
+                {doctors[currentDoctor].experience} Experience
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-xl py-3 px-5 border border-white/10">
+              <Calendar
+                className="w-6 h-6 flex-shrink-0"
+                style={{ color: settings.primaryColor }}
+              />
+              <span className="font-medium text-white text-lg">
+                {doctors[currentDoctor].available}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {doctors.length > 1 && (
+        <div className="bg-black/20 backdrop-blur-sm px-8 py-5 border-t border-white/10">
+          <div className="flex justify-center gap-2.5">
+            {doctors.map((_, idx) => (
+              <div
+                key={idx}
+                className="transition-all duration-300 rounded-full"
+                style={{
+                  width: idx === currentDoctor ? "32px" : "12px",
+                  height: "12px",
+                  backgroundColor:
+                    idx === currentDoctor ? settings.primaryColor : "#64748b",
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // Get component based on type
+  const getComponent = (type: string) => {
+    switch (type) {
+      case "doctors":
+        return doctors.length > 0 ? <DoctorCarousel /> : null;
+      case "appointments":
+        return (
+          <AppointmentReminders
+            appointments={appointments}
+            primaryColor={settings.primaryColor}
+            secondaryColor={settings.secondaryColor}
+            accentColor={settings.accentColor}
+          />
+        );
+      case "schedules":
+        return (
+          <ScheduleSlider schedules={doctorSchedules} settings={settings} />
+        );
+      default:
+        return null;
+    }
+  };
+
+  // Determine which component to show
+  const leftComponentToShow = settings.enableSlideshow
+    ? ["doctors", "appointments", "schedules"][currentLeftSlide]
+    : settings.leftComponent;
+
+  const rightComponentToShow = settings.enableSlideshow
+    ? ["doctors", "appointments", "schedules"][currentRightSlide]
+    : settings.rightComponent;
+
   return (
     <div
       className="w-full h-full relative overflow-hidden"
       style={dynamicBackgroundStyle}
     >
-      {/* Dark overlay */}
       {settings.backgroundImage && (
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900/70 via-slate-800/60 to-slate-900/70"></div>
       )}
@@ -372,9 +342,7 @@ export function HospitalTemplate({
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"></div>
       )}
 
-      {/* Content */}
       <div className="relative z-10 h-full flex flex-col">
-        {/* Top Header Bar */}
         <header
           className="bg-black/60 backdrop-blur-md border-b-2 px-8 py-5"
           style={{ borderColor: settings.primaryColor }}
@@ -424,151 +392,16 @@ export function HospitalTemplate({
           </div>
         </header>
 
-        {/* Main Content Area - 2 Columns */}
         <div className="flex-1 grid grid-cols-2 gap-6 p-6 overflow-hidden min-h-0">
-          {/* Left Panel - Enhanced Doctor Carousel */}
           <div className="flex flex-col justify-center">
-            {doctors.length > 0 && (
-              <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-3xl overflow-hidden border border-white/20 shadow-2xl">
-                {/* Doctor Card */}
-                <div className="relative p-8">
-                  {/* Decorative Background Elements */}
-                  <div
-                    className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 -mr-20 -mt-20"
-                    style={{ backgroundColor: settings.primaryColor }}
-                  ></div>
-                  <div
-                    className="absolute bottom-0 left-0 w-32 h-32 rounded-full opacity-10 -ml-16 -mb-16"
-                    style={{ backgroundColor: settings.secondaryColor }}
-                  ></div>
-
-                  {/* Content */}
-                  <div className="relative z-10">
-                    {/* Avatar with Glow Effect */}
-                    <div className="flex justify-center mb-6">
-                      <div className="relative">
-                        {/* Glow effect */}
-                        <div
-                          className="absolute -inset-3 rounded-full opacity-50 blur-2xl animate-pulse"
-                          style={{
-                            background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
-                          }}
-                        ></div>
-
-                        {/* Avatar container */}
-                        <div
-                          className="relative w-48 h-48 rounded-full p-1.5 shadow-2xl"
-                          style={{
-                            background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
-                          }}
-                        >
-                          <img
-                            src={doctors[currentDoctor].image}
-                            alt={doctors[currentDoctor].name}
-                            className="w-full h-full rounded-full object-cover border-4 border-black/20"
-                          />
-                        </div>
-
-                        {/* Online Status Indicator */}
-                        <div
-                          className="absolute bottom-2 right-2 w-12 h-12 rounded-full border-4 border-black/30 flex items-center justify-center shadow-lg"
-                          style={{ backgroundColor: "#10b981" }}
-                        >
-                          <div className="w-4 h-4 bg-white rounded-full animate-pulse"></div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Doctor Info */}
-                    <div className="text-center mb-6">
-                      <h3 className="text-3xl font-bold text-white mb-3 tracking-wide">
-                        {doctors[currentDoctor].name}
-                      </h3>
-                      <div
-                        className="inline-block px-6 py-2.5 rounded-full text-lg font-bold text-white shadow-lg"
-                        style={{
-                          background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
-                        }}
-                      >
-                        {doctors[currentDoctor].specialty}
-                      </div>
-                    </div>
-
-                    {/* Details with Icons */}
-                    <div className="space-y-3 max-w-md mx-auto">
-                      <div className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-xl py-3 px-5 border border-white/10">
-                        <Award
-                          className="w-6 h-6 flex-shrink-0"
-                          style={{ color: settings.accentColor }}
-                        />
-                        <span className="font-medium text-white text-lg">
-                          {doctors[currentDoctor].experience} Experience
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-xl py-3 px-5 border border-white/10">
-                        <Calendar
-                          className="w-6 h-6 flex-shrink-0"
-                          style={{ color: settings.primaryColor }}
-                        />
-                        <span className="font-medium text-white text-lg">
-                          {doctors[currentDoctor].available}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Dots Indicator */}
-                {doctors.length > 1 && (
-                  <div className="bg-black/20 backdrop-blur-sm px-8 py-5 border-t border-white/10">
-                    <div className="flex justify-center gap-2.5">
-                      {doctors.map((_, idx) => (
-                        <div
-                          key={idx}
-                          className="transition-all duration-300 rounded-full"
-                          style={{
-                            width: idx === currentDoctor ? "32px" : "12px",
-                            height: "12px",
-                            backgroundColor:
-                              idx === currentDoctor
-                                ? settings.primaryColor
-                                : "#64748b",
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+            {getComponent(leftComponentToShow)}
           </div>
 
-          {/* Right Panel - Doctor Schedules with Vertical Slider */}
           <div className="flex flex-col justify-center">
-            <div className="bg-black/40 backdrop-blur-md rounded-3xl p-8 border-2 border-white/30 shadow-2xl">
-              <h2 className="text-3xl font-bold text-white mb-6 text-center">
-                Today's Schedule
-              </h2>
-
-              <div className="mb-6 text-center space-y-2">
-                <div className="text-lg text-gray-300">
-                  {settings.departmentInfo}
-                </div>
-                <div
-                  className="text-xl font-semibold"
-                  style={{ color: settings.accentColor }}
-                >
-                  Emergency: {settings.emergencyContact}
-                </div>
-              </div>
-
-              <ScheduleSlider schedules={doctorSchedules} settings={settings} />
-            </div>
+            {!settings.enableSlideshow && getComponent(rightComponentToShow)}
           </div>
         </div>
 
-        {/* Bottom Ticker */}
         <div
           className="bg-black/60 backdrop-blur-md border-t-2 px-8 py-3"
           style={{ borderColor: settings.primaryColor }}

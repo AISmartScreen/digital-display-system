@@ -4,6 +4,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Trash2, Plus, Upload, X } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface HospitalEditorProps {
   config: any;
@@ -320,6 +327,63 @@ export function HospitalEditor({
     userId
   );
 
+  // Helper to convert datetime-local value to ISO string (preserving local time)
+  const localToISO = (localDatetimeString: string) => {
+    // Input format: "2025-12-04T11:00"
+    // We want to store this as the actual time, not convert to UTC
+    const [date, time] = localDatetimeString.split("T");
+    const [year, month, day] = date.split("-");
+    const [hours, minutes] = time.split(":");
+
+    // Create date in local timezone
+    const localDate = new Date(
+      parseInt(year),
+      parseInt(month) - 1,
+      parseInt(day),
+      parseInt(hours),
+      parseInt(minutes)
+    );
+
+    return localDate.toISOString();
+  };
+
+  // Helper to convert ISO string to datetime-local value
+  const isoToLocal = (isoString: string) => {
+    if (!isoString) return "";
+    const date = new Date(isoString);
+    // Get local date/time components
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  // Helper to format time for input (HH:MM format)
+  const formatTimeForInput = (date?: Date | string) => {
+    if (!date) return "09:00";
+    const d = typeof date === "string" ? new Date(date) : date;
+    if (isNaN(d.getTime())) return "09:00";
+    const h = d.getHours().toString().padStart(2, "0");
+    const m = d.getMinutes().toString().padStart(2, "0");
+    return `${h}:${m}`;
+  };
+
+  // Helper to format time for display (12-hour with AM/PM)
+  const formatTimeForDisplay = (date?: Date | string) => {
+    if (!date) return "9:00 AM";
+    const d = typeof date === "string" ? new Date(date) : date;
+    if (isNaN(d.getTime())) return "9:00 AM";
+    const hours = d.getHours();
+    const minutes = d.getMinutes();
+    const ampm = hours >= 12 ? "PM" : "AM";
+    const displayHours = hours % 12 || 12;
+    const displayMinutes = minutes.toString().padStart(2, "0");
+    return `${displayHours}:${displayMinutes} ${ampm}`;
+  };
+
   // Fetch user ID if not provided
   useEffect(() => {
     const fetchUserId = async () => {
@@ -362,6 +426,11 @@ export function HospitalEditor({
   const emergencyContact = config.emergencyContact || "911";
   const doctorSchedules = config.doctorSchedules || [];
   const doctors = config.doctors || [];
+  const appointments = config.appointments || [];
+  const leftComponent = config.leftComponent || "doctors";
+  const rightComponent = config.rightComponent || "appointments";
+  const enableSlideshow = config.enableSlideshow || false;
+  const slideshowSpeed = config.slideshowSpeed || 10000;
 
   // Handle basic field updates
   const handleFieldChange = (field: string, value: any) => {
@@ -370,18 +439,41 @@ export function HospitalEditor({
 
   // Doctor Schedule Management
   const handleAddSchedule = () => {
+    const defaultDate = new Date();
+    defaultDate.setHours(9, 0, 0, 0); // Default to 9:00 AM
+
     onConfigChange({
       ...config,
       doctorSchedules: [
         ...doctorSchedules,
-        { name: "", specialty: "", time: "09:00", room: "" },
+        {
+          name: "",
+          specialty: "",
+          room: "",
+          appointmentDate: defaultDate.toISOString(),
+        },
       ],
     });
   };
 
   const handleUpdateSchedule = (idx: number, field: string, value: any) => {
     const updated = [...doctorSchedules];
-    updated[idx] = { ...updated[idx], [field]: value };
+
+    if (field === "time") {
+      // Handle time input (HH:MM format)
+      const [hours, minutes] = value.split(":").map(Number);
+      const date = updated[idx].appointmentDate
+        ? new Date(updated[idx].appointmentDate)
+        : new Date();
+      date.setHours(hours, minutes, 0, 0);
+      updated[idx] = {
+        ...updated[idx],
+        appointmentDate: date.toISOString(),
+      };
+    } else {
+      updated[idx] = { ...updated[idx], [field]: value };
+    }
+
     onConfigChange({ ...config, doctorSchedules: updated });
   };
 
@@ -419,8 +511,121 @@ export function HospitalEditor({
     onConfigChange({ ...config, doctors: updated });
   };
 
+  // Appointment Management
+  const handleAddAppointment = () => {
+    const defaultDate = new Date(Date.now() + 60 * 60000); // 1 hour from now
+
+    onConfigChange({
+      ...config,
+      appointments: [
+        ...appointments,
+        {
+          id: `apt-${Date.now()}`,
+          patientName: "",
+          doctorName: "",
+          specialty: "",
+          room: "",
+          appointmentDate: defaultDate.toISOString(),
+          priority: "normal",
+        },
+      ],
+    });
+  };
+
+  const handleUpdateAppointment = (idx: number, field: string, value: any) => {
+    const updated = [...appointments];
+    updated[idx] = { ...updated[idx], [field]: value };
+    onConfigChange({ ...config, appointments: updated });
+  };
+
+  const handleRemoveAppointment = (idx: number) => {
+    const updated = appointments.filter((_: any, i: number) => i !== idx);
+    onConfigChange({ ...config, appointments: updated });
+  };
+
   return (
     <div className="space-y-8">
+      {/* Layout Configuration */}
+      <div>
+        <h3 className="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
+          <span className="text-lg">🎛️</span> Layout Configuration
+        </h3>
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">
+              Left Panel Component
+            </label>
+            <Select
+              value={leftComponent}
+              onValueChange={(val) => handleFieldChange("leftComponent", val)}
+            >
+              <SelectTrigger className="bg-slate-700 border-slate-600 text-slate-50">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="doctors">👨‍⚕️ Featured Doctors</SelectItem>
+                <SelectItem value="appointments">📅 Appointments</SelectItem>
+                <SelectItem value="schedules">🗓️ Doctor Schedules</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">
+              Right Panel Component
+            </label>
+            <Select
+              value={rightComponent}
+              onValueChange={(val) => handleFieldChange("rightComponent", val)}
+            >
+              <SelectTrigger className="bg-slate-700 border-slate-600 text-slate-50">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="doctors">👨‍⚕️ Featured Doctors</SelectItem>
+                <SelectItem value="appointments">📅 Appointments</SelectItem>
+                <SelectItem value="schedules">🗓️ Doctor Schedules</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2 p-3 bg-slate-700/50 rounded-lg">
+            <input
+              type="checkbox"
+              checked={enableSlideshow}
+              onChange={(e) =>
+                handleFieldChange("enableSlideshow", e.target.checked)
+              }
+              className="w-4 h-4"
+            />
+            <label className="text-sm text-slate-300">
+              Enable Slideshow (Auto-rotate components)
+            </label>
+          </div>
+          {enableSlideshow && (
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">
+                Slideshow Speed (milliseconds)
+              </label>
+              <Input
+                type="number"
+                value={slideshowSpeed}
+                onChange={(e) =>
+                  handleFieldChange("slideshowSpeed", parseInt(e.target.value))
+                }
+                min="5000"
+                max="60000"
+                step="1000"
+                className="bg-slate-700 border-slate-600 text-slate-50"
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Current: {slideshowSpeed / 1000} seconds per component
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <hr className="border-slate-700" />
+
       {/* Hospital Branding */}
       <div>
         <h3 className="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
@@ -743,6 +948,130 @@ export function HospitalEditor({
 
       <hr className="border-slate-700" />
 
+      {/* Appointments */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+            <span className="text-lg">📅</span> Appointments
+          </h3>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleAddAppointment}
+            className="border-slate-600 text-slate-300 h-7 bg-transparent hover:bg-slate-700"
+          >
+            <Plus className="w-3 h-3 mr-1" />
+            Add Appointment
+          </Button>
+        </div>
+        <div className="space-y-3">
+          {appointments.map((appointment: any, idx: number) => (
+            <div key={idx} className="bg-slate-700/50 p-3 rounded space-y-2">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-slate-400">
+                  Appointment #{idx + 1}
+                </span>
+              </div>
+              <Input
+                value={appointment.patientName}
+                onChange={(e) =>
+                  handleUpdateAppointment(idx, "patientName", e.target.value)
+                }
+                placeholder="Patient Name"
+                className="bg-slate-700 border-slate-600 text-slate-50 text-sm"
+              />
+              <Input
+                value={appointment.doctorName}
+                onChange={(e) =>
+                  handleUpdateAppointment(idx, "doctorName", e.target.value)
+                }
+                placeholder="Doctor Name"
+                className="bg-slate-700 border-slate-600 text-slate-50 text-sm"
+              />
+              <Input
+                value={appointment.specialty}
+                onChange={(e) =>
+                  handleUpdateAppointment(idx, "specialty", e.target.value)
+                }
+                placeholder="Specialty"
+                className="bg-slate-700 border-slate-600 text-slate-50 text-sm"
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">
+                    Date & Time
+                  </label>
+                  <Input
+                    type="datetime-local"
+                    value={isoToLocal(appointment.appointmentDate)}
+                    onChange={(e) => {
+                      handleUpdateAppointment(
+                        idx,
+                        "appointmentDate",
+                        localToISO(e.target.value)
+                      );
+                    }}
+                    className="bg-slate-700 border-slate-600 text-slate-50 text-sm"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Display: {formatTimeForDisplay(appointment.appointmentDate)}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">
+                    Room Number
+                  </label>
+                  <Input
+                    value={appointment.room}
+                    onChange={(e) =>
+                      handleUpdateAppointment(idx, "room", e.target.value)
+                    }
+                    placeholder="Room #"
+                    className="bg-slate-700 border-slate-600 text-slate-50 text-sm"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">
+                  Priority
+                </label>
+                <Select
+                  value={appointment.priority || "normal"}
+                  onValueChange={(val) =>
+                    handleUpdateAppointment(idx, "priority", val)
+                  }
+                >
+                  <SelectTrigger className="bg-slate-700 border-slate-600 text-slate-50 text-sm h-10">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                    <SelectItem value="follow-up">Follow-up</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleRemoveAppointment(idx)}
+                className="w-full text-red-400 hover:bg-red-500/10 text-sm"
+              >
+                <Trash2 className="w-3 h-3 mr-1" />
+                Remove Appointment
+              </Button>
+            </div>
+          ))}
+          {appointments.length === 0 && (
+            <div className="text-center py-6 text-slate-500 text-sm">
+              No appointments added yet. Click "Add Appointment" to start.
+            </div>
+          )}
+        </div>
+      </div>
+
+      <hr className="border-slate-700" />
+
       {/* Doctor Schedules (Right Panel) */}
       <div>
         <div className="flex items-center justify-between mb-4">
@@ -762,6 +1091,11 @@ export function HospitalEditor({
         <div className="space-y-3">
           {doctorSchedules.map((schedule: any, idx: number) => (
             <div key={idx} className="bg-slate-700/50 p-3 rounded space-y-2">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-slate-400">
+                  Schedule #{idx + 1}
+                </span>
+              </div>
               <Input
                 value={schedule.name}
                 onChange={(e) =>
@@ -779,22 +1113,35 @@ export function HospitalEditor({
                 className="bg-slate-700 border-slate-600 text-slate-50 text-sm"
               />
               <div className="grid grid-cols-2 gap-2">
-                <Input
-                  type="time"
-                  value={schedule.time}
-                  onChange={(e) =>
-                    handleUpdateSchedule(idx, "time", e.target.value)
-                  }
-                  className="bg-slate-700 border-slate-600 text-slate-50 text-sm"
-                />
-                <Input
-                  value={schedule.room}
-                  onChange={(e) =>
-                    handleUpdateSchedule(idx, "room", e.target.value)
-                  }
-                  placeholder="Room #"
-                  className="bg-slate-700 border-slate-600 text-slate-50 text-sm"
-                />
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">
+                    Time
+                  </label>
+                  <Input
+                    type="time"
+                    value={formatTimeForInput(schedule.appointmentDate)}
+                    onChange={(e) =>
+                      handleUpdateSchedule(idx, "time", e.target.value)
+                    }
+                    className="bg-slate-700 border-slate-600 text-slate-50 text-sm"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Display: {formatTimeForDisplay(schedule.appointmentDate)}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">
+                    Room
+                  </label>
+                  <Input
+                    value={schedule.room}
+                    onChange={(e) =>
+                      handleUpdateSchedule(idx, "room", e.target.value)
+                    }
+                    placeholder="Room #"
+                    className="bg-slate-700 border-slate-600 text-slate-50 text-sm"
+                  />
+                </div>
               </div>
               <Button
                 size="sm"
