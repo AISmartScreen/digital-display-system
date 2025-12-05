@@ -1,32 +1,37 @@
-// ============================================================
-// middleware.ts (in your app root)
-// ============================================================
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 
-const publicPaths = ['/login', '/register', '/api/auth/login', '/api/auth/register'];
+const publicPaths = ['/login', '/register', '/api/auth/login', '/api/auth/register',];
+// Note: You can optionally define the API regex here if you prefer:
+// const publicApiRegex = /^\/api\/displays\/[^\/]+\/config$/; 
 const adminPaths = ['/admin'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Allow public paths
+  // 1. Allow public front-end paths
   if (publicPaths.some(path => pathname.startsWith(path))) {
     return NextResponse.next();
   }
 
-  // Allow ONLY the live display route to be public (NEW)
+  // 2. Allow ONLY the live display route (Front-end page)
   if (pathname.match(/^\/displays\/[^\/]+\/live$/)) {
     return NextResponse.next();
   }
 
-  // Allow public assets
+  // 3. ✨ NEW: Allow the public CONFIG API route for the live display ✨
+  // This regex matches /api/displays/[ID]/config exactly.
+  if (pathname.match(/^\/api\/displays\/[^\/]+\/config$/)) {
+      return NextResponse.next();
+  }
+
+  // 4. Allow public assets
   if (pathname.startsWith('/_next') || pathname.startsWith('/static') || pathname.includes('.')) {
     return NextResponse.next();
   }
 
-  // Check authentication
+  // Check authentication (everything below this point requires a token)
   const token = request.cookies.get('auth_token')?.value;
   
   if (!token) {
