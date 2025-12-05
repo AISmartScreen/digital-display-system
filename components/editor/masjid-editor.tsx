@@ -895,7 +895,7 @@ export default function MasjidEditorPanel({
 
           {arePrayerTimesModified() && supabaseDefaultPrayerTimes && (
             <div className="p-2 bg-yellow-500/10 border border-yellow-500/20 rounded text-xs text-yellow-400">
-              ⚠️ Prayer times have been modified from Supabase defaults
+              ⚠️ Prayer times have been modified from defaults
             </div>
           )}
 
