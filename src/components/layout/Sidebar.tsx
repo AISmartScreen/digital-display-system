@@ -102,7 +102,7 @@ export function Sidebar() {
   return (
     <nav className="fixed left-0 top-0 h-screen w-20 bg-gray-900 flex flex-col items-center py-8 overflow-y-auto scrollbar-hide z-50">
       <Link
-        href="/displays"
+        href="/dashboard"
         className="mb-8 flex-shrink-0 hover:opacity-80 transition-opacity"
       >
         <div className="border-pink-300 rounded-lg">
