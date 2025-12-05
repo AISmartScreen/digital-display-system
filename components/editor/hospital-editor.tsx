@@ -421,7 +421,11 @@ export function HospitalEditor({
     "⚕️ Quality Healthcare • Compassionate Service • Advanced Technology";
   const tickerRightMessage =
     config.tickerRightMessage || "Your Health, Our Priority";
-  const doctorRotationSpeed = config.doctorRotationSpeed || 6000;
+  const doctorRotationSpeed =
+    config.doctors && config.doctors.length
+      ? (3 * config.slideshowSpeed) / config.doctors.length
+      : 6000;
+
   const departmentInfo = config.departmentInfo || "Emergency Department";
   const emergencyContact = config.emergencyContact || "911";
   const doctorSchedules = config.doctorSchedules || [];
