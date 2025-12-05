@@ -624,7 +624,7 @@ export function MasjidTemplate({
           {nextEvent && (
             <div
               className={`rounded-3xl backdrop-blur-sm transition-all ${
-                isAdhanSoon ? "p-20 animate-pulse" : "p-16"
+                isAdhanSoon ? "p-10 animate-pulse" : "p-16"
               }`}
               style={{ backgroundColor: `${customization.colors.accent}DD` }}
             >
@@ -645,7 +645,7 @@ export function MasjidTemplate({
                 {nextEvent.timeUntil}
               </p>
               {isAdhanSoon && (
-                <p className="text-4xl mt-8" style={textStyle}>
+                <p className="text-4xl mt-4" style={textStyle}>
                   🕌 Adhan Time Approaching
                 </p>
               )}
