@@ -15,7 +15,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Display Manager - Digital Signage Platform",
+  title: "ScreenSync - Digital Signage Platform",
   description: "Create and manage digital display screens for your business",
   generator: "v0.app",
 };

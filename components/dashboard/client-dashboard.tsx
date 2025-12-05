@@ -56,9 +56,7 @@ export function ClientDashboard() {
       <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-50">
-              Display Manager
-            </h1>
+            <h1 className="text-2xl font-bold text-slate-50">ScreenSync</h1>
             <p className="text-slate-400 text-sm">
               Manage your digital displays
             </p>

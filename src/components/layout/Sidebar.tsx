@@ -108,7 +108,7 @@ export function Sidebar() {
         <div className="border-pink-300 rounded-lg">
           <img
             src="/logo.png"
-            alt="Display Manager Logo"
+            alt="ScreenSync Logo"
             className="w-12 h-12 object-contain"
             onError={(e) => {
               e.currentTarget.src =

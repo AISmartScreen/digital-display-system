@@ -18,8 +18,8 @@ const jetbrainsMono = JetBrains_Mono({
 // SEO Metadata
 export const metadata: Metadata = {
   title: {
-    default: "Display Manager - Digital Signage Platform",
-    template: "%s | Display Manager",
+    default: "ScreenSync - Digital Signage Platform",
+    template: "%s | ScreenSync",
   },
   description:
     "Create and manage digital display screens for masjids, hospitals, restaurants, and corporate businesses. Easy-to-use digital signage platform.",
@@ -55,22 +55,22 @@ export const metadata: Metadata = {
     type: "website",
     locale: "lk_en",
     url: "https://digital-display-system.vercel.app",
-    title: "Display Manager - Digital Signage Platform",
+    title: "ScreenSync - Digital Signage Platform",
     description:
       "Create and manage digital display screens for various business needs",
-    siteName: "Display Manager",
+    siteName: "ScreenSync",
     images: [
       {
         url: "/og-image.png", // Create this image
         width: 1200,
         height: 630,
-        alt: "Display Manager - Digital Signage Platform",
+        alt: "ScreenSync - Digital Signage Platform",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Display Manager - Digital Signage Platform",
+    title: "ScreenSync - Digital Signage Platform",
     description:
       "Create and manage digital display screens for various business needs",
     images: ["/twitter-image.png"], // Create this image
@@ -112,7 +112,7 @@ export const viewport: Viewport = {
 const structuredData = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  name: "Display Manager",
+  name: "ScreenSync",
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
   description:
@@ -164,13 +164,13 @@ export default function RootLayout({
         />
 
         {/* Additional meta tags */}
-        <meta name="application-name" content="Display Manager" />
+        <meta name="application-name" content="ScreenSync" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta
           name="apple-mobile-web-app-status-bar-style"
           content="black-translucent"
         />
-        <meta name="apple-mobile-web-app-title" content="Display Manager" />
+        <meta name="apple-mobile-web-app-title" content="ScreenSync" />
         <meta name="mobile-web-app-capable" content="yes" />
 
         {/* PWA theme color */}
