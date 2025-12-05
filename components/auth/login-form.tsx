@@ -1,6 +1,7 @@
 "use client";
 
 import type React from "react";
+import Image from "next/image";
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -56,9 +57,14 @@ export function LoginForm() {
           {/* Header */}
           <div className="mb-8 text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-500/20 to-cyan-500/20 border border-pink-500/20 mb-4 relative group">
-              <div className="absolute inset-0 bg-gradient-to-br from-pink-500/20 to-cyan-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all"></div>
-              <Lock className="w-8 h-8 text-pink-400 relative z-10" />
-              <Sparkles className="w-4 h-4 text-cyan-400 absolute -top-1 -right-1 animate-pulse" />
+              <Image
+                src="/logo.png"
+                alt="Display Manager Logo"
+                width={40}
+                height={40}
+                className="w-10 h-10 object-contain"
+              />
+              <div className="absolute inset-0 bg-gradient-to-br from-pink-500 to-cyan-500 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity blur-xl"></div>
             </div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent mb-2">
               Display Manager
