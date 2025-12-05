@@ -121,7 +121,7 @@ export function RegisterForm() {
                 height={40}
                 className="w-10 h-10 object-contain"
               />
-              <div className="absolute inset-0 bg-gradient-to-br from-pink-500 to-cyan-500 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity blur-xl">
+              <div className="absolute inset-0 bg-gradient-to-br from-pink-500 to-cyan-500 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity blur-xl"></div>
             </div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent mb-2">
               Create Account
