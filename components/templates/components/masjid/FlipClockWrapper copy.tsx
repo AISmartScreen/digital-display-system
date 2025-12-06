@@ -12,25 +12,9 @@ const FlipClockWrapper: React.FC = () => {
 
     // Create custom styles to match your countdown design
     const customStyles = `
-    .flip-clock-card-item-inner .top,
-    .flip-clock-card-item-inner .bottom {
-      font-weight: 1000 !important;
-      color: #ffffff !important;
-      background: #0d0d0d !important;       /* very dark */
-      border-color: #000 !important;         /* dark border */
-      
-
-      /* Optional: makes digits appear thicker */
-      text-shadow:
-        0 0 2px rgba(255,255,255,0.6),
-        0 0 3px rgba(255,255,255,0.5) !important;
-
-      /* Ensures font scaling works */
-      font-family: inherit !important;
-    }
       .fc-digit {
         color: #f5f5f5 !important;
-        font-weight: 1200 !important;
+        font-weight: 700 !important;
       }
       .fc-face {
         background-color: #1a1a1a !important;
@@ -71,11 +55,11 @@ const FlipClockWrapper: React.FC = () => {
         dividers: ":",
         css: fcCss({
           fontSize: "200px", // Larger font to match your design
-          lineHeight: "160px", // Match the height of your design
+          lineHeight: "240px", // Match the height of your design
         }),
         // Additional theme options if the library supports them
         faceWidth: 220,
-        faceHeight: 180,
+        faceHeight: 220,
       }),
     });
 

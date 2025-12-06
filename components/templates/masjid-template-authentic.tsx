@@ -608,7 +608,7 @@ export function MasjidTemplateAuthentic({
             </h1>
           </div>
         </div>
-        <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-8 py-4">
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-8 py-2">
           <FlipClockWrapper />
           {/* <FlipClockWrapper currentTime={currentTime} /> */}
 
@@ -617,7 +617,7 @@ export function MasjidTemplateAuthentic({
               <div className="grid grid-cols-2 gap-12">
                 <div className="flex flex-col items-center justify-center py-2 px-8">
                   <h3
-                    className="text-8xl font-black tracking-tight mb-8"
+                    className="text-8xl font-black tracking-tight mb-0"
                     style={{
                       ...textStyle,
                       color: customization.colors.secondary,
@@ -626,10 +626,10 @@ export function MasjidTemplateAuthentic({
                     {nextPrayer.name.toUpperCase()}
                   </h3>
                   <div
-                    className="text-[12rem] font-black leading-none"
+                    className="text-[16rem] font-black leading-none"
                     style={{
-                      fontFamily: "'Orbitron', monospace",
-                      fontWeight: 900,
+                      fontFamily: "'Amiri', monospace",
+                      fontWeight: 1000,
                       color: customization.colors.secondary,
                       textShadow: `
                         0 0 10px ${customization.colors.secondary}80,
@@ -646,16 +646,16 @@ export function MasjidTemplateAuthentic({
 
                 <div className="flex flex-col items-center justify-center py-2 px-8">
                   <h3
-                    className="text-8xl font-black tracking-tight mb-8"
+                    className="text-8xl font-black tracking-tight mb-0"
                     style={{ ...textStyle, color: customization.colors.accent }}
                   >
                     IQAMAH
                   </h3>
                   <div
-                    className="text-[12rem] font-black leading-none"
+                    className="text-[16rem] font-black leading-none"
                     style={{
-                      fontFamily: "'Orbitron', monospace",
-                      fontWeight: 900,
+                      fontFamily: "'Amiri', monospace",
+                      fontWeight: 1000,
                       color: customization.colors.accent,
                       textShadow: `
                         0 0 10px ${customization.colors.accent}80,
@@ -682,7 +682,7 @@ export function MasjidTemplateAuthentic({
                     <div
                       className="text-4xl font-black"
                       style={{
-                        fontFamily: "'Orbitron', monospace",
+                        fontFamily: "'Amiri', monospace",
                         color: customization.colors.secondary,
                       }}
                     >
@@ -699,7 +699,7 @@ export function MasjidTemplateAuthentic({
                     <div
                       className="text-4xl font-black"
                       style={{
-                        fontFamily: "'Orbitron', monospace",
+                        fontFamily: "'Amiri', monospace",
                         color: customization.colors.accent,
                       }}
                     >
@@ -730,10 +730,10 @@ export function MasjidTemplateAuthentic({
                     {countdownState.type === "adhan" ? "ADHAN IN" : "IQAMAH IN"}
                   </h3>
                   <div
-                    className="text-[12rem] font-black leading-none"
+                    className="text-[18rem] font-black leading-none"
                     style={{
-                      fontFamily: "'Orbitron', monospace",
-                      fontWeight: 900,
+                      fontFamily: "'Amiri', monospace",
+                      fontWeight: 1000,
                       color:
                         countdownState.seconds > 300
                           ? "#10B981" // Green for >5 min
@@ -768,7 +768,8 @@ export function MasjidTemplateAuthentic({
             )}
           </div>
         </div>
-        <div className="relative z-10 px-0 pb-4">
+
+        <div className="relative z-10 px-0 pb-0">
           <div className="grid grid-cols-6 gap-3 max-w-[95%] mx-auto">
             {prayers.map((prayer, index) => {
               // Check if this is the next prayer (excluding Sunrise as it doesn't have Iqamah)
