@@ -57,21 +57,12 @@ export function MasjidTemplateAuthentic({
   const [currentTime, setCurrentTime] = useState(new Date());
   const [currentAnnouncement, setCurrentAnnouncement] = useState(0);
   const [hijriDate, setHijriDate] = useState("");
-  const [clockKey, setClockKey] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    // Reset the clock every minute to keep it synchronized
-    const interval = setInterval(() => {
-      setClockKey((prev) => prev + 1);
-    }, 60000);
-    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -277,13 +268,6 @@ export function MasjidTemplateAuthentic({
     textShadow: "2px 2px 8px rgba(0,0,0,0.9)",
   };
 
-  // Calculate target time for flip clock (end of current day)
-  const getEndOfDay = () => {
-    const end = new Date();
-    end.setHours(23, 59, 59, 999);
-    return end;
-  };
-
   return (
     <div className="fixed inset-0 w-full h-full overflow-hidden">
       <div
@@ -339,14 +323,13 @@ export function MasjidTemplateAuthentic({
             <div className="absolute -inset-4 bg-gradient-to-r from-amber-500/20 to-orange-500/20 blur-2xl rounded-full"></div>
 
             <FlipClockCountdown
-              key={clockKey}
-              to={getEndOfDay()}
+              to={nextPrayer.time}
               renderMap={["hours", "minutes", "seconds"]}
-              labels={["Hours", "Minutes", "Seconds"]}
+              labels={["Days", "Hours", "Minutes", "Seconds"]}
               labelStyle={{ display: "none" }}
               showLabels={false}
               showSeparators={true}
-              hideOnComplete={false}
+              daysInHours={true}
               digitBlockStyle={{
                 width: 220,
                 height: 240,
@@ -425,60 +408,58 @@ export function MasjidTemplateAuthentic({
 
         <div className="relative z-10 px-0 pb-4">
           <div className="grid grid-cols-6 gap-6 max-w-[95%] mx-auto">
-            {prayers.map((prayer, index) => {
-              const isNextPrayer =
-                prayer.name.toLowerCase() === nextPrayer.name;
-              return (
-                <div
-                  key={index}
-                  className={`relative overflow-hidden rounded-3xl transition-all duration-300 hover:scale-105 hover:shadow-2xl ${
-                    isNextPrayer
-                      ? "bg-gradient-to-br from-yellow-400 via-amber-500 to-yellow-600 shadow-xl shadow-yellow-500/50"
-                      : "bg-gradient-to-br from-teal-600/90 to-cyan-700/90 backdrop-blur-sm"
-                  }`}
-                  style={{
-                    border: isNextPrayer
+            {prayers.map((prayer, index) => (
+              <div
+                key={index}
+                className={`relative overflow-hidden rounded-3xl transition-all duration-300 hover:scale-105 hover:shadow-2xl ${
+                  index === 5
+                    ? "bg-gradient-to-br from-yellow-400 via-amber-500 to-yellow-600 shadow-xl shadow-yellow-500/50"
+                    : "bg-gradient-to-br from-teal-600/90 to-cyan-700/90 backdrop-blur-sm"
+                }`}
+                style={{
+                  border:
+                    index === 5
                       ? "3px solid rgba(251, 191, 36, 0.6)"
                       : "2px solid rgba(255, 255, 255, 0.15)",
-                  }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0"></div>
+                }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0"></div>
 
-                  <div className="relative p-6 text-center">
-                    <div
-                      className="text-4xl font-bold mb-3 tracking-wide"
-                      style={{
-                        ...textStyle,
-                        color: isNextPrayer ? "#1e293b" : "#ffffff",
-                      }}
-                    >
-                      {prayer.name}{" "}
-                      <span className="text-2xl">({prayer.nameAr})</span>
-                    </div>
-                    <div
-                      className="text-6xl font-black"
-                      style={{
-                        ...textStyle,
-                        color: isNextPrayer ? "#1e293b" : "#fbbf24",
-                        textShadow: isNextPrayer
+                <div className="relative p-6 text-center">
+                  <div
+                    className="text-4xl font-bold mb-3 tracking-wide"
+                    style={{
+                      ...textStyle,
+                      color: index === 5 ? "#1e293b" : "#ffffff",
+                    }}
+                  >
+                    {prayer.name}{" "}
+                    <span className="text-2xl">({prayer.nameAr})</span>
+                  </div>
+                  <div
+                    className="text-6xl font-black"
+                    style={{
+                      ...textStyle,
+                      color: index === 5 ? "#1e293b" : "#fbbf24",
+                      textShadow:
+                        index === 5
                           ? "2px 2px 4px rgba(0,0,0,0.2)"
                           : "2px 2px 8px rgba(0,0,0,0.9)",
-                      }}
-                    >
-                      {prayer.adhan}
-                    </div>
+                    }}
+                  >
+                    {prayer.adhan}
                   </div>
-
-                  <div
-                    className={`absolute bottom-0 left-0 right-0 h-1.5 ${
-                      isNextPrayer
-                        ? "bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-300"
-                        : "bg-gradient-to-r from-cyan-400 via-teal-300 to-cyan-400"
-                    }`}
-                  ></div>
                 </div>
-              );
-            })}
+
+                <div
+                  className={`absolute bottom-0 left-0 right-0 h-1.5 ${
+                    index === 5
+                      ? "bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-300"
+                      : "bg-gradient-to-r from-cyan-400 via-teal-300 to-cyan-400"
+                  }`}
+                ></div>
+              </div>
+            ))}
           </div>
         </div>
 
