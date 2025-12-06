@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Trash2, Plus, Upload, X } from "lucide-react";
+import { Trash2, Plus, Upload, X, ChevronDown, ChevronUp } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -20,6 +20,41 @@ interface HospitalEditorProps {
   templateType: string;
   userId?: string;
   environment?: "preview" | "production";
+  layout?: "Advanced" | "Authentic";
+}
+
+interface CollapsibleSectionProps {
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}
+
+// Collapsible Section Component
+function CollapsibleSection({
+  title,
+  children,
+  defaultOpen = true,
+}: CollapsibleSectionProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  return (
+    <div className="border-b border-gray-800 last:border-0">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-800/50 transition-colors"
+      >
+        <span className="font-semibold text-gray-100">{title}</span>
+        {isOpen ? (
+          <ChevronUp className="w-4 h-4 text-gray-400" />
+        ) : (
+          <ChevronDown className="w-4 h-4 text-gray-400" />
+        )}
+      </button>
+      {isOpen && (
+        <div className="px-4 py-4 space-y-4 bg-gray-800/30">{children}</div>
+      )}
+    </div>
+  );
 }
 
 // Image Uploader Component
@@ -322,6 +357,7 @@ export function HospitalEditor({
   onConfigChange,
   userId,
   environment = "preview",
+  layout = "Advanced",
 }: HospitalEditorProps) {
   const [currentUserId, setCurrentUserId] = useState<string | undefined>(
     userId
@@ -329,13 +365,10 @@ export function HospitalEditor({
 
   // Helper to convert datetime-local value to ISO string (preserving local time)
   const localToISO = (localDatetimeString: string) => {
-    // Input format: "2025-12-04T11:00"
-    // We want to store this as the actual time, not convert to UTC
     const [date, time] = localDatetimeString.split("T");
     const [year, month, day] = date.split("-");
     const [hours, minutes] = time.split(":");
 
-    // Create date in local timezone
     const localDate = new Date(
       parseInt(year),
       parseInt(month) - 1,
@@ -351,7 +384,6 @@ export function HospitalEditor({
   const isoToLocal = (isoString: string) => {
     if (!isoString) return "";
     const date = new Date(isoString);
-    // Get local date/time components
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
@@ -435,6 +467,7 @@ export function HospitalEditor({
   const rightComponent = config.rightComponent || "appointments";
   const enableSlideshow = config.enableSlideshow || false;
   const slideshowSpeed = config.slideshowSpeed || 10000;
+  const layoutConfig = config.layout || layout || "Advanced";
 
   // Handle basic field updates
   const handleFieldChange = (field: string, value: any) => {
@@ -444,7 +477,7 @@ export function HospitalEditor({
   // Doctor Schedule Management
   const handleAddSchedule = () => {
     const defaultDate = new Date();
-    defaultDate.setHours(9, 0, 0, 0); // Default to 9:00 AM
+    defaultDate.setHours(9, 0, 0, 0);
 
     onConfigChange({
       ...config,
@@ -464,7 +497,6 @@ export function HospitalEditor({
     const updated = [...doctorSchedules];
 
     if (field === "time") {
-      // Handle time input (HH:MM format)
       const [hours, minutes] = value.split(":").map(Number);
       const date = updated[idx].appointmentDate
         ? new Date(updated[idx].appointmentDate)
@@ -517,7 +549,7 @@ export function HospitalEditor({
 
   // Appointment Management
   const handleAddAppointment = () => {
-    const defaultDate = new Date(Date.now() + 60 * 60000); // 1 hour from now
+    const defaultDate = new Date(Date.now() + 60 * 60000);
 
     onConfigChange({
       ...config,
@@ -550,11 +582,36 @@ export function HospitalEditor({
   return (
     <div className="space-y-8">
       {/* Layout Configuration */}
-      <div>
-        <h3 className="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
-          <span className="text-lg">🎛️</span> Layout Configuration
-        </h3>
+      <CollapsibleSection title="🎛️ Layout Configuration" defaultOpen={true}>
         <div className="space-y-3">
+          {/* Layout Selection */}
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">
+              Display Layout
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { value: "Authentic", icon: "🩺", label: "Authentic" },
+                { value: "Advanced", icon: "🏥", label: "Advanced" },
+              ].map((layoutOption) => (
+                <button
+                  key={layoutOption.value}
+                  onClick={() =>
+                    handleFieldChange("layout", layoutOption.value)
+                  }
+                  className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                    layoutConfig === layoutOption.value
+                      ? "border-green-500 bg-green-500/20 text-green-400"
+                      : "border-slate-700 text-slate-400 hover:border-slate-600 hover:bg-slate-700/50"
+                  }`}
+                >
+                  <div className="text-xl mb-1">{layoutOption.icon}</div>
+                  <div className="text-xs">{layoutOption.label}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div>
             <label className="text-xs text-slate-400 mb-1 block">
               Left Panel Component
@@ -626,15 +683,10 @@ export function HospitalEditor({
             </div>
           )}
         </div>
-      </div>
-
-      <hr className="border-slate-700" />
+      </CollapsibleSection>
 
       {/* Hospital Branding */}
-      <div>
-        <h3 className="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
-          <span className="text-lg">🏥</span> Hospital Branding
-        </h3>
+      <CollapsibleSection title="🏥 Hospital Branding">
         <div className="space-y-3">
           <div>
             <label className="text-xs text-slate-400 mb-1 block">
@@ -675,15 +727,10 @@ export function HospitalEditor({
             />
           </div>
         </div>
-      </div>
-
-      <hr className="border-slate-700" />
+      </CollapsibleSection>
 
       {/* Colors & Styling */}
-      <div>
-        <h3 className="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
-          <span className="text-lg">🎨</span> Colors & Styling
-        </h3>
+      <CollapsibleSection title="🎨 Colors & Styling">
         <div className="grid grid-cols-3 gap-3">
           <div>
             <label className="text-xs text-slate-400 mb-1 block">
@@ -768,15 +815,10 @@ export function HospitalEditor({
             environment={environment}
           />
         </div>
-      </div>
-
-      <hr className="border-slate-700" />
+      </CollapsibleSection>
 
       {/* Contact Information */}
-      <div>
-        <h3 className="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
-          <span className="text-lg">📞</span> Contact Information
-        </h3>
+      <CollapsibleSection title="📞 Contact Information">
         <div className="space-y-3">
           <div>
             <label className="text-xs text-slate-400 mb-1 block">
@@ -805,15 +847,10 @@ export function HospitalEditor({
             />
           </div>
         </div>
-      </div>
-
-      <hr className="border-slate-700" />
+      </CollapsibleSection>
 
       {/* Ticker Messages */}
-      <div>
-        <h3 className="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
-          <span className="text-lg">📰</span> Ticker Messages
-        </h3>
+      <CollapsibleSection title="📰 Ticker Messages">
         <div className="space-y-3">
           <div>
             <label className="text-xs text-slate-400 mb-1 block">
@@ -842,27 +879,22 @@ export function HospitalEditor({
             />
           </div>
         </div>
-      </div>
-
-      <hr className="border-slate-700" />
+      </CollapsibleSection>
 
       {/* Featured Doctors (Carousel) */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-            <span className="text-lg">👨‍⚕️</span> Featured Doctors (Carousel)
-          </h3>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleAddDoctor}
-            className="border-slate-600 text-slate-300 h-7 bg-transparent hover:bg-slate-700"
-          >
-            <Plus className="w-3 h-3 mr-1" />
-            Add Doctor
-          </Button>
-        </div>
+      <CollapsibleSection title="👨‍⚕️ Featured Doctors (Carousel)">
         <div className="space-y-3">
+          <div className="flex justify-end mb-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleAddDoctor}
+              className="border-slate-600 text-slate-300 h-7 bg-transparent hover:bg-slate-700"
+            >
+              <Plus className="w-3 h-3 mr-1" />
+              Add Doctor
+            </Button>
+          </div>
           {doctors.map((doctor: any, idx: number) => (
             <div key={idx} className="bg-slate-700/50 p-4 rounded-lg space-y-2">
               <div className="flex items-center justify-between mb-2">
@@ -928,29 +960,30 @@ export function HospitalEditor({
               No featured doctors added yet. Click "Add Doctor" to start.
             </div>
           )}
+          <div className="mt-3">
+            <label className="text-xs text-slate-400 mb-1 block">
+              Carousel Rotation Speed (milliseconds)
+            </label>
+            <Input
+              type="number"
+              value={doctorRotationSpeed}
+              onChange={(e) =>
+                handleFieldChange(
+                  "doctorRotationSpeed",
+                  parseInt(e.target.value)
+                )
+              }
+              min="2000"
+              max="20000"
+              step="1000"
+              className="bg-slate-700 border-slate-600 text-slate-50"
+            />
+            <p className="text-xs text-slate-500 mt-1">
+              Current: {doctorRotationSpeed / 1000} seconds per doctor
+            </p>
+          </div>
         </div>
-        <div className="mt-3">
-          <label className="text-xs text-slate-400 mb-1 block">
-            Carousel Rotation Speed (milliseconds)
-          </label>
-          <Input
-            type="number"
-            value={doctorRotationSpeed}
-            onChange={(e) =>
-              handleFieldChange("doctorRotationSpeed", parseInt(e.target.value))
-            }
-            min="2000"
-            max="20000"
-            step="1000"
-            className="bg-slate-700 border-slate-600 text-slate-50"
-          />
-          <p className="text-xs text-slate-500 mt-1">
-            Current: {doctorRotationSpeed / 1000} seconds per doctor
-          </p>
-        </div>
-      </div>
-
-      <hr className="border-slate-700" />
+      </CollapsibleSection>
 
       {/* Appointments */}
       <div>

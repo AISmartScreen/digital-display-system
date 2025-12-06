@@ -1,65 +1,179 @@
 import React, { useState, useEffect } from "react";
+import { Heart, Award, Calendar } from "lucide-react";
+import AppointmentReminders from "./components/hospital/AppointmentReminders";
+import { ScheduleSlider } from "./components/hospital/ScheduleSlider";
 
-interface Doctor {
-  name: string;
-  specialty: string;
-  schedule: string;
+interface HospitalCustomization {
+  hospitalName: string;
+  tagline: string;
+  hospitalLogo: string;
+  backgroundImage: string;
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  tickerMessage: string;
+  tickerRightMessage: string;
+  doctorRotationSpeed: number;
+  departmentInfo: string;
+  emergencyContact: string;
+  leftComponent: "doctors" | "appointments" | "schedules";
+  rightComponent: "doctors" | "appointments" | "schedules";
+  enableSlideshow: boolean;
+  slideshowSpeed: number;
+  doctors: Array<{
+    name: string;
+    specialty: string;
+    experience: string;
+    image: string;
+    available: string;
+  }>;
+  appointments: Array<{
+    id: string;
+    patientName: string;
+    doctorName: string;
+    specialty: string;
+    time: string;
+    room: string;
+    appointmentDate: Date;
+    priority: "normal" | "urgent" | "follow-up";
+  }>;
+  doctorSchedules: Array<{
+    time: string;
+    patientName: string;
+    doctorName: string;
+    department: string;
+    room: string;
+  }>;
 }
 
-interface SimpleHospitalProps {
-  hospitalName?: string;
-  logo?: string;
-  backgroundImage?: string;
-  doctors?: Doctor[];
-  slideSpeed?: number;
+interface HospitalTemplateProps {
+  customization: HospitalCustomization;
+  backgroundStyle: React.CSSProperties;
 }
 
-export default function HospitalTemplate({
-  hospitalName = "OLIVIA Hospital",
-  logo = "",
-  backgroundImage = "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1920&h=1080&fit=crop",
-  doctors = [
-    {
-      name: "Consultant Surgeon",
-      specialty: "",
-      schedule: "Daily 3.00 pm",
-    },
-    {
-      name: "Consultant VOG",
-      specialty: "",
-      schedule: "Mon - Fri 5.00 pm",
-    },
-    {
-      name: "Consultant Paediatrician",
-      specialty: "",
-      schedule: "Daily 7.00 pm",
-    },
-  ],
-  slideSpeed = 3000,
-}: SimpleHospitalProps) {
+export function HospitalTemplate({
+  customization,
+  backgroundStyle,
+}: HospitalTemplateProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [currentDoctorIndex, setCurrentDoctorIndex] = useState(0);
+  const [currentDoctor, setCurrentDoctor] = useState(0);
+  const [currentLeftSlide, setCurrentLeftSlide] = useState(0);
+  const [currentRightSlide, setCurrentRightSlide] = useState(0);
+
+  const settings = {
+    hospitalName: customization.hospitalName || "MediTech Hospital",
+    tagline: customization.tagline || "Excellence in Healthcare Since 1995",
+    hospitalLogo: customization.hospitalLogo || "",
+    backgroundImage: customization.backgroundImage || "",
+    primaryColor: customization.primaryColor || "#06b6d4",
+    secondaryColor: customization.secondaryColor || "#14b8a6",
+    accentColor: customization.accentColor || "#f59e0b",
+    tickerMessage:
+      customization.tickerMessage ||
+      "⚕️ Quality Healthcare • Compassionate Service • Advanced Technology",
+    tickerRightMessage:
+      customization.tickerRightMessage || "Your Health, Our Priority",
+    doctorRotationSpeed: customization.doctorRotationSpeed || 6000,
+    departmentInfo: customization.departmentInfo || "Emergency Department",
+    emergencyContact: customization.emergencyContact || "911",
+    leftComponent: customization.leftComponent || "doctors",
+    rightComponent: customization.rightComponent || "appointments",
+    enableSlideshow: customization.enableSlideshow || false,
+    slideshowSpeed: customization.slideshowSpeed || 10000,
+  };
+
+  const doctors =
+    customization.doctors && customization.doctors.length > 0
+      ? customization.doctors
+      : [
+          {
+            name: "Dr. Sarah Johnson",
+            specialty: "Cardiology",
+            experience: "15+ Years",
+            image:
+              "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=300&h=300&fit=crop",
+            available: "Mon-Fri, 9 AM - 5 PM",
+          },
+          {
+            name: "Dr. Michael Chen",
+            specialty: "Neurology",
+            experience: "12+ Years",
+            image:
+              "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=300&h=300&fit=crop",
+            available: "Mon-Thu, 10 AM - 6 PM",
+          },
+          {
+            name: "Dr. Emily Rodriguez",
+            specialty: "Pediatrics",
+            experience: "10+ Years",
+            image:
+              "https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=300&h=300&fit=crop",
+            available: "Mon-Sat, 8 AM - 4 PM",
+          },
+        ];
+
+  const appointments = customization.appointments || [
+    {
+      id: "1",
+      patientName: "John Smith",
+      doctorName: "Dr. Sarah Johnson",
+      specialty: "Cardiology",
+      time: "10:30 AM",
+      room: "101",
+      appointmentDate: new Date(Date.now() + 15 * 60000),
+      priority: "urgent" as const,
+    },
+    {
+      id: "2",
+      patientName: "Emma Wilson",
+      doctorName: "Dr. Michael Chen",
+      specialty: "Neurology",
+      time: "11:00 AM",
+      room: "202",
+      appointmentDate: new Date(Date.now() + 45 * 60000),
+      priority: "normal" as const,
+    },
+  ];
+
+  const doctorSchedules = customization.doctorSchedules || [];
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
   useEffect(() => {
     if (doctors.length === 0) return;
     const interval = setInterval(() => {
-      setCurrentDoctorIndex((prev) => (prev + 1) % doctors.length);
-    }, slideSpeed);
+      setCurrentDoctor((prev) => (prev + 1) % doctors.length);
+    }, settings.doctorRotationSpeed);
     return () => clearInterval(interval);
-  }, [doctors.length, slideSpeed]);
+  }, [doctors.length, settings.doctorRotationSpeed]);
+
+  // Slideshow for left component
+  useEffect(() => {
+    if (!settings.enableSlideshow) return;
+    const components = ["doctors", "appointments", "schedules"];
+    const interval = setInterval(() => {
+      setCurrentLeftSlide((prev) => (prev + 1) % components.length);
+    }, settings.slideshowSpeed);
+    return () => clearInterval(interval);
+  }, [settings.enableSlideshow, settings.slideshowSpeed]);
+
+  // Slideshow for right component
+  useEffect(() => {
+    if (!settings.enableSlideshow) return;
+    const components = ["doctors", "appointments", "schedules"];
+    const interval = setInterval(() => {
+      setCurrentRightSlide((prev) => (prev + 1) % components.length);
+    }, settings.slideshowSpeed);
+    return () => clearInterval(interval);
+  }, [settings.enableSlideshow, settings.slideshowSpeed]);
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
-      second: "2-digit",
       hour12: true,
     });
   };
@@ -73,98 +187,231 @@ export default function HospitalTemplate({
     });
   };
 
-  return (
-    <div className="fixed inset-0 w-full h-full overflow-hidden">
-      {/* Background Image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{
-          backgroundImage: `url(${backgroundImage})`,
-        }}
-      >
-        <div className="absolute inset-0 bg-black/40"></div>
-      </div>
+  const dynamicBackgroundStyle = settings.backgroundImage
+    ? {
+        ...backgroundStyle,
+        backgroundImage: `url(${settings.backgroundImage})`,
+      }
+    : backgroundStyle;
 
-      {/* Content */}
-      <div className="relative z-10 h-full flex flex-col">
-        {/* Header with Logo and Hospital Name */}
-        <div className="flex items-start justify-between p-8">
-          {/* Left: Logo and Name */}
-          <div className="flex items-center gap-6">
-            {logo && (
-              <img
-                src={logo}
-                alt="Hospital Logo"
-                className="w-32 h-32 object-contain bg-white/90 rounded-2xl p-4 shadow-2xl"
-              />
-            )}
-            <div>
-              <h1 className="text-7xl font-bold text-white drop-shadow-2xl">
-                {hospitalName}
-              </h1>
+  // Doctor Carousel Component
+  const DoctorCarousel = () => (
+    <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-3xl overflow-hidden border border-white/20 shadow-2xl h-full flex flex-col justify-center">
+      <div className="relative p-8">
+        <div
+          className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 -mr-20 -mt-20"
+          style={{ backgroundColor: settings.primaryColor }}
+        ></div>
+        <div
+          className="absolute bottom-0 left-0 w-32 h-32 rounded-full opacity-10 -ml-16 -mb-16"
+          style={{ backgroundColor: settings.secondaryColor }}
+        ></div>
+
+        <div className="relative z-10">
+          <div className="flex justify-center mb-6">
+            <div className="relative">
+              <div
+                className="absolute -inset-3 rounded-full opacity-50 blur-2xl animate-pulse"
+                style={{
+                  background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
+                }}
+              ></div>
+
+              <div
+                className="relative w-48 h-48 rounded-full p-1.5 shadow-2xl"
+                style={{
+                  background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
+                }}
+              >
+                <img
+                  src={doctors[currentDoctor].image}
+                  alt={doctors[currentDoctor].name}
+                  className="w-full h-full rounded-full object-cover border-4 border-black/20"
+                />
+              </div>
+
+              <div
+                className="absolute bottom-2 right-2 w-12 h-12 rounded-full border-4 border-black/30 flex items-center justify-center shadow-lg"
+                style={{ backgroundColor: "#10b981" }}
+              >
+                <div className="w-4 h-4 bg-white rounded-full animate-pulse"></div>
+              </div>
             </div>
           </div>
 
-          {/* Right: Time and Date */}
-          <div className="text-right bg-black/50 backdrop-blur-md rounded-2xl px-8 py-6 border border-yellow-400/50">
-            <div className="text-6xl font-bold text-yellow-400 mb-2 drop-shadow-lg">
-              {formatTime(currentTime)}
+          <div className="text-center mb-6">
+            <h3 className="text-3xl font-bold text-white mb-3 tracking-wide">
+              {doctors[currentDoctor].name}
+            </h3>
+            <div
+              className="inline-block px-6 py-2.5 rounded-full text-lg font-bold text-white shadow-lg"
+              style={{
+                background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
+              }}
+            >
+              {doctors[currentDoctor].specialty}
             </div>
-            <div className="text-2xl text-yellow-300 drop-shadow-lg">
-              {formatDate(currentTime)}
+          </div>
+
+          <div className="space-y-3 max-w-md mx-auto">
+            <div className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-xl py-3 px-5 border border-white/10">
+              <Award
+                className="w-6 h-6 flex-shrink-0"
+                style={{ color: settings.accentColor }}
+              />
+              <span className="font-medium text-white text-lg">
+                {doctors[currentDoctor].experience} Experience
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-xl py-3 px-5 border border-white/10">
+              <Calendar
+                className="w-6 h-6 flex-shrink-0"
+                style={{ color: settings.primaryColor }}
+              />
+              <span className="font-medium text-white text-lg">
+                {doctors[currentDoctor].available}
+              </span>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Doctor Names - Vertical Sliding */}
-        <div className="flex-1 flex items-center justify-center px-8">
-          <div className="w-full max-w-6xl">
-            <div className="relative h-[500px] overflow-hidden">
-              {doctors.map((doctor, index) => (
+      {doctors.length > 1 && (
+        <div className="bg-black/20 backdrop-blur-sm px-8 py-5 border-t border-white/10">
+          <div className="flex justify-center gap-2.5">
+            {doctors.map((_, idx) => (
+              <div
+                key={idx}
+                className="transition-all duration-300 rounded-full"
+                style={{
+                  width: idx === currentDoctor ? "32px" : "12px",
+                  height: "12px",
+                  backgroundColor:
+                    idx === currentDoctor ? settings.primaryColor : "#64748b",
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // Get component based on type
+  const getComponent = (type: string) => {
+    switch (type) {
+      case "doctors":
+        return doctors.length > 0 ? <DoctorCarousel /> : null;
+      case "appointments":
+        return (
+          <AppointmentReminders
+            appointments={appointments}
+            primaryColor={settings.primaryColor}
+            secondaryColor={settings.secondaryColor}
+            accentColor={settings.accentColor}
+          />
+        );
+      case "schedules":
+        return (
+          <ScheduleSlider schedules={doctorSchedules} settings={settings} />
+        );
+      default:
+        return null;
+    }
+  };
+
+  // Determine which component to show
+  const leftComponentToShow = settings.enableSlideshow
+    ? ["doctors", "appointments", "schedules"][currentLeftSlide]
+    : settings.leftComponent;
+
+  const rightComponentToShow = settings.enableSlideshow
+    ? ["doctors", "appointments", "schedules"][currentRightSlide]
+    : settings.rightComponent;
+
+  return (
+    <div
+      className="w-full h-full relative overflow-hidden"
+      style={dynamicBackgroundStyle}
+    >
+      {settings.backgroundImage && (
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/70 via-slate-800/60 to-slate-900/70"></div>
+      )}
+      {!settings.backgroundImage && (
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"></div>
+      )}
+
+      <div className="relative z-10 h-full flex flex-col">
+        <header
+          className="bg-black/60 backdrop-blur-md border-b-2 px-8 py-5"
+          style={{ borderColor: settings.primaryColor }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {settings.hospitalLogo ? (
+                <img
+                  src={settings.hospitalLogo}
+                  alt="Hospital Logo"
+                  className="w-16 h-16 object-contain"
+                />
+              ) : (
                 <div
-                  key={index}
-                  className={`absolute inset-0 transition-all duration-700 ease-in-out ${
-                    index === currentDoctorIndex
-                      ? "opacity-100 translate-y-0"
-                      : index < currentDoctorIndex
-                      ? "opacity-0 -translate-y-full"
-                      : "opacity-0 translate-y-full"
-                  }`}
+                  className="w-16 h-16 rounded-full flex items-center justify-center shadow-2xl"
+                  style={{
+                    background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
+                  }}
                 >
-                  <div className="h-full flex flex-col items-center justify-center bg-gradient-to-r from-red-600/80 to-pink-600/80 backdrop-blur-sm rounded-3xl border-4 border-red-400/50 shadow-2xl px-12 py-16">
-                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-8 shadow-xl">
-                      <span className="text-4xl">🩺</span>
-                    </div>
-                    <h2 className="text-8xl font-black text-white text-center mb-6 drop-shadow-2xl leading-tight">
-                      {doctor.name}
-                    </h2>
-                    {doctor.specialty && (
-                      <p className="text-4xl text-white/90 text-center mb-4 drop-shadow-lg">
-                        {doctor.specialty}
-                      </p>
-                    )}
-                    <p className="text-5xl font-bold text-yellow-300 text-center drop-shadow-lg">
-                      {doctor.schedule}
-                    </p>
-                  </div>
+                  <Heart className="w-8 h-8 text-white fill-white" />
                 </div>
-              ))}
+              )}
+              <div>
+                <h1 className="text-4xl font-bold text-white mb-1">
+                  {settings.hospitalName}
+                </h1>
+                <p
+                  className="text-base"
+                  style={{ color: settings.accentColor }}
+                >
+                  {settings.tagline}
+                </p>
+              </div>
             </div>
 
-            {/* Slide Indicators */}
-            <div className="flex justify-center gap-3 mt-8">
-              {doctors.map((_, idx) => (
-                <div
-                  key={idx}
-                  className="transition-all duration-300 rounded-full"
-                  style={{
-                    width: idx === currentDoctorIndex ? "48px" : "16px",
-                    height: "16px",
-                    backgroundColor:
-                      idx === currentDoctorIndex ? "#ef4444" : "#94a3b8",
-                  }}
-                />
-              ))}
+            <div className="text-right">
+              <div
+                className="text-5xl font-bold mb-1"
+                style={{ color: settings.primaryColor }}
+              >
+                {formatTime(currentTime)}
+              </div>
+              <div className="text-base text-gray-300">
+                {formatDate(currentTime)}
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="flex-1 grid grid-cols-2 gap-6 p-6 overflow-hidden min-h-0">
+          <div className="flex flex-col justify-center">
+            {getComponent(leftComponentToShow)}
+          </div>
+
+          <div className="flex flex-col justify-center">
+            {!settings.enableSlideshow && getComponent(rightComponentToShow)}
+          </div>
+        </div>
+
+        <div
+          className="bg-black/60 backdrop-blur-md border-t-2 px-8 py-3"
+          style={{ borderColor: settings.primaryColor }}
+        >
+          <div className="flex items-center justify-between text-base">
+            <div className="text-white font-semibold">
+              {settings.tickerMessage}
+            </div>
+            <div className="font-bold" style={{ color: settings.accentColor }}>
+              {settings.hospitalName} - {settings.tickerRightMessage}
             </div>
           </div>
         </div>
