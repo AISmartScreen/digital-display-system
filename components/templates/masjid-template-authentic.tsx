@@ -178,6 +178,83 @@ export function MasjidTemplateAuthentic({
       .padStart(2, "0")}`;
   };
 
+  const getCountdownState = () => {
+    const now = new Date();
+    const currentMinutes =
+      now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+
+    const prayers = [
+      {
+        name: "fajr",
+        time: customization.prayerTimes.fajr,
+        offset: customization.iqamahOffsets.fajr,
+      },
+      {
+        name: "dhuhr",
+        time: customization.prayerTimes.dhuhr,
+        offset: customization.iqamahOffsets.dhuhr,
+      },
+      {
+        name: "asr",
+        time: customization.prayerTimes.asr,
+        offset: customization.iqamahOffsets.asr,
+      },
+      {
+        name: "maghrib",
+        time: customization.prayerTimes.maghrib,
+        offset: customization.iqamahOffsets.maghrib,
+      },
+      {
+        name: "isha",
+        time: customization.prayerTimes.isha,
+        offset: customization.iqamahOffsets.isha,
+      },
+    ];
+
+    for (const prayer of prayers) {
+      const [hours, minutes] = prayer.time.split(":").map(Number);
+      const adhanMinutes = hours * 60 + minutes;
+      const iqamahMinutes = adhanMinutes + prayer.offset;
+
+      const minutesUntilAdhan = adhanMinutes - currentMinutes;
+      const minutesUntilIqamah = iqamahMinutes - currentMinutes;
+
+      // 10 minutes before Adhan
+      if (minutesUntilAdhan > 0 && minutesUntilAdhan <= 10) {
+        const seconds = Math.floor(minutesUntilAdhan * 60);
+        return {
+          type: "adhan",
+          seconds,
+          prayerName: prayer.name,
+          adhanTime: prayer.time,
+          iqamahTime: calculateIqamahTime(prayer.time, prayer.offset),
+        };
+      }
+
+      // Between Adhan and Iqamah
+      if (minutesUntilAdhan <= 0 && minutesUntilIqamah > 0) {
+        const seconds = Math.floor(minutesUntilIqamah * 60);
+        return {
+          type: "iqamah",
+          seconds,
+          prayerName: prayer.name,
+          adhanTime: prayer.time,
+          iqamahTime: calculateIqamahTime(prayer.time, prayer.offset),
+        };
+      }
+    }
+
+    return null;
+  };
+
+  const formatCountdown = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
+  };
+
   const formatCustomDate = (date: Date) => {
     const day = date.getDate();
     const year = date.getFullYear();
@@ -203,6 +280,7 @@ export function MasjidTemplateAuthentic({
   };
 
   const nextPrayer = getNextPrayer();
+  const countdownState = getCountdownState();
 
   const calculateSunriseTime = () => {
     const [hours, minutes] = customization.prayerTimes.fajr
@@ -283,6 +361,21 @@ export function MasjidTemplateAuthentic({
           rel="stylesheet"
         />
 
+        <style>
+          {`
+            @keyframes subtlePulse {
+              0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+              }
+              50% {
+                opacity: 0.85;
+                transform: scale(1.02);
+              }
+            }
+          `}
+        </style>
+
         <div
           className="absolute inset-0 opacity-5"
           style={{
@@ -320,58 +413,149 @@ export function MasjidTemplateAuthentic({
         <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-8 py-12">
           <FlipClockWrapper targetTime={nextPrayer.time} />
 
-          <div className="w-full max-w-7xl grid grid-cols-2 gap-12">
-            <div className="flex flex-col items-center justify-center py-2 px-8">
-              <h3
-                className="text-8xl font-black tracking-tight mb-8"
-                style={{ ...textStyle, color: customization.colors.secondary }}
-              >
-                ADHAN
-              </h3>
-              <div
-                className="text-[9rem] font-black leading-none"
-                style={{
-                  fontFamily: "'Orbitron', monospace",
-                  fontWeight: 900,
-                  color: customization.colors.secondary,
-                  textShadow: `
-                    0 0 10px ${customization.colors.secondary}80,
-                    0 0 20px ${customization.colors.secondary}60,
-                    0 0 30px ${customization.colors.secondary}40,
-                    4px 4px 16px rgba(0,0,0,0.8)
-                  `,
-                  letterSpacing: "0.1em",
-                }}
-              >
-                {nextPrayer.adhan}
-              </div>
-            </div>
+          <div className="w-full max-w-7xl relative">
+            {!countdownState && (
+              <div className="grid grid-cols-2 gap-12">
+                <div className="flex flex-col items-center justify-center py-2 px-8">
+                  <h3
+                    className="text-8xl font-black tracking-tight mb-8"
+                    style={{
+                      ...textStyle,
+                      color: customization.colors.secondary,
+                    }}
+                  >
+                    ADHAN
+                  </h3>
+                  <div
+                    className="text-[9rem] font-black leading-none"
+                    style={{
+                      fontFamily: "'Orbitron', monospace",
+                      fontWeight: 900,
+                      color: customization.colors.secondary,
+                      textShadow: `
+                        0 0 10px ${customization.colors.secondary}80,
+                        0 0 20px ${customization.colors.secondary}60,
+                        0 0 30px ${customization.colors.secondary}40,
+                        4px 4px 16px rgba(0,0,0,0.8)
+                      `,
+                      letterSpacing: "0.1em",
+                    }}
+                  >
+                    {nextPrayer.adhan}
+                  </div>
+                </div>
 
-            <div className="flex flex-col items-center justify-center py-2 px-8">
-              <h3
-                className="text-8xl font-black tracking-tight mb-8"
-                style={{ ...textStyle, color: customization.colors.accent }}
-              >
-                IQAMATH
-              </h3>
-              <div
-                className="text-[9rem] font-black leading-none"
-                style={{
-                  fontFamily: "'Orbitron', monospace",
-                  fontWeight: 900,
-                  color: customization.colors.accent,
-                  textShadow: `
-                    0 0 10px ${customization.colors.accent}80,
-                    0 0 20px ${customization.colors.accent}60,
-                    0 0 30px ${customization.colors.accent}40,
-                    4px 4px 16px rgba(0,0,0,0.8)
-                  `,
-                  letterSpacing: "0.1em",
-                }}
-              >
-                {calculateIqamahTime(nextPrayer.adhan, nextPrayer.offset)}
+                <div className="flex flex-col items-center justify-center py-2 px-8">
+                  <h3
+                    className="text-8xl font-black tracking-tight mb-8"
+                    style={{ ...textStyle, color: customization.colors.accent }}
+                  >
+                    IQAMAH
+                  </h3>
+                  <div
+                    className="text-[9rem] font-black leading-none"
+                    style={{
+                      fontFamily: "'Orbitron', monospace",
+                      fontWeight: 900,
+                      color: customization.colors.accent,
+                      textShadow: `
+                        0 0 10px ${customization.colors.accent}80,
+                        0 0 20px ${customization.colors.accent}60,
+                        0 0 30px ${customization.colors.accent}40,
+                        4px 4px 16px rgba(0,0,0,0.8)
+                      `,
+                      letterSpacing: "0.1em",
+                    }}
+                  >
+                    {calculateIqamahTime(nextPrayer.adhan, nextPrayer.offset)}
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
+
+            {countdownState && (
+              <div className="relative flex items-center justify-center">
+                <div className="absolute left-8 opacity-20 blur-sm scale-75 transition-all duration-500">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold mb-2" style={textStyle}>
+                      ADHAN
+                    </div>
+                    <div
+                      className="text-4xl font-black"
+                      style={{
+                        fontFamily: "'Orbitron', monospace",
+                        color: customization.colors.secondary,
+                      }}
+                    >
+                      {countdownState.adhanTime}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="absolute right-8 opacity-20 blur-sm scale-75 transition-all duration-500">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold mb-2" style={textStyle}>
+                      IQAMAH
+                    </div>
+                    <div
+                      className="text-4xl font-black"
+                      style={{
+                        fontFamily: "'Orbitron', monospace",
+                        color: customization.colors.accent,
+                      }}
+                    >
+                      {countdownState.iqamahTime}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center justify-center">
+                  <h3
+                    className="text-7xl font-black tracking-tight mb-6 uppercase"
+                    style={{
+                      ...textStyle,
+                      color:
+                        countdownState.type === "adhan"
+                          ? customization.colors.secondary
+                          : customization.colors.accent,
+                      animation: "subtlePulse 2s ease-in-out infinite",
+                    }}
+                  >
+                    {countdownState.prayerName.toUpperCase()}{" "}
+                    {countdownState.type === "adhan" ? "ADHAN IN" : "IQAMAH IN"}
+                  </h3>
+                  <div
+                    className="text-[12rem] font-black leading-none"
+                    style={{
+                      fontFamily: "'Orbitron', monospace",
+                      fontWeight: 900,
+                      color:
+                        countdownState.type === "adhan"
+                          ? customization.colors.secondary
+                          : customization.colors.accent,
+                      textShadow:
+                        countdownState.type === "adhan"
+                          ? `
+                          0 0 20px ${customization.colors.secondary}80,
+                          0 0 40px ${customization.colors.secondary}60,
+                          0 0 60px ${customization.colors.secondary}40,
+                          6px 6px 20px rgba(0,0,0,0.9)
+                        `
+                          : `
+                          0 0 20px ${customization.colors.accent}80,
+                          0 0 40px ${customization.colors.accent}60,
+                          0 0 60px ${customization.colors.accent}40,
+                          6px 6px 20px rgba(0,0,0,0.9)
+                        `,
+                      letterSpacing: "0.1em",
+                      animation: "subtlePulse 2s ease-in-out infinite",
+                    }}
+                  >
+                    {formatCountdown(countdownState.seconds)}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
