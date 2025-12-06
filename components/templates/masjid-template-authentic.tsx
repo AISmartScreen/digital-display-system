@@ -42,6 +42,8 @@ interface MasjidCustomization {
   announcements: Announcement[];
   showHijriDate: boolean;
   font: string;
+  prayerInstructionImage: string;
+  prayerInstructionDuration: number;
 }
 
 interface MasjidTemplateProps {
@@ -56,7 +58,13 @@ export function MasjidTemplateAuthentic({
   const [currentTime, setCurrentTime] = useState(new Date());
   const [currentAnnouncement, setCurrentAnnouncement] = useState(0);
   const [hijriDate, setHijriDate] = useState("");
-
+  const [showInstructions, setShowInstructions] = useState(true);
+  const [instructionsPrayer, setInstructionsPrayer] = useState("");
+  const [prayerInstructionImage, setPrayerInstructionImage] = useState(
+    "/how-to-perform-muslim-prayer.png"
+  );
+  const [prayerInstructionDuration, setPrayerInstructionDuration] =
+    useState(10);
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -79,6 +87,68 @@ export function MasjidTemplateAuthentic({
   useEffect(() => {
     fetchHijriDate();
   }, []);
+
+  // Check if Iqamah time has passed and show instructions
+  useEffect(() => {
+    const checkInstructions = () => {
+      const now = new Date();
+      const currentMinutes =
+        now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+
+      const prayers = [
+        {
+          name: "fajr",
+          time: customization.prayerTimes.fajr,
+          offset: customization.iqamahOffsets.fajr,
+        },
+        {
+          name: "dhuhr",
+          time: customization.prayerTimes.dhuhr,
+          offset: customization.iqamahOffsets.dhuhr,
+        },
+        {
+          name: "asr",
+          time: customization.prayerTimes.asr,
+          offset: customization.iqamahOffsets.asr,
+        },
+        {
+          name: "maghrib",
+          time: customization.prayerTimes.maghrib,
+          offset: customization.iqamahOffsets.maghrib,
+        },
+        {
+          name: "isha",
+          time: customization.prayerTimes.isha,
+          offset: customization.iqamahOffsets.isha,
+        },
+      ];
+
+      for (const prayer of prayers) {
+        const [hours, minutes] = prayer.time.split(":").map(Number);
+        const adhanMinutes = hours * 60 + minutes;
+        const iqamahMinutes = adhanMinutes + prayer.offset;
+
+        const timeSinceIqamah = currentMinutes - iqamahMinutes;
+
+        // Show instructions if within the duration window after Iqamah
+        if (
+          timeSinceIqamah >= 0 &&
+          timeSinceIqamah <= customization.prayerInstructionDuration
+        ) {
+          setShowInstructions(true);
+          setInstructionsPrayer(prayer.name);
+          return;
+        }
+      }
+
+      setShowInstructions(false);
+      setInstructionsPrayer("");
+    };
+
+    checkInstructions();
+    const interval = setInterval(checkInstructions, 1000);
+    return () => clearInterval(interval);
+  }, [customization]);
 
   const fetchHijriDate = async () => {
     try {
@@ -395,6 +465,46 @@ export function MasjidTemplateAuthentic({
                 transform: scale(1.02);
               }
             }
+
+            @keyframes fadeInScale {
+              0% {
+                opacity: 0;
+                transform: scale(0.95);
+              }
+              100% {
+                opacity: 1;
+                transform: scale(1);
+              }
+            }
+
+            @keyframes slideDown {
+              0% {
+                opacity: 0;
+                transform: translateY(-30px);
+              }
+              100% {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+
+            @keyframes glowPulse {
+              0%, 100% {
+                box-shadow: 0 0 30px rgba(251, 191, 36, 0.5), 0 0 60px rgba(251, 191, 36, 0.3), 0 10px 40px rgba(0, 0, 0, 0.6);
+              }
+              50% {
+                box-shadow: 0 0 50px rgba(251, 191, 36, 0.7), 0 0 80px rgba(251, 191, 36, 0.5), 0 10px 40px rgba(0, 0, 0, 0.6);
+              }
+            }
+
+            @keyframes shimmer {
+              0% {
+                background-position: -1000px 0;
+              }
+              100% {
+                background-position: 1000px 0;
+              }
+            }
           `}
         </style>
 
@@ -405,6 +515,50 @@ export function MasjidTemplateAuthentic({
             backgroundSize: "30px 30px",
           }}
         ></div>
+
+        {/* Prayer Instructions Overlay - Full Screen, Nothing Hidden */}
+        {(showInstructions && customization.prayerInstructionImage) ||
+          (prayerInstructionImage && (
+            <div
+              className="fixed inset-0 flex items-center justify-center z-[9999]"
+              style={{
+                backgroundColor: "rgba(0, 0, 0, 0.95)",
+                animation: "fadeInScale 0.6s ease-out",
+              }}
+            >
+              <div className="relative w-full h-full flex flex-col items-center justify-center">
+                <div className="flex  items-center justify-center z-[9999] bg-black/95">
+                  <div
+                    className="relative rounded-3xl overflow-hidden"
+                    style={{
+                      maxHeight: "120vh", // 90% of viewport height
+                      width: "auto",
+                      maxWidth: "100vw", // optional: limit width
+                      border: `8px solid ${customization.colors.accent}`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      animation:
+                        "fadeInScale 0.8s ease-out 0.2s backwards, glowPulse 3s ease-in-out infinite 0.8s",
+                    }}
+                  >
+                    <img
+                      src={
+                        customization.prayerInstructionImage ||
+                        prayerInstructionImage
+                      }
+                      alt="Prayer Instructions"
+                      style={{
+                        maxHeight: "150vh", // ensures image covers 90% of height
+                        width: "auto", // maintains aspect ratio
+                        display: "block",
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
 
         <div className="relative z-10 flex flex-col items-center px-0 p-8 pb-4 bg-gradient-to-b from-black/40 to-transparent">
           <div className="text-center mb-2">
@@ -595,7 +749,7 @@ export function MasjidTemplateAuthentic({
         </div>
 
         <div className="relative z-10 px-0 pb-4">
-          <div className="grid grid-cols-6 gap-6 max-w-[95%] mx-auto">
+          <div className="grid grid-cols-6 gap-3 max-w-[1%] mx-auto">
             {prayers.map((prayer, index) => {
               // Check if this is the next prayer (excluding Sunrise as it doesn't have Iqamah)
               const isNextPrayer = prayer.name.toLowerCase() === nextPrayerName;
