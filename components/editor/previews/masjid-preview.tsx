@@ -72,7 +72,7 @@ export function MasjidPreview({ config }: { config: any }) {
       accent: "#fbbf24",
     };
 
-  const layout = config.layout || "vertical";
+  const layout = config.layout || "authentic";
 
   const prayers = [
     {
@@ -604,6 +604,7 @@ export function MasjidPreview({ config }: { config: any }) {
 
       {/* Content */}
       <div className="relative z-10 w-full h-full flex items-center justify-center">
+        {layout === "authentic" && renderVerticalLayout()}
         {layout === "vertical" && renderVerticalLayout()}
         {layout === "horizontal" && renderHorizontalLayout()}
         {layout === "centered" && renderCenteredLayout()}

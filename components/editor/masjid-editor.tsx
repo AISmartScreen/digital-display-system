@@ -68,7 +68,7 @@ interface MasjidConfig {
   masjidName: string;
   showWeather: boolean;
   animationSpeed: "slow" | "normal" | "fast";
-  layout: "vertical" | "horizontal" | "centered";
+  layout: "authentic" | "vertical" | "horizontal" | "centered";
   colorTheme?: Colors;
 }
 
@@ -474,7 +474,7 @@ export default function MasjidEditorPanel({
     masjidName: "Masjid Al-Noor",
     showWeather: true,
     animationSpeed: "normal",
-    layout: "vertical",
+    layout: "authentic",
   };
 
   const [customization, setCustomization] =
@@ -835,8 +835,9 @@ export default function MasjidEditorPanel({
       <CollapsibleSection title="Layout">
         <div className="space-y-2">
           <label className="text-sm text-gray-300">Display Layout</label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             {[
+              { value: "authentic", icon: "🕌", label: "Authentic" },
               { value: "vertical", icon: "📏", label: "Vertical" },
               { value: "horizontal", icon: "📐", label: "Horizontal" },
               { value: "centered", icon: "◼️", label: "Centered" },

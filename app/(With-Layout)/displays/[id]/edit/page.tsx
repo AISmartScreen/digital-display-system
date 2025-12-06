@@ -144,7 +144,7 @@ export default function EditDisplayPage() {
     // Create the configuration object that preview page expects
     const previewConfig = {
       template: templateMap[display.templateType] || "masjid-classic",
-      layout: display.config?.layout || "vertical",
+      layout: display.config?.layout || "authentic",
       prayerTimes: display.config?.prayerTimes || {
         fajr: "05:30",
         dhuhr: "12:45",

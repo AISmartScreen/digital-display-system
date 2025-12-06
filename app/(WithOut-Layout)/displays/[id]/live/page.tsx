@@ -4,7 +4,7 @@
 import { use, useEffect, useState, useRef } from "react";
 import { Loader2, AlertCircle, Power } from "lucide-react";
 import { MasjidTemplate } from "@/components/templates/masjid-template";
-import { HospitalTemplate } from "@/components/templates/hospital-template";
+import HospitalTemplate from "@/components/templates/hospital-template";
 import { CorporateTemplate } from "@/components/templates/corporate-template";
 import type React from "react";
 

@@ -2,6 +2,7 @@
 
 import type React from "react";
 import { useState, useEffect } from "react";
+import { MasjidTemplateAuthentic } from "./masjid-template-authentic";
 
 interface MasjidCustomization {
   template: string;
@@ -102,11 +103,9 @@ export function MasjidTemplate({
       const adhanTime = adhanHours * 60 + adhanMinutes;
       const iqamahTime = adhanTime + prayer.offset;
 
-      // Calculate total minutes from midnight
       const currentTotalMinutes = currentMinutes + currentSeconds / 60;
 
       if (adhanTime > currentTotalMinutes) {
-        // Next is Adhan
         const diffInMinutes = adhanTime - currentTotalMinutes;
         const totalSecondsUntil = Math.floor(diffInMinutes * 60);
 
@@ -129,7 +128,6 @@ export function MasjidTemplate({
         adhanTime <= currentTotalMinutes &&
         iqamahTime > currentTotalMinutes
       ) {
-        // Currently between Adhan and Iqamah
         const diffInMinutes = iqamahTime - currentTotalMinutes;
         const totalSecondsUntil = Math.floor(diffInMinutes * 60);
 
@@ -150,11 +148,9 @@ export function MasjidTemplate({
     }
 
     if (!foundNext) {
-      // All prayers passed for today, calculate until tomorrow's Fajr
       const [hours, minutes] = prayers[0].adhan.split(":").map(Number);
       const fajrMinutes = hours * 60 + minutes;
 
-      // Minutes left in today + fajr minutes tomorrow
       const minutesLeftToday = 24 * 60 - (currentMinutes + currentSeconds / 60);
       const totalDiffInMinutes = minutesLeftToday + fajrMinutes;
       const totalSecondsUntil = Math.floor(totalDiffInMinutes * 60);
@@ -186,7 +182,7 @@ export function MasjidTemplate({
     return () => clearInterval(interval);
   }, [customization.announcements, currentAnnouncement]);
 
-  // Slideshow rotation
+  // Slideshow rotation - FIXED
   useEffect(() => {
     if (
       customization.backgroundType === "slideshow" &&
@@ -272,24 +268,38 @@ export function MasjidTemplate({
     },
   ];
 
-  const dynamicBackgroundStyle =
-    customization.backgroundType === "slideshow" &&
-    customization.backgroundImage?.[currentImageIndex]
-      ? {
-          ...backgroundStyle,
-          backgroundImage: `url(${customization.backgroundImage[currentImageIndex]})`,
-          transition: "background-image 1s ease-in-out",
-        }
-      : backgroundStyle;
+  // FIXED: Dynamic background style that handles slideshow
+  const getDynamicBackgroundStyle = () => {
+    if (
+      customization.backgroundType === "slideshow" &&
+      customization.backgroundImage &&
+      customization.backgroundImage.length > 0
+    ) {
+      return {
+        ...backgroundStyle,
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(${customization.backgroundImage[currentImageIndex]})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        transition: "background-image 1s ease-in-out",
+      };
+    }
+    return {
+      ...backgroundStyle,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundRepeat: "no-repeat",
+    };
+  };
 
-  // Check if we're close to Adhan time (within 10 minutes)
+  const dynamicBackgroundStyle = getDynamicBackgroundStyle();
+
   const isCloseToAdhan = () => {
     if (!nextEvent || nextEvent.type !== "adhan") return false;
     const [hours, minutes] = nextEvent.timeUntil.split(":").map(Number);
     return hours === 0 && minutes <= 10;
   };
 
-  // Header component with masjid name
   const MasjidHeader = () => (
     <div className="text-center mb-6">
       <h1
@@ -309,18 +319,24 @@ export function MasjidTemplate({
     </div>
   );
 
-  // VERTICAL LAYOUT - Split screen: prayers on left, info on right
+  // AUTHENTIC LAYOUT - Use imported component
+  if (customization.layout === "authentic") {
+    return (
+      <MasjidTemplateAuthentic
+        customization={customization}
+        backgroundStyle={dynamicBackgroundStyle}
+      />
+    );
+  }
+
+  // VERTICAL LAYOUT
   const renderVerticalLayout = () => {
     const isAdhanSoon = isCloseToAdhan();
 
     return (
       <div className="w-full h-[100%] flex flex-col p-10 overflow-hidden">
-        {/* Masjid Name Header - Compact for vertical layout */}
         <MasjidHeader />
-
-        {/* Main Content - Adjusted to fit with masjid name */}
         <div className="flex-1 grid grid-cols-2 gap-10">
-          {/* LEFT SIDE - All Prayer Times */}
           <div className="flex flex-col justify-center space-y-6">
             {prayers.map((prayer) => (
               <div
@@ -358,9 +374,7 @@ export function MasjidTemplate({
             ))}
           </div>
 
-          {/* RIGHT SIDE - Current Time, Countdown, Date */}
           <div className="flex flex-col justify-between h-full">
-            {/* Next Prayer Countdown */}
             {nextEvent && (
               <div
                 className="rounded-3xl backdrop-blur-sm text-center transition-all flex-1 flex flex-col justify-center p-8"
@@ -390,7 +404,6 @@ export function MasjidTemplate({
               </div>
             )}
 
-            {/* Current Time Display */}
             <div
               className="p-8 rounded-3xl backdrop-blur-sm text-center flex-1 flex flex-col justify-center mt-6"
               style={{ backgroundColor: `${customization.colors.primary}60` }}
@@ -418,7 +431,6 @@ export function MasjidTemplate({
               </p>
             </div>
 
-            {/* Hijri Date */}
             {hijriDate && customization.showHijriDate && (
               <div
                 className="p-6 rounded-3xl backdrop-blur-sm text-center mt-6"
@@ -438,7 +450,7 @@ export function MasjidTemplate({
     );
   };
 
-  // HORIZONTAL LAYOUT - Modern card design
+  // HORIZONTAL LAYOUT
   const renderHorizontalLayout = () => {
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
@@ -446,12 +458,10 @@ export function MasjidTemplate({
 
     return (
       <div className="w-full h-full flex flex-col justify-center px-20 py-8 space-y-12 overflow-hidden">
-        {/* Top Section - Masjid Name */}
         <div className="mb-4">
           <MasjidHeader />
         </div>
 
-        {/* Middle Section - Current Time, Date & Countdown */}
         <div className="grid grid-cols-3 gap-12">
           <div
             className="col-span-2 p-14 rounded-3xl backdrop-blur-sm"
@@ -491,7 +501,6 @@ export function MasjidTemplate({
             </div>
           </div>
 
-          {/* Countdown */}
           {nextEvent && (
             <div
               className={`rounded-3xl backdrop-blur-sm flex flex-col justify-center items-center transition-all ${
@@ -525,7 +534,6 @@ export function MasjidTemplate({
           )}
         </div>
 
-        {/* Bottom Section - Prayer Times in Cards */}
         <div className="grid grid-cols-5 gap-10">
           {prayers.map((prayer) => {
             const [prayerHours, prayerMinutes] = prayer.time
@@ -583,14 +591,11 @@ export function MasjidTemplate({
 
     return (
       <div className="w-full h-full flex flex-col items-center justify-center px-24 py-8 overflow-hidden">
-        {/* Masjid Name Header */}
         <div className="mb-8">
           <MasjidHeader />
         </div>
 
-        {/* Main Content Area */}
         <div className="flex-1 w-full max-w-8xl space-y-12">
-          {/* Hijri Date + Current Time Row */}
           <div className="flex justify-between items-end px-4">
             <div className="text-left">
               <p className="text-3xl opacity-80" style={textStyle}>
@@ -620,7 +625,6 @@ export function MasjidTemplate({
             )}
           </div>
 
-          {/* Countdown Block */}
           {nextEvent && (
             <div
               className={`rounded-3xl backdrop-blur-sm transition-all ${
@@ -652,7 +656,6 @@ export function MasjidTemplate({
             </div>
           )}
 
-          {/* Prayer Grid */}
           <div className="grid grid-cols-5 gap-10">
             {prayers.map((prayer) => (
               <div
@@ -688,17 +691,14 @@ export function MasjidTemplate({
       className="w-full h-full relative overflow-hidden flex items-center justify-center"
       style={dynamicBackgroundStyle}
     >
-      {/* Dark overlay */}
       <div className="absolute inset-0 bg-black/50"></div>
 
-      {/* Content */}
       <div className="relative z-10 w-full h-full flex items-center justify-center">
         {customization.layout === "vertical" && renderVerticalLayout()}
         {customization.layout === "horizontal" && renderHorizontalLayout()}
         {customization.layout === "centered" && renderCenteredLayout()}
       </div>
 
-      {/* Announcements Ticker */}
       {customization.announcements &&
         customization.announcements.length > 0 && (
           <div
@@ -716,3 +716,5 @@ export function MasjidTemplate({
     </div>
   );
 }
+
+export default MasjidTemplate;
