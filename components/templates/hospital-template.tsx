@@ -50,6 +50,7 @@ interface HospitalCustomization {
     department: string;
     room: string;
   }>;
+  galleryImages: string[];
 }
 
 interface HospitalTemplateProps {
@@ -432,33 +433,40 @@ export function HospitalTemplate({
   customization,
   backgroundStyle,
 }: HospitalTemplateProps) {
-  const layout = customization.layout || "Advanced";
+  const layout = customization.layout || "Authentic";
 
   if (layout === "Authentic") {
-    // Transform customization to match the authentic template interface
+    // Transform galleryImages to galleryItems if needed (backward compatibility)
+    let galleryItems = customization.galleryItems || [];
+
+    // If galleryItems is empty but galleryImages exists, convert it WITHOUT captions
+    if (
+      galleryItems.length === 0 &&
+      customization.galleryImages &&
+      customization.galleryImages.length > 0
+    ) {
+      galleryItems = customization.galleryImages.map((image) => ({
+        image,
+        caption: "", // Empty caption - won't show overlay
+      }));
+    }
+
     const authenticCustomization = {
-      hospitalName: customization.hospitalName,
-      hospitalLogo: customization.hospitalLogo,
-      backgroundImage: customization.backgroundImage,
-      backgroundImages: customization.backgroundImages || [],
-      primaryColor: customization.primaryColor,
-      secondaryColor: customization.secondaryColor,
-      accentColor: customization.accentColor,
-      slideSpeed: customization.slideSpeed || 20,
-      slideshowSpeed: customization.slideshowSpeed || 10000,
-      enableSlideshow: customization.enableSlideshow || false,
-      doctors: customization.doctors || [],
+      ...customization,
+      galleryItems,
     };
 
     return (
-      <HospitalTemplateAuthentic
-        customization={authenticCustomization}
-        backgroundStyle={backgroundStyle}
-      />
+      <div>
+        {/* <pre>{JSON.stringify(authenticCustomization, null, 2)}</pre> */}
+        <HospitalTemplateAuthentic
+          customization={authenticCustomization}
+          backgroundStyle={backgroundStyle}
+        />
+      </div>
     );
   }
 
-  // Default to Advanced layout
   return (
     <HospitalTemplateAdvanced
       customization={customization}

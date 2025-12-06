@@ -29,6 +29,265 @@ interface CollapsibleSectionProps {
   defaultOpen?: boolean;
 }
 
+// Gallery Media Library Component
+function GalleryMediaLibrary({
+  selectedItems,
+  onItemsChange,
+  userId,
+  displayId,
+  environment = "preview",
+}: {
+  selectedItems: any[];
+  onItemsChange: (items: any[]) => void;
+  userId?: string;
+  displayId: string;
+  environment?: "preview" | "production";
+}) {
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [mediaLibrary, setMediaLibrary] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [newCaption, setNewCaption] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const fetchImages = async () => {
+      if (!userId || !displayId) return;
+
+      setIsLoading(true);
+      try {
+        const response = await fetch(`/api/media`);
+        if (!response.ok) {
+          console.error("Failed to fetch images:", await response.text());
+          return;
+        }
+
+        const allMedia = await response.json();
+        const filteredImages = allMedia
+          .filter(
+            (item: any) => item.userId === userId && item.type === "slideshow"
+          )
+          .map((item: any) => item.fileUrl);
+
+        setMediaLibrary(filteredImages);
+      } catch (err) {
+        console.error("Error fetching images:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchImages();
+  }, [userId, displayId]);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    if (!userId) {
+      setUploadError("User ID is required for upload");
+      return;
+    }
+
+    if (!displayId) {
+      setUploadError("Display ID is required for upload");
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      const validFiles = Array.from(files).filter((file) => {
+        if (!file.type.startsWith("image/")) {
+          setUploadError(`${file.name} is not an image file`);
+          return false;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+          setUploadError(`${file.name} is too large (max 10MB)`);
+          return false;
+        }
+        return true;
+      });
+
+      if (validFiles.length === 0) {
+        setIsUploading(false);
+        return;
+      }
+
+      const formData = new FormData();
+      validFiles.forEach((file) => formData.append("images", file));
+      formData.append("userId", userId);
+      formData.append("displayId", displayId);
+      formData.append("type", "slideshow");
+
+      const response = await fetch("/api/media/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Upload failed");
+      }
+
+      const data = await response.json();
+
+      // Add uploaded images to selected items with caption
+      const newItems = data.urls.map((url: string) => ({
+        image: url,
+        caption: newCaption || "",
+      }));
+      onItemsChange([...selectedItems, ...newItems]);
+      setNewCaption("");
+
+      // Refresh media library
+      const imagesResponse = await fetch(`/api/media`);
+      if (imagesResponse.ok) {
+        const allMedia = await imagesResponse.json();
+        const newImages = allMedia
+          .filter(
+            (item: any) => item.userId === userId && item.type === "slideshow"
+          )
+          .map((item: any) => item.fileUrl);
+        setMediaLibrary(newImages);
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      setUploadError(error instanceof Error ? error.message : "Upload failed");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleImageClick = (img: string) => {
+    const isSelected = selectedItems.some((item) => item.image === img);
+
+    if (isSelected) {
+      // Deselect
+      onItemsChange(selectedItems.filter((item) => item.image !== img));
+    } else {
+      // Select with empty caption
+      onItemsChange([...selectedItems, { image: img, caption: "" }]);
+    }
+  };
+
+  const isImageSelected = (img: string) => {
+    return selectedItems.some((item) => item.image === img);
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Media Library Grid */}
+      {(isLoading || mediaLibrary.length > 0) && (
+        <div>
+          <label className="text-xs font-medium flex items-center gap-2 mb-2">
+            <span className="inline-block w-2 h-2 bg-blue-500 rounded-full"></span>
+            <span className="text-blue-400">
+              Gallery Media Library ({mediaLibrary.length})
+            </span>
+          </label>
+
+          {isLoading ? (
+            <div className="text-center py-6 bg-slate-700/30 rounded-lg">
+              <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-blue-400 border-t-transparent"></div>
+              <p className="text-xs text-slate-400 mt-2">
+                Loading media library...
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-2 p-3 bg-slate-700/30 rounded-lg max-h-64 overflow-y-auto custom-scrollbar">
+              {mediaLibrary.map((img, idx) => (
+                <div
+                  key={idx}
+                  className="relative group cursor-pointer"
+                  onClick={() => handleImageClick(img)}
+                >
+                  <img
+                    src={img}
+                    alt={`Media ${idx + 1}`}
+                    className={`w-full h-20 object-cover rounded border-2 transition-colors ${
+                      isImageSelected(img)
+                        ? "border-green-500"
+                        : "border-slate-600 hover:border-blue-400"
+                    }`}
+                  />
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center">
+                    <span className="text-white text-xs font-medium">
+                      {isImageSelected(img) ? "✓ Selected" : "Click to select"}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Upload New Image */}
+      <div className="border-t border-slate-700 pt-3">
+        <label className="text-xs text-slate-400 font-medium block mb-2">
+          Upload New Gallery Image
+        </label>
+
+        <div className="space-y-2">
+          <Input
+            value={newCaption}
+            onChange={(e) => setNewCaption(e.target.value)}
+            placeholder="Enter caption for new image..."
+            className="bg-slate-700 border-slate-600 text-slate-50 text-sm"
+          />
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading || !userId || !displayId}
+            className="w-full flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-600 rounded-lg hover:border-slate-500 hover:bg-slate-700/30 text-slate-400 hover:text-slate-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Upload className="w-4 h-4" />
+            <span className="text-sm font-medium">
+              {isUploading ? "Uploading..." : "Upload & Add to Gallery"}
+            </span>
+          </button>
+        </div>
+
+        {uploadError && (
+          <div className="mt-2 p-2 bg-red-500/10 border border-red-500/30 rounded-lg">
+            <p className="text-xs text-red-400">{uploadError}</p>
+          </div>
+        )}
+      </div>
+
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #1e293b;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #475569;
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #64748b;
+        }
+      `}</style>
+    </div>
+  );
+}
+
 // Collapsible Section Component
 function CollapsibleSection({
   title,
@@ -468,6 +727,7 @@ export function HospitalEditor({
   const enableSlideshow = config.enableSlideshow || false;
   const slideshowSpeed = config.slideshowSpeed || 10000;
   const layoutConfig = config.layout || layout || "Advanced";
+  const galleryItems = config.galleryItems || [];
 
   // Handle basic field updates
   const handleFieldChange = (field: string, value: any) => {
@@ -582,9 +842,9 @@ export function HospitalEditor({
   return (
     <div className="space-b-8">
       {/* Layout Configuration */}
-      <div className="hidden">
+      <div className="">
         <CollapsibleSection title="🎛️ Layout Configuration" defaultOpen={true}>
-          <div className="space-y-3 hidden">
+          <div className="space-y-3">
             {/* Layout Selection */}
             <div>
               <label className="text-xs text-slate-400 mb-1 block">
@@ -720,151 +980,6 @@ export function HospitalEditor({
         <div className="space-y-3">
           <div>
             <label className="text-xs text-slate-400 mb-1 block">
-              Hospital Name
-            </label>
-            <Input
-              value={hospitalName}
-              onChange={(e) =>
-                handleFieldChange("hospitalName", e.target.value)
-              }
-              placeholder="MediTech Hospital"
-              className="bg-slate-700 border-slate-600 text-slate-50"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">Tagline</label>
-            <Input
-              value={tagline}
-              onChange={(e) => handleFieldChange("tagline", e.target.value)}
-              placeholder="Excellence in Healthcare Since 1995"
-              className="bg-slate-700 border-slate-600 text-slate-50"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">
-              Hospital Logo
-            </label>
-            <ImageUploader
-              images={hospitalLogo ? [hospitalLogo] : []}
-              onChange={(imgs) =>
-                handleFieldChange("hospitalLogo", imgs[0] || "")
-              }
-              maxImages={1}
-              userId={currentUserId}
-              displayId={displayId}
-              imageType="logo"
-              environment={environment}
-            />
-          </div>
-        </div>
-      </CollapsibleSection>
-
-      {/* Colors & Styling */}
-      <CollapsibleSection title="🎨 Colors & Styling">
-        <div className="grid grid-cols-3 gap-3">
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">
-              Primary Color
-            </label>
-            <div className="flex gap-2">
-              <Input
-                type="color"
-                value={primaryColor}
-                onChange={(e) =>
-                  handleFieldChange("primaryColor", e.target.value)
-                }
-                className="w-16 h-10 p-1 bg-slate-700 border-slate-600"
-              />
-              <Input
-                value={primaryColor}
-                onChange={(e) =>
-                  handleFieldChange("primaryColor", e.target.value)
-                }
-                className="flex-1 bg-slate-700 border-slate-600 text-slate-50 text-xs"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">
-              Secondary Color
-            </label>
-            <div className="flex gap-2">
-              <Input
-                type="color"
-                value={secondaryColor}
-                onChange={(e) =>
-                  handleFieldChange("secondaryColor", e.target.value)
-                }
-                className="w-16 h-10 p-1 bg-slate-700 border-slate-600"
-              />
-              <Input
-                value={secondaryColor}
-                onChange={(e) =>
-                  handleFieldChange("secondaryColor", e.target.value)
-                }
-                className="flex-1 bg-slate-700 border-slate-600 text-slate-50 text-xs"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">
-              Accent Color
-            </label>
-            <div className="flex gap-2">
-              <Input
-                type="color"
-                value={accentColor}
-                onChange={(e) =>
-                  handleFieldChange("accentColor", e.target.value)
-                }
-                className="w-16 h-10 p-1 bg-slate-700 border-slate-600"
-              />
-              <Input
-                value={accentColor}
-                onChange={(e) =>
-                  handleFieldChange("accentColor", e.target.value)
-                }
-                className="flex-1 bg-slate-700 border-slate-600 text-slate-50 text-xs"
-              />
-            </div>
-          </div>
-        </div>
-        <div className="mt-3">
-          <label className="text-xs text-slate-400 mb-1 block">
-            Background Image
-          </label>
-          <ImageUploader
-            images={backgroundImage ? [backgroundImage] : []}
-            onChange={(imgs) =>
-              handleFieldChange("backgroundImage", imgs[0] || "")
-            }
-            maxImages={1}
-            userId={currentUserId}
-            displayId={displayId}
-            imageType="background"
-            environment={environment}
-          />
-        </div>
-      </CollapsibleSection>
-
-      {/* Contact Information */}
-      <CollapsibleSection title="📞 Contact Information">
-        <div className="space-y-3">
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">
-              Emergency Contact
-            </label>
-            <Input
-              value={emergencyContact}
-              onChange={(e) =>
-                handleFieldChange("emergencyContact", e.target.value)
-              }
-              placeholder="911"
-              className="bg-slate-700 border-slate-600 text-slate-50"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">
               Department
             </label>
             <Input
@@ -907,6 +1022,83 @@ export function HospitalEditor({
               placeholder="Your Health, Our Priority"
               className="bg-slate-700 border-slate-600 text-slate-50"
             />
+          </div>
+        </div>
+      </CollapsibleSection>
+
+      {/* Gallery Images */}
+      <CollapsibleSection title="🖼️ Hospital Gallery Images">
+        <div className="space-y-3">
+          <p className="text-xs text-slate-400">
+            Add images with captions to showcase your hospital facilities,
+            patient care, and medical team.
+          </p>
+
+          {/* Preview and edit existing gallery items */}
+          {galleryItems.length > 0 && (
+            <div className="mb-4">
+              <label className="text-xs text-slate-400 font-medium block mb-2">
+                Current Gallery ({galleryItems.length} items)
+              </label>
+              <div className="grid grid-cols-2 gap-2 p-3 bg-slate-700/30 rounded-lg">
+                {galleryItems.map((item: any, idx: number) => (
+                  <div key={idx} className="relative group">
+                    {item.image && (
+                      <img
+                        src={item.image}
+                        alt={item.caption || `Gallery ${idx + 1}`}
+                        className="w-full h-24 object-cover rounded border border-slate-600"
+                      />
+                    )}
+                    {item.caption && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/70 p-1">
+                        <p className="text-xs text-white truncate">
+                          {item.caption}
+                        </p>
+                      </div>
+                    )}
+                    <button
+                      onClick={() => {
+                        const updated = galleryItems.filter(
+                          (_: any, i: number) => i !== idx
+                        );
+                        handleFieldChange("galleryItems", updated);
+                      }}
+                      className="absolute top-1 right-1 p-1 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                    >
+                      <X className="w-3 h-3 text-white" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            {/* Add new gallery item button */}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const updated = [...galleryItems, { image: "", caption: "" }];
+                handleFieldChange("galleryItems", updated);
+              }}
+              className="w-full border-slate-600 text-slate-300 bg-transparent hover:bg-slate-700"
+            >
+              <Plus className="w-3 h-3 mr-1" />
+              Add Gallery Image
+            </Button>
+          </div>
+
+          <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+            <p className="text-xs text-blue-400">
+              • 1 image: Full screen display
+              <br />
+              • 2 images: Stacked vertically
+              <br />
+              • 3 images: Large + 2 small layout
+              <br />• 4+ images: Auto-rotating slideshow (6 seconds each)
+            </p>
           </div>
         </div>
       </CollapsibleSection>
@@ -1014,220 +1206,6 @@ export function HospitalEditor({
           </div>
         </div>
       </CollapsibleSection>
-
-      {/* Appointments */}
-      <div className="hidden">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-            <span className="text-lg">📅</span> Appointments
-          </h3>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleAddAppointment}
-            className="border-slate-600 text-slate-300 h-7 bg-transparent hover:bg-slate-700"
-          >
-            <Plus className="w-3 h-3 mr-1" />
-            Add Appointment
-          </Button>
-        </div>
-        <div className="space-y-3">
-          {appointments.map((appointment: any, idx: number) => (
-            <div key={idx} className="bg-slate-700/50 p-3 rounded space-y-2">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-slate-400">
-                  Appointment #{idx + 1}
-                </span>
-              </div>
-              <Input
-                value={appointment.patientName}
-                onChange={(e) =>
-                  handleUpdateAppointment(idx, "patientName", e.target.value)
-                }
-                placeholder="Patient Name"
-                className="bg-slate-700 border-slate-600 text-slate-50 text-sm"
-              />
-              <Input
-                value={appointment.doctorName}
-                onChange={(e) =>
-                  handleUpdateAppointment(idx, "doctorName", e.target.value)
-                }
-                placeholder="Doctor Name"
-                className="bg-slate-700 border-slate-600 text-slate-50 text-sm"
-              />
-              <Input
-                value={appointment.specialty}
-                onChange={(e) =>
-                  handleUpdateAppointment(idx, "specialty", e.target.value)
-                }
-                placeholder="Specialty"
-                className="bg-slate-700 border-slate-600 text-slate-50 text-sm"
-              />
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-xs text-slate-400 mb-1 block">
-                    Date & Time
-                  </label>
-                  <Input
-                    type="datetime-local"
-                    value={isoToLocal(appointment.appointmentDate)}
-                    onChange={(e) => {
-                      handleUpdateAppointment(
-                        idx,
-                        "appointmentDate",
-                        localToISO(e.target.value)
-                      );
-                    }}
-                    className="bg-slate-700 border-slate-600 text-slate-50 text-sm"
-                  />
-                  <p className="text-xs text-slate-500 mt-1">
-                    Display: {formatTimeForDisplay(appointment.appointmentDate)}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-xs text-slate-400 mb-1 block">
-                    Room Number
-                  </label>
-                  <Input
-                    value={appointment.room}
-                    onChange={(e) =>
-                      handleUpdateAppointment(idx, "room", e.target.value)
-                    }
-                    placeholder="Room #"
-                    className="bg-slate-700 border-slate-600 text-slate-50 text-sm"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-xs text-slate-400 mb-1 block">
-                  Priority
-                </label>
-                <Select
-                  value={appointment.priority || "normal"}
-                  onValueChange={(val) =>
-                    handleUpdateAppointment(idx, "priority", val)
-                  }
-                >
-                  <SelectTrigger className="bg-slate-700 border-slate-600 text-slate-50 text-sm h-10">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="normal">Normal</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                    <SelectItem value="follow-up">Follow-up</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => handleRemoveAppointment(idx)}
-                className="w-full text-red-400 hover:bg-red-500/10 text-sm"
-              >
-                <Trash2 className="w-3 h-3 mr-1" />
-                Remove Appointment
-              </Button>
-            </div>
-          ))}
-          {appointments.length === 0 && (
-            <div className="text-center py-6 text-slate-500 text-sm">
-              No appointments added yet. Click "Add Appointment" to start.
-            </div>
-          )}
-        </div>
-      </div>
-
-      <hr className="border-slate-700" />
-
-      {/* Doctor Schedules (Right Panel) */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-            <span className="text-lg">📅</span> Today's Doctor Schedules
-          </h3>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleAddSchedule}
-            className="border-slate-600 text-slate-300 h-7 bg-transparent hover:bg-slate-700"
-          >
-            <Plus className="w-3 h-3 mr-1" />
-            Add Schedule
-          </Button>
-        </div>
-        <div className="space-y-3">
-          {doctorSchedules.map((schedule: any, idx: number) => (
-            <div key={idx} className="bg-slate-700/50 p-3 rounded space-y-2">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-slate-400">
-                  Schedule #{idx + 1}
-                </span>
-              </div>
-              <Input
-                value={schedule.name}
-                onChange={(e) =>
-                  handleUpdateSchedule(idx, "name", e.target.value)
-                }
-                placeholder="Doctor Name"
-                className="bg-slate-700 border-slate-600 text-slate-50 text-sm"
-              />
-              <Input
-                value={schedule.specialty}
-                onChange={(e) =>
-                  handleUpdateSchedule(idx, "specialty", e.target.value)
-                }
-                placeholder="Specialty"
-                className="bg-slate-700 border-slate-600 text-slate-50 text-sm"
-              />
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-xs text-slate-400 mb-1 block">
-                    Time
-                  </label>
-                  <Input
-                    type="time"
-                    value={formatTimeForInput(schedule.appointmentDate)}
-                    onChange={(e) =>
-                      handleUpdateSchedule(idx, "time", e.target.value)
-                    }
-                    className="bg-slate-700 border-slate-600 text-slate-50 text-sm"
-                  />
-                  <p className="text-xs text-slate-500 mt-1">
-                    Display: {formatTimeForDisplay(schedule.appointmentDate)}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-xs text-slate-400 mb-1 block">
-                    Room
-                  </label>
-                  <Input
-                    value={schedule.room}
-                    onChange={(e) =>
-                      handleUpdateSchedule(idx, "room", e.target.value)
-                    }
-                    placeholder="Room #"
-                    className="bg-slate-700 border-slate-600 text-slate-50 text-sm"
-                  />
-                </div>
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => handleRemoveSchedule(idx)}
-                className="w-full text-red-400 hover:bg-red-500/10 text-sm"
-              >
-                <Trash2 className="w-3 h-3 mr-1" />
-                Remove Schedule
-              </Button>
-            </div>
-          ))}
-          {doctorSchedules.length === 0 && (
-            <div className="text-center py-6 text-slate-500 text-sm">
-              No schedules added yet. Click "Add Schedule" to start.
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
