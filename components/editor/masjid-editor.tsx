@@ -1308,7 +1308,7 @@ export default function MasjidEditorPanel({
             <input
               type="range"
               min="10"
-              max="600"
+              max="1200"
               step="10"
               value={customization.prayerInstructionDuration}
               onChange={(e) =>

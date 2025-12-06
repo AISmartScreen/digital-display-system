@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import FlipClockWrapper from "./components/masjid/FlipClockWrapper";
+import { PrayerInstructions } from "./components/masjid/PrayerInstructions";
 
 interface PrayerTimes {
   fajr: string;
@@ -64,6 +65,9 @@ export function MasjidTemplateAuthentic({
 
   const [prayerInstructionDuration, setPrayerInstructionDuration] =
     useState(10);
+
+  const [instructionsRemainingTime, setInstructionsRemainingTime] = useState(0);
+
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -98,7 +102,6 @@ export function MasjidTemplateAuthentic({
     fetchHijriDate();
   }, []);
 
-  // Check if Iqamah time has passed and show instructions
   useEffect(() => {
     const checkInstructions = () => {
       // Only check if image is provided and duration is greater than 0
@@ -108,6 +111,7 @@ export function MasjidTemplateAuthentic({
       ) {
         setShowInstructions(false);
         setInstructionsPrayer("");
+        setInstructionsRemainingTime(0); // Reset the remaining time
         return;
       }
 
@@ -150,19 +154,24 @@ export function MasjidTemplateAuthentic({
 
         const timeSinceIqamah = currentMinutes - iqamahMinutes;
 
-        // Show instructions if within the duration window after Iqamah
         // Convert duration from seconds to minutes for comparison
         const durationInMinutes = customization.prayerInstructionDuration / 60;
 
         if (timeSinceIqamah >= 0 && timeSinceIqamah <= durationInMinutes) {
+          // Calculate remaining time in milliseconds
+          const remainingTimeInMs =
+            (durationInMinutes - timeSinceIqamah) * 60 * 1000;
+
           setShowInstructions(true);
           setInstructionsPrayer(prayer.name);
+          setInstructionsRemainingTime(Math.max(0, remainingTimeInMs));
           return;
         }
       }
 
       setShowInstructions(false);
       setInstructionsPrayer("");
+      setInstructionsRemainingTime(0);
     };
 
     checkInstructions();
@@ -456,6 +465,22 @@ export function MasjidTemplateAuthentic({
     fontFamily: `'${customization.font}', 'Amiri', 'Scheherazade New', serif`,
     textShadow: "2px 2px 8px rgba(0,0,0,0.9)",
   };
+
+  // If showing instructions, ONLY show the instructions component
+  if (showInstructions && customization.prayerInstructionImage) {
+    return (
+      <PrayerInstructions
+        imageUrl={customization.prayerInstructionImage}
+        accentColor={customization.colors.accent}
+        duration={instructionsRemainingTime}
+        onClose={() => {
+          setShowInstructions(false);
+          setInstructionsPrayer("");
+          setInstructionsRemainingTime(0);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 w-full h-full overflow-hidden">
