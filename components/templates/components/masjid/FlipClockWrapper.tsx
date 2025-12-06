@@ -1,4 +1,3 @@
-// FlipClockWrapper.tsx
 import React, { useEffect, useRef } from "react";
 import { flipClock, clock, theme, css as fcCss } from "flipclock";
 
@@ -30,6 +29,15 @@ const FlipClockWrapper: React.FC = () => {
         color: #666 !important;
         font-size: 32px !important;
         font-weight: 700 !important;
+        animation: blink 1s step-start infinite !important;
+      }
+      @keyframes blink {
+        0%, 49% {
+          opacity: 1;
+        }
+        50%, 100% {
+          opacity: 0;
+        }
       }
     `;
 

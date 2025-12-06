@@ -20,6 +20,7 @@ interface HospitalCustomization {
   slideshowSpeed?: number;
   enableSlideshow?: boolean;
   doctors?: Doctor[];
+  galleryImages?: string[];
 }
 
 interface HospitalTemplateAuthenticProps {
@@ -42,7 +43,7 @@ export default function HospitalTemplateAuthentic({
     primaryColor: customization.primaryColor || "#06b6d4",
     secondaryColor: customization.secondaryColor || "#14b8a6",
     accentColor: customization.accentColor || "#f59e0b",
-    slideSpeed: customization.slideSpeed || 20, // Slightly slower for larger cards
+    slideSpeed: customization.slideSpeed || 20,
     slideshowSpeed: customization.slideshowSpeed || 10000,
     enableSlideshow: customization.enableSlideshow || false,
   };
@@ -77,17 +78,28 @@ export default function HospitalTemplateAuthentic({
           },
         ];
 
+  // Default gallery images
+  const galleryImages =
+    customization.galleryImages && customization.galleryImages.length > 0
+      ? customization.galleryImages
+      : [
+          "https://images.unsplash.com/photo-1538108149393-fbbd81895907?w=800&h=600&fit=crop",
+          "https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=400&h=300&fit=crop",
+          "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=400&h=300&fit=crop",
+          "https://images.unsplash.com/photo-1504813184591-01572f98c85f?w=800&h=600&fit=crop",
+          "https://images.unsplash.com/photo-1666214280557-f1b5022eb634?w=800&h=600&fit=crop",
+        ];
+
   const [currentTime, setCurrentTime] = useState(new Date());
   const [scrollPosition, setScrollPosition] = useState(0);
   const [currentBgIndex, setCurrentBgIndex] = useState(0);
+  const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0);
   const animationRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
 
-  // Default placeholder image
   const defaultDoctorImage =
     "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=400&fit=crop";
 
-  // Determine which images to use for slideshow
   const bgImages =
     settings.enableSlideshow &&
     settings.backgroundImages &&
@@ -102,16 +114,14 @@ export default function HospitalTemplateAuthentic({
     return () => clearInterval(timer);
   }, []);
 
-  // Smooth animation using requestAnimationFrame
   useEffect(() => {
     const animate = (timestamp: number) => {
       if (!lastTimeRef.current) lastTimeRef.current = timestamp;
       const delta = timestamp - lastTimeRef.current;
       lastTimeRef.current = timestamp;
 
-      // Calculate smooth scroll based on time elapsed
       setScrollPosition((prev) => {
-        const speed = settings.slideSpeed / 80; // Adjusted for larger cards
+        const speed = settings.slideSpeed / 80;
         const newPosition = prev + (speed * delta) / 16.67;
         return newPosition;
       });
@@ -126,7 +136,6 @@ export default function HospitalTemplateAuthentic({
     };
   }, [settings.slideSpeed]);
 
-  // Background slideshow
   useEffect(() => {
     if (!settings.enableSlideshow || bgImages.length <= 1) return;
 
@@ -136,6 +145,17 @@ export default function HospitalTemplateAuthentic({
 
     return () => clearInterval(interval);
   }, [settings.enableSlideshow, bgImages.length, settings.slideshowSpeed]);
+
+  // Gallery slideshow - only if more than 3 images
+  useEffect(() => {
+    if (galleryImages.length <= 3) return;
+
+    const interval = setInterval(() => {
+      setCurrentGalleryIndex((prev) => (prev + 1) % galleryImages.length);
+    }, 6000); // 2 seconds per image
+
+    return () => clearInterval(interval);
+  }, [galleryImages.length]);
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString("en-US", {
@@ -155,10 +175,164 @@ export default function HospitalTemplateAuthentic({
     });
   };
 
-  // Duplicate doctors array for seamless loop
   const duplicatedDoctors = [...doctors, ...doctors, ...doctors, ...doctors];
-  const itemHeight = 220; // Increased card height for larger images
+  const itemHeight = 220;
   const totalHeight = doctors.length * itemHeight;
+
+  // Determine gallery layout based on image count
+  const renderGallery = () => {
+    if (galleryImages.length === 1) {
+      // Single image - full height
+      return (
+        <div
+          className="h-full relative overflow-hidden rounded-3xl shadow-2xl border-2"
+          style={{ borderColor: `${settings.accentColor}40` }}
+        >
+          <img
+            src={galleryImages[0]}
+            alt="Hospital"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-8">
+            <h3 className="text-4xl font-black text-white mb-2 drop-shadow-2xl">
+              Our Facility
+            </h3>
+            <p className="text-xl text-white/90 font-medium drop-shadow-lg">
+              Excellence in healthcare
+            </p>
+          </div>
+        </div>
+      );
+    } else if (galleryImages.length === 2) {
+      // Two images - stacked vertically
+      return (
+        <div className="h-full flex flex-col gap-6">
+          {galleryImages.map((img, idx) => (
+            <div
+              key={idx}
+              className="flex-1 relative overflow-hidden rounded-3xl shadow-2xl border-2"
+              style={{ borderColor: `${settings.accentColor}40` }}
+            >
+              <img
+                src={img}
+                alt={`Hospital ${idx + 1}`}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-6">
+                <p className="text-3xl font-bold text-white drop-shadow-lg">
+                  {idx === 0 ? "Our Facilities" : "Patient Care"}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    } else {
+      // Three or more images - one large (rotating), two small
+      const displayImages =
+        galleryImages.length === 3
+          ? galleryImages
+          : [
+              galleryImages[currentGalleryIndex],
+              galleryImages[(currentGalleryIndex + 1) % galleryImages.length],
+              galleryImages[(currentGalleryIndex + 2) % galleryImages.length],
+            ];
+
+      return (
+        <>
+          <div
+            className="h-2/3 relative overflow-hidden rounded-3xl shadow-2xl border-2"
+            style={{ borderColor: `${settings.accentColor}40` }}
+          >
+            {/* Rotating large image with fade effect */}
+            {galleryImages.length > 3 ? (
+              galleryImages.map((img, idx) => (
+                <div
+                  key={idx}
+                  className="absolute inset-0 transition-opacity duration-1000"
+                  style={{
+                    opacity: idx === currentGalleryIndex ? 1 : 0,
+                    zIndex: idx === currentGalleryIndex ? 1 : 0,
+                  }}
+                >
+                  <img
+                    src={img}
+                    alt={`Hospital ${idx + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ))
+            ) : (
+              <img
+                src={displayImages[0]}
+                alt="Hospital Facility"
+                className="w-full h-full object-cover"
+              />
+            )}
+
+            <div
+              className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"
+              style={{ zIndex: 2 }}
+            />
+            <div
+              className="absolute bottom-0 left-0 right-0 p-8"
+              style={{ zIndex: 3 }}
+            >
+              <h3 className="text-4xl font-black text-white mb-2 drop-shadow-2xl">
+                State-of-the-Art Facilities
+              </h3>
+              <p className="text-xl text-white/90 font-medium drop-shadow-lg">
+                Modern equipment & compassionate care
+              </p>
+            </div>
+
+            {/* Slideshow indicators for 4+ images */}
+            {galleryImages.length > 3 && (
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 z-10">
+                {galleryImages.map((_, idx) => (
+                  <div
+                    key={idx}
+                    className="w-2 h-2 rounded-full transition-all duration-300"
+                    style={{
+                      backgroundColor:
+                        idx === currentGalleryIndex
+                          ? settings.accentColor
+                          : "rgba(255,255,255,0.5)",
+                      width: idx === currentGalleryIndex ? "24px" : "8px",
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex-1 flex gap-6">
+            {displayImages.slice(1, 3).map((img, idx) => (
+              <div
+                key={idx}
+                className="flex-1 relative overflow-hidden rounded-2xl shadow-xl border-2 group hover:scale-[1.02] transition-transform duration-300"
+                style={{ borderColor: `${settings.accentColor}40` }}
+              >
+                <img
+                  src={img}
+                  alt={`Hospital ${idx + 2}`}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-5">
+                  <p className="text-2xl font-bold text-white drop-shadow-lg">
+                    {idx === 0 ? "Expert Patient Care" : "Dedicated Team"}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      );
+    }
+  };
 
   return (
     <div
@@ -178,7 +352,6 @@ export default function HospitalTemplateAuthentic({
             }}
           />
         ))}
-        {/* Subtle overlay for better text readability */}
         <div
           className="absolute inset-0 bg-black/20 backdrop-blur-sm"
           style={{ zIndex: 2 }}
@@ -190,7 +363,6 @@ export default function HospitalTemplateAuthentic({
         {/* Header with Background */}
         <div className="bg-black/50 backdrop-blur-xl border-b border-white/20 shadow-2xl">
           <div className="flex items-center justify-between p-6">
-            {/* Left: Logo and Name */}
             <div className="flex items-center gap-5">
               {settings.hospitalLogo && (
                 <img
@@ -206,7 +378,6 @@ export default function HospitalTemplateAuthentic({
               </div>
             </div>
 
-            {/* Right: Time and Date */}
             <div className="text-right">
               <div
                 className="text-7xl font-black drop-shadow-2xl tracking-tight"
@@ -240,7 +411,6 @@ export default function HospitalTemplateAuthentic({
                   "linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)",
               }}
             >
-              {/* Decorative gradient overlay */}
               <div
                 className="absolute inset-0 opacity-10"
                 style={{
@@ -263,7 +433,6 @@ export default function HospitalTemplateAuthentic({
                     className="mb-5"
                     style={{ height: `${itemHeight}px` }}
                   >
-                    {/* Card for each doctor */}
                     <div
                       className="h-full rounded-2xl p-5 shadow-xl border-2 backdrop-blur-md transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl group"
                       style={{
@@ -272,10 +441,8 @@ export default function HospitalTemplateAuthentic({
                       }}
                     >
                       <div className="flex items-center h-full gap-6">
-                        {/* Doctor Image - Much larger and prominent */}
                         <div className="relative flex-shrink-0">
                           <div className="relative w-40 h-40 rounded-2xl overflow-hidden shadow-2xl group-hover:shadow-3xl transition-all duration-500">
-                            {/* Background gradient for image container */}
                             <div
                               className="absolute inset-0 opacity-60 blur-sm"
                               style={{
@@ -283,7 +450,6 @@ export default function HospitalTemplateAuthentic({
                               }}
                             />
 
-                            {/* Doctor Image */}
                             <img
                               src={doctor.image || defaultDoctorImage}
                               alt={doctor.name}
@@ -293,7 +459,6 @@ export default function HospitalTemplateAuthentic({
                               }}
                             />
 
-                            {/* Decorative overlay */}
                             <div
                               className="absolute inset-0 rounded-2xl opacity-20 group-hover:opacity-30 transition-opacity duration-500"
                               style={{
@@ -301,7 +466,6 @@ export default function HospitalTemplateAuthentic({
                               }}
                             />
 
-                            {/* Experience badge - Larger and more prominent */}
                             {doctor.experience && (
                               <div
                                 className="absolute bottom-3 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-full text-sm font-bold shadow-2xl whitespace-nowrap z-20"
@@ -319,9 +483,7 @@ export default function HospitalTemplateAuthentic({
                           </div>
                         </div>
 
-                        {/* Doctor info - Stacked vertically */}
                         <div className="flex-1 space-y-4">
-                          {/* Name with accent line */}
                           <div className="space-y-2">
                             <div className="flex items-center gap-3">
                               <div
@@ -343,7 +505,6 @@ export default function HospitalTemplateAuthentic({
                             </div>
                           </div>
 
-                          {/* Specialty - More prominent */}
                           {doctor.specialty && (
                             <div className="space-y-1">
                               <div className="flex items-center gap-3">
@@ -368,7 +529,6 @@ export default function HospitalTemplateAuthentic({
                             </div>
                           )}
 
-                          {/* Decorative separator */}
                           <div className="flex items-center gap-2 pt-2">
                             <div
                               className="flex-1 h-0.5 rounded-full opacity-40"
@@ -390,28 +550,6 @@ export default function HospitalTemplateAuthentic({
                               }}
                             />
                           </div>
-
-                          {/* Status indicator - Simplified */}
-                          {/* <div className="pt-2">
-                            <div className="inline-flex items-center gap-3">
-                              <div
-                                className="w-4 h-4 rounded-full animate-pulse"
-                                style={{
-                                  backgroundColor: "#10b981",
-                                  boxShadow: `0 0 10px #10b981`,
-                                }}
-                              />
-                              <p
-                                className="text-xl font-semibold"
-                                style={{
-                                  color: "#10b981",
-                                  textShadow: "0 1px 3px rgba(0,0,0,0.5)",
-                                }}
-                              >
-                                Available for Consultation
-                              </p>
-                            </div>
-                          </div> */}
                         </div>
                       </div>
                     </div>
@@ -419,25 +557,36 @@ export default function HospitalTemplateAuthentic({
                 ))}
               </div>
 
-              {/* Fade edges for smoother visual effect */}
               <div
-                className="absolute top-0 left-0 right-0 h-20 pointer-events-none"
+                className="absolute top-0 left-0 right-0 h-20 pointer-events-none z-20"
                 style={{
                   background: `linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 100%)`,
                 }}
               />
               <div
-                className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none"
+                className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none z-20"
                 style={{
                   background: `linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%)`,
+                }}
+              />
+              <div
+                className="absolute top-0 left-0 bottom-0 w-16 pointer-events-none z-20"
+                style={{
+                  background: `linear-gradient(to right, rgba(0,0,0,0.9) 0%, transparent 100%)`,
+                }}
+              />
+              <div
+                className="absolute top-0 right-0 bottom-0 w-16 pointer-events-none z-20"
+                style={{
+                  background: `linear-gradient(to left, rgba(0,0,0,0.9) 0%, transparent 100%)`,
                 }}
               />
             </div>
           </div>
 
-          {/* Right Column - Empty for future content */}
-          <div className="flex-1">
-            {/* Empty space reserved for future content */}
+          {/* Right Column - Hospital Portfolio Gallery */}
+          <div className="flex-1 flex flex-col py-10 gap-6 overflow-hidden">
+            {renderGallery()}
           </div>
         </div>
       </div>

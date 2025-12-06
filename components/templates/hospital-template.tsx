@@ -1,13 +1,23 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Heart, Award, Calendar } from "lucide-react";
 import AppointmentReminders from "./components/hospital/AppointmentReminders";
 import { ScheduleSlider } from "./components/hospital/ScheduleSlider";
+import HospitalTemplateAuthentic from "./hospital-template-authentic";
+
+interface Doctor {
+  name: string;
+  specialty: string;
+  experience: string;
+  image: string;
+  available: string;
+}
 
 interface HospitalCustomization {
   hospitalName: string;
   tagline: string;
   hospitalLogo: string;
   backgroundImage: string;
+  backgroundImages: string[];
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
@@ -20,13 +30,9 @@ interface HospitalCustomization {
   rightComponent: "doctors" | "appointments" | "schedules";
   enableSlideshow: boolean;
   slideshowSpeed: number;
-  doctors: Array<{
-    name: string;
-    specialty: string;
-    experience: string;
-    image: string;
-    available: string;
-  }>;
+  slideSpeed: number;
+  layout: "Advanced" | "Authentic";
+  doctors: Doctor[];
   appointments: Array<{
     id: string;
     patientName: string;
@@ -51,7 +57,8 @@ interface HospitalTemplateProps {
   backgroundStyle: React.CSSProperties;
 }
 
-export function HospitalTemplate({
+// Advanced Template Component (the original one)
+function HospitalTemplateAdvanced({
   customization,
   backgroundStyle,
 }: HospitalTemplateProps) {
@@ -417,5 +424,45 @@ export function HospitalTemplate({
         </div>
       </div>
     </div>
+  );
+}
+
+// Main HospitalTemplate component that switches between layouts
+export function HospitalTemplate({
+  customization,
+  backgroundStyle,
+}: HospitalTemplateProps) {
+  const layout = customization.layout || "Advanced";
+
+  if (layout === "Authentic") {
+    // Transform customization to match the authentic template interface
+    const authenticCustomization = {
+      hospitalName: customization.hospitalName,
+      hospitalLogo: customization.hospitalLogo,
+      backgroundImage: customization.backgroundImage,
+      backgroundImages: customization.backgroundImages || [],
+      primaryColor: customization.primaryColor,
+      secondaryColor: customization.secondaryColor,
+      accentColor: customization.accentColor,
+      slideSpeed: customization.slideSpeed || 20,
+      slideshowSpeed: customization.slideshowSpeed || 10000,
+      enableSlideshow: customization.enableSlideshow || false,
+      doctors: customization.doctors || [],
+    };
+
+    return (
+      <HospitalTemplateAuthentic
+        customization={authenticCustomization}
+        backgroundStyle={backgroundStyle}
+      />
+    );
+  }
+
+  // Default to Advanced layout
+  return (
+    <HospitalTemplateAdvanced
+      customization={customization}
+      backgroundStyle={backgroundStyle}
+    />
   );
 }

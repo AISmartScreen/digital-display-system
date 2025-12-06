@@ -580,110 +580,140 @@ export function HospitalEditor({
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-b-8">
       {/* Layout Configuration */}
-      <CollapsibleSection title="🎛️ Layout Configuration" defaultOpen={true}>
-        <div className="space-y-3">
-          {/* Layout Selection */}
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">
-              Display Layout
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { value: "Authentic", icon: "🩺", label: "Authentic" },
-                { value: "Advanced", icon: "🏥", label: "Advanced" },
-              ].map((layoutOption) => (
-                <button
-                  key={layoutOption.value}
-                  onClick={() =>
-                    handleFieldChange("layout", layoutOption.value)
-                  }
-                  className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                    layoutConfig === layoutOption.value
-                      ? "border-green-500 bg-green-500/20 text-green-400"
-                      : "border-slate-700 text-slate-400 hover:border-slate-600 hover:bg-slate-700/50"
-                  }`}
-                >
-                  <div className="text-xl mb-1">{layoutOption.icon}</div>
-                  <div className="text-xs">{layoutOption.label}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">
-              Left Panel Component
-            </label>
-            <Select
-              value={leftComponent}
-              onValueChange={(val) => handleFieldChange("leftComponent", val)}
-            >
-              <SelectTrigger className="bg-slate-700 border-slate-600 text-slate-50">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="doctors">👨‍⚕️ Featured Doctors</SelectItem>
-                <SelectItem value="appointments">📅 Appointments</SelectItem>
-                <SelectItem value="schedules">🗓️ Doctor Schedules</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">
-              Right Panel Component
-            </label>
-            <Select
-              value={rightComponent}
-              onValueChange={(val) => handleFieldChange("rightComponent", val)}
-            >
-              <SelectTrigger className="bg-slate-700 border-slate-600 text-slate-50">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="doctors">👨‍⚕️ Featured Doctors</SelectItem>
-                <SelectItem value="appointments">📅 Appointments</SelectItem>
-                <SelectItem value="schedules">🗓️ Doctor Schedules</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-2 p-3 bg-slate-700/50 rounded-lg">
-            <input
-              type="checkbox"
-              checked={enableSlideshow}
-              onChange={(e) =>
-                handleFieldChange("enableSlideshow", e.target.checked)
-              }
-              className="w-4 h-4"
-            />
-            <label className="text-sm text-slate-300">
-              Enable Slideshow (Auto-rotate components)
-            </label>
-          </div>
-          {enableSlideshow && (
+      <div className="hidden">
+        <CollapsibleSection title="🎛️ Layout Configuration" defaultOpen={true}>
+          <div className="space-y-3 hidden">
+            {/* Layout Selection */}
             <div>
               <label className="text-xs text-slate-400 mb-1 block">
-                Slideshow Speed (milliseconds)
+                Display Layout
               </label>
-              <Input
-                type="number"
-                value={slideshowSpeed}
-                onChange={(e) =>
-                  handleFieldChange("slideshowSpeed", parseInt(e.target.value))
-                }
-                min="5000"
-                max="60000"
-                step="1000"
-                className="bg-slate-700 border-slate-600 text-slate-50"
-              />
-              <p className="text-xs text-slate-500 mt-1">
-                Current: {slideshowSpeed / 1000} seconds per component
-              </p>
+
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: "Authentic", icon: "🩺", label: "Authentic" },
+                  { value: "Advanced", icon: "🏥", label: "Advanced" },
+                ].map((layoutOption) => (
+                  <button
+                    key={layoutOption.value}
+                    onClick={() =>
+                      handleFieldChange("layout", layoutOption.value)
+                    }
+                    className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                      layoutConfig === layoutOption.value
+                        ? "border-green-500 bg-green-500/20 text-green-400"
+                        : "border-slate-700 text-slate-400 hover:border-slate-600 hover:bg-slate-700/50"
+                    }`}
+                  >
+                    <div className="text-xl mb-1">{layoutOption.icon}</div>
+                    <div className="text-xs">{layoutOption.label}</div>
+                  </button>
+                ))}
+              </div>
             </div>
-          )}
-        </div>
-      </CollapsibleSection>
+
+            {/* Only show these settings if layout is NOT Authentic */}
+            {layoutConfig !== "Authentic" && (
+              <>
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">
+                    Left Panel Component
+                  </label>
+                  <Select
+                    value={leftComponent}
+                    onValueChange={(val) =>
+                      handleFieldChange("leftComponent", val)
+                    }
+                  >
+                    <SelectTrigger className="bg-slate-700 border-slate-600 text-slate-50">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="doctors">
+                        👨‍⚕️ Featured Doctors
+                      </SelectItem>
+                      <SelectItem value="appointments">
+                        📅 Appointments
+                      </SelectItem>
+                      <SelectItem value="schedules">
+                        🗓️ Doctor Schedules
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">
+                    Right Panel Component
+                  </label>
+                  <Select
+                    value={rightComponent}
+                    onValueChange={(val) =>
+                      handleFieldChange("rightComponent", val)
+                    }
+                  >
+                    <SelectTrigger className="bg-slate-700 border-slate-600 text-slate-50">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="doctors">
+                        👨‍⚕️ Featured Doctors
+                      </SelectItem>
+                      <SelectItem value="appointments">
+                        📅 Appointments
+                      </SelectItem>
+                      <SelectItem value="schedules">
+                        🗓️ Doctor Schedules
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-2 p-3 bg-slate-700/50 rounded-lg">
+                  <input
+                    type="checkbox"
+                    checked={enableSlideshow}
+                    onChange={(e) =>
+                      handleFieldChange("enableSlideshow", e.target.checked)
+                    }
+                    className="w-4 h-4"
+                  />
+                  <label className="text-sm text-slate-300">
+                    Enable Slideshow (Auto-rotate components)
+                  </label>
+                </div>
+
+                {enableSlideshow && (
+                  <div>
+                    <label className="text-xs text-slate-400 mb-1 block">
+                      Slideshow Speed (milliseconds)
+                    </label>
+                    <Input
+                      type="number"
+                      value={slideshowSpeed}
+                      onChange={(e) =>
+                        handleFieldChange(
+                          "slideshowSpeed",
+                          parseInt(e.target.value)
+                        )
+                      }
+                      min="5000"
+                      max="60000"
+                      step="1000"
+                      className="bg-slate-700 border-slate-600 text-slate-50"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">
+                      Current: {slideshowSpeed / 1000} seconds per component
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </CollapsibleSection>
+      </div>
 
       {/* Hospital Branding */}
       <CollapsibleSection title="🏥 Hospital Branding">
@@ -986,7 +1016,7 @@ export function HospitalEditor({
       </CollapsibleSection>
 
       {/* Appointments */}
-      <div>
+      <div className="hidden">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
             <span className="text-lg">📅</span> Appointments

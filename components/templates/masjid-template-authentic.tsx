@@ -100,10 +100,21 @@ export function MasjidTemplateAuthentic({
     }
   };
 
+  // Convert 24-hour HH:MM to 12-hour format (no AM/PM)
+  const to12Hour = (time: string) => {
+    let [h, m] = time.split(":").map(Number);
+    let hour12 = h % 12;
+    if (hour12 === 0) hour12 = 12;
+    return `${hour12.toString().padStart(2, "0")}:${m
+      .toString()
+      .padStart(2, "0")}`;
+  };
+
   const getNextPrayer = () => {
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
+    // Prayer list
     const prayers = [
       {
         name: "fajr",
@@ -132,6 +143,7 @@ export function MasjidTemplateAuthentic({
       },
     ];
 
+    // Find next prayer
     for (const prayer of prayers) {
       const [hours, minutes] = prayer.time.split(":").map(Number);
       const prayerTime = hours * 60 + minutes;
@@ -140,18 +152,21 @@ export function MasjidTemplateAuthentic({
       if (iqamahTime > currentMinutes) {
         const targetDate = new Date();
         targetDate.setHours(Math.floor(iqamahTime / 60), iqamahTime % 60, 0, 0);
+
         return {
           name: prayer.name,
           time: targetDate,
-          adhan: prayer.time,
+          adhan: to12Hour(prayer.time), // <-- 12-hour output
           offset: prayer.offset,
         };
       }
     }
 
+    // No more prayers today → next day Fajr
     const [hours, minutes] = customization.prayerTimes.fajr
       .split(":")
       .map(Number);
+
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() + 1);
     targetDate.setHours(
@@ -160,20 +175,27 @@ export function MasjidTemplateAuthentic({
       0,
       0
     );
+
     return {
       name: "fajr",
       time: targetDate,
-      adhan: customization.prayerTimes.fajr,
+      adhan: to12Hour(customization.prayerTimes.fajr), // <-- 12-hour output
       offset: customization.iqamahOffsets.fajr,
     };
   };
 
   const calculateIqamahTime = (adhanTime: string, offset: number) => {
     const [hours, minutes] = adhanTime.split(":").map(Number);
+
     const totalMinutes = hours * 60 + minutes + offset;
-    const iqamahHours = Math.floor(totalMinutes / 60) % 24;
+    const iqamahHours24 = Math.floor(totalMinutes / 60) % 24;
     const iqamahMinutes = totalMinutes % 60;
-    return `${iqamahHours.toString().padStart(2, "0")}:${iqamahMinutes
+
+    // Convert 24h → 12h (1–12)
+    let iqamahHours12 = iqamahHours24 % 12;
+    if (iqamahHours12 === 0) iqamahHours12 = 12;
+
+    return `${iqamahHours12.toString().padStart(2, "0")}:${iqamahMinutes
       .toString()
       .padStart(2, "0")}`;
   };
@@ -300,42 +322,42 @@ export function MasjidTemplateAuthentic({
     {
       name: "Fajr",
       nameAr: "الفجر",
-      adhan: customization.prayerTimes.fajr,
+      adhan: to12Hour(customization.prayerTimes.fajr),
       offset: customization.iqamahOffsets.fajr,
       icon: "🌙",
     },
     {
       name: "Sunrise",
       nameAr: "الشروق",
-      adhan: calculateSunriseTime(),
+      adhan: to12Hour(calculateSunriseTime()), // sunrise also converted
       offset: 0,
       icon: "🌅",
     },
     {
       name: "Dhuhr",
       nameAr: "الظهر",
-      adhan: customization.prayerTimes.dhuhr,
+      adhan: to12Hour(customization.prayerTimes.dhuhr),
       offset: customization.iqamahOffsets.dhuhr,
       icon: "☀️",
     },
     {
       name: "Asr",
       nameAr: "العصر",
-      adhan: customization.prayerTimes.asr,
+      adhan: to12Hour(customization.prayerTimes.asr),
       offset: customization.iqamahOffsets.asr,
       icon: "🌤️",
     },
     {
       name: "Maghrib",
       nameAr: "المغرب",
-      adhan: customization.prayerTimes.maghrib,
+      adhan: to12Hour(customization.prayerTimes.maghrib),
       offset: customization.iqamahOffsets.maghrib,
       icon: "🌆",
     },
     {
       name: "Isha",
       nameAr: "العشاء",
-      adhan: customization.prayerTimes.isha,
+      adhan: to12Hour(customization.prayerTimes.isha),
       offset: customization.iqamahOffsets.isha,
       icon: "✨",
     },
