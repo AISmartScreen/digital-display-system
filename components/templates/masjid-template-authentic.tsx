@@ -615,13 +615,13 @@ export function MasjidTemplateAuthentic({
             </span>
           </div>
         </div>
-        <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-8 py-2 pt-0">
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center -pt-12 px-8 py-2 pt-0">
           <FlipClockWrapper />
           {/* <FlipClockWrapper currentTime={currentTime} /> */}
 
-          <div className="w-full max-w-8xl relative -mb-12">
+          <div className="w-full max-w-8xl relative mt-12">
             {!countdownState && (
-              <div className="grid grid-cols-2 gap-12">
+              <div className="grid grid-cols-2 gap-12 -mb-12">
                 <div className="flex flex-col items-center justify-center py-2 px-8">
                   <h3
                     className="text-8xl font-black tracking-tight mb-0"
@@ -633,7 +633,7 @@ export function MasjidTemplateAuthentic({
                     {nextPrayer.name.toUpperCase()}
                   </h3>
                   <div
-                    className="text-[16rem] font-black leading-none"
+                    className="text-[15rem] font-black leading-none"
                     style={{
                       fontFamily: "'Oxanium', monospace",
                       fontWeight: 1000,
@@ -645,6 +645,7 @@ export function MasjidTemplateAuthentic({
                         4px 4px 16px rgba(0,0,0,0.8)
                       `,
                       letterSpacing: "0.1em",
+                      height: "210px",
                     }}
                   >
                     {nextPrayer.adhan}
@@ -659,7 +660,7 @@ export function MasjidTemplateAuthentic({
                     IQAMAH
                   </h3>
                   <div
-                    className="text-[16rem] font-black leading-none"
+                    className="text-[15rem] font-black leading-none"
                     style={{
                       fontFamily: "'Oxanium', monospace",
                       fontWeight: 1000,
@@ -671,6 +672,7 @@ export function MasjidTemplateAuthentic({
                         4px 4px 16px rgba(0,0,0,0.8)
                       `,
                       letterSpacing: "0.1em",
+                      height: "210px",
                     }}
                   >
                     {calculateIqamahTime(nextPrayer.adhan, nextPrayer.offset)}
@@ -737,7 +739,7 @@ export function MasjidTemplateAuthentic({
                     {countdownState.type === "adhan" ? "ADHAN IN" : "IQAMAH IN"}
                   </h3>
                   <div
-                    className="text-[16rem] font-black leading-none"
+                    className="text-[15rem] font-black leading-none"
                     style={{
                       fontFamily: "'Oxanium', monospace",
                       fontWeight: 1000,
