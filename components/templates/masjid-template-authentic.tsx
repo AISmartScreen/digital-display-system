@@ -467,7 +467,8 @@ export function MasjidTemplateAuthentic({
   };
 
   // If showing instructions, ONLY show the instructions component
-  if (showInstructions && customization.prayerInstructionImage) {
+  // if (showInstructions && customization.prayerInstructionImage) {
+  if (true) {
     return (
       <PrayerInstructions
         imageUrl={customization.prayerInstructionImage}
