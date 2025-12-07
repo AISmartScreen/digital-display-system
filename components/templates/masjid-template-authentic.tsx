@@ -633,7 +633,7 @@ export function MasjidTemplateAuthentic({
                     {nextPrayer.name.toUpperCase()}
                   </h3>
                   <div
-                    className="text-[18rem] font-black leading-none"
+                    className="text-[14rem] font-black leading-none"
                     style={{
                       fontFamily: "'Oxanium', monospace",
                       fontWeight: 1000,
@@ -659,7 +659,7 @@ export function MasjidTemplateAuthentic({
                     IQAMAH
                   </h3>
                   <div
-                    className="text-[18rem] font-black leading-none"
+                    className="text-[14rem] font-black leading-none"
                     style={{
                       fontFamily: "'Oxanium', monospace",
                       fontWeight: 1000,
@@ -737,7 +737,7 @@ export function MasjidTemplateAuthentic({
                     {countdownState.type === "adhan" ? "ADHAN IN" : "IQAMAH IN"}
                   </h3>
                   <div
-                    className="text-[20rem] font-black leading-none"
+                    className="text-[16rem] font-black leading-none"
                     style={{
                       fontFamily: "'Oxanium', monospace",
                       fontWeight: 1000,
