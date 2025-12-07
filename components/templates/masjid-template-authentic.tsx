@@ -602,8 +602,8 @@ export function MasjidTemplateAuthentic({
           <div className="text-center mt-8">
             <span
               className={`text-${
-                hijriDate ? "6xl" : "7xl"
-              } font-bold tracking-wide`}
+                customization.showHijriDate ? "6xl" : "7xl"
+              } font-extrabold tracking-wider`}
               style={{ ...textStyle, color: customization.colors.accent }}
             >
               {hijriDate && customization.showHijriDate && (
