@@ -1,23 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import {
-  ChevronDown,
-  ChevronUp,
-  Plus,
-  Trash2,
-  Upload,
-  X,
-  Calendar,
-  Check,
-  RotateCcw,
-  AlertCircle,
-} from "lucide-react";
-
-// Import the extracted component
+import React, { useState, useEffect } from "react";
+import { Plus, Trash2 } from "lucide-react";
 import PrayerTimesManager from "./PrayerTimesManager";
+import CollapsibleSection from "./CollapsibleSection";
+import ColorPicker from "./ColorPicker";
+import ImageUploader from "./ImageUploader";
 
-// Types (KEEP ALL TYPES)
+// Types
 interface PrayerTimes {
   fajr: string;
   sunrise: string;
@@ -78,345 +68,6 @@ interface MasjidConfig {
   colorTheme?: Colors;
   prayerInstructionImage: string;
   prayerInstructionDuration: number;
-}
-
-interface CollapsibleSectionProps {
-  title: string;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}
-
-// Collapsible Section Component (KEEP)
-function CollapsibleSection({
-  title,
-  children,
-  defaultOpen = true,
-}: CollapsibleSectionProps) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-
-  return (
-    <div className="border-b border-gray-800 last:border-0">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-800/50 transition-colors"
-      >
-        <span className="font-semibold text-gray-100">{title}</span>
-        {isOpen ? (
-          <ChevronUp className="w-4 h-4 text-gray-400" />
-        ) : (
-          <ChevronDown className="w-4 h-4 text-gray-400" />
-        )}
-      </button>
-      {isOpen && (
-        <div className="px-4 py-4 space-y-4 bg-gray-800/30">{children}</div>
-      )}
-    </div>
-  );
-}
-
-// Color Picker Component (KEEP)
-function ColorPicker({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <input
-        type="color"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-12 h-10 rounded cursor-pointer border border-gray-700 bg-gray-800"
-      />
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="flex-1 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
-        placeholder="#000000"
-      />
-    </div>
-  );
-}
-
-// Image Uploader Component (KEEP)
-function ImageUploader({
-  images,
-  onChange,
-  maxImages = 10,
-  userId = "4b30b998-ec73-469a-b800-9c57fcb1fe90",
-  displayId = "1",
-  imageType = "background",
-  environment = "preview",
-}: {
-  images: string[];
-  onChange: (imgs: string[]) => void;
-  maxImages?: number;
-  userId?: string;
-  displayId?: string;
-  imageType: "logo" | "background" | "slideshow" | "prayer-instruction";
-  environment?: "preview" | "production";
-}) {
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [mediaUploadedImages, setMediaUploadedImages] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const fetchImages = async () => {
-      if (!userId || !displayId || !imageType) return;
-
-      setIsLoading(true);
-      try {
-        const response = await fetch(`/api/media`);
-        if (!response.ok) {
-          console.error("Failed to fetch images:", await response.text());
-          return;
-        }
-
-        const allMedia = await response.json();
-        const filteredImages = allMedia
-          .filter(
-            (item: any) => item.userId === userId && item.type === imageType
-          )
-          .map((item: any) => item.fileUrl);
-
-        setMediaUploadedImages(filteredImages);
-      } catch (err) {
-        console.error("Error fetching images:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchImages();
-  }, [userId, displayId, imageType]);
-
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    if (!userId) {
-      setUploadError("User ID is required for upload");
-      return;
-    }
-
-    if (!displayId) {
-      setUploadError("Display ID is required for upload");
-      return;
-    }
-
-    setIsUploading(true);
-    setUploadError(null);
-
-    try {
-      const validFiles = Array.from(files).filter((file) => {
-        if (!file.type.startsWith("image/")) {
-          setUploadError(`${file.name} is not an image file`);
-          return false;
-        }
-        if (file.size > 10 * 1024 * 1024) {
-          setUploadError(`${file.name} is too large (max 10MB)`);
-          return false;
-        }
-        return true;
-      });
-
-      if (validFiles.length === 0) {
-        setIsUploading(false);
-        return;
-      }
-
-      const formData = new FormData();
-      validFiles.forEach((file) => formData.append("images", file));
-      formData.append("userId", userId);
-      formData.append("displayId", displayId);
-      formData.append("type", imageType);
-
-      const response = await fetch("/api/media/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Upload failed");
-      }
-
-      const data = await response.json();
-
-      if (maxImages === 1) {
-        onChange(data.urls.slice(0, 1));
-      } else {
-        const combined = [...images, ...data.urls].slice(0, maxImages);
-        onChange(combined);
-      }
-
-      // Refresh media library
-      const imagesResponse = await fetch(`/api/media`);
-      if (imagesResponse.ok) {
-        const allMedia = await imagesResponse.json();
-        const newImages = allMedia
-          .filter(
-            (item: any) =>
-              item.userId === userId &&
-              item.displayId === displayId &&
-              item.type === imageType
-          )
-          .map((item: any) => item.fileUrl);
-        setMediaUploadedImages(newImages);
-      }
-    } catch (error) {
-      console.error("Upload error:", error);
-      setUploadError(error instanceof Error ? error.message : "Upload failed");
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
-  };
-
-  const handleRemoveImage = (index: number) => {
-    onChange(images.filter((_, i) => i !== index));
-  };
-
-  const handleImageClick = (img: string) => {
-    if (!images.includes(img)) {
-      if (maxImages === 1) {
-        onChange([img]);
-      } else if (images.length < maxImages) {
-        onChange([...images, img]);
-      }
-    }
-  };
-
-  const canUploadMore = images.length < maxImages;
-
-  return (
-    <div className="space-y-3">
-      {canUploadMore && (
-        <div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple={maxImages > 1}
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading || !userId || !displayId}
-            className="w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-700 rounded-lg hover:border-gray-600 hover:bg-gray-800/30 text-gray-400 hover:text-gray-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Upload className="w-5 h-5" />
-            <span className="text-sm font-medium">
-              {isUploading
-                ? "Uploading..."
-                : `Upload ${
-                    imageType === "logo"
-                      ? "Logo"
-                      : imageType === "background"
-                      ? "Background"
-                      : imageType === "prayer-instruction"
-                      ? "Prayer Instructions"
-                      : "Images"
-                  }`}
-            </span>
-          </button>
-          {maxImages > 1 && (
-            <p className="text-xs text-gray-500 mt-2 text-center">
-              {images.length} / {maxImages} images selected
-            </p>
-          )}
-        </div>
-      )}
-
-      {uploadError && (
-        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-          <p className="text-sm text-red-400">{uploadError}</p>
-        </div>
-      )}
-
-      {images.length > 0 && (
-        <div>
-          <label className="text-xs text-gray-400 font-medium block mb-2">
-            Currently Selected ({images.length})
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            {images.map((img, idx) => (
-              <div key={idx} className="relative group">
-                <img
-                  src={img}
-                  alt={`Selected ${idx + 1}`}
-                  className="w-full h-24 object-cover rounded border border-gray-700"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleRemoveImage(idx)}
-                  className="absolute top-1 right-1 p-1 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                >
-                  <X className="w-3 h-3 text-white" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {(isLoading || mediaUploadedImages.length > 0) && (
-        <div className="mt-4 pt-4 border-t border-gray-700">
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-medium flex items-center gap-2">
-              <span className="inline-block w-2 h-2 bg-green-500 rounded-full"></span>
-              <span className="text-green-400">
-                Media Library ({mediaUploadedImages.length})
-              </span>
-            </label>
-          </div>
-
-          {isLoading ? (
-            <div className="text-center py-6">
-              <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-green-400 border-t-transparent"></div>
-              <p className="text-xs text-gray-400 mt-2">
-                Loading media library...
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto custom-scrollbar">
-              {mediaUploadedImages.map((img, idx) => (
-                <div
-                  key={idx}
-                  className="relative group cursor-pointer"
-                  onClick={() => handleImageClick(img)}
-                >
-                  <img
-                    src={img}
-                    alt={`Media ${idx + 1}`}
-                    className={`w-full h-20 object-cover rounded border-2 transition-colors ${
-                      images.includes(img)
-                        ? "border-green-500"
-                        : "border-gray-700 hover:border-green-400"
-                    }`}
-                  />
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center">
-                    <span className="text-white text-xs font-medium">
-                      {images.includes(img) ? "✓ Selected" : "Click to use"}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
 }
 
 interface MasjidEditorPanelProps {
@@ -577,12 +228,10 @@ export default function MasjidEditorPanel({
               savedConfig.colors ||
               defaultConfig.colors;
 
-            // FIX: Always preserve the saved prayerScheduleLabel if it exists
             const savedLabel = savedConfig.prayerScheduleLabel || "";
             let finalPrayerTimes = defaultPrayerTimes;
-            let finalScheduleLabel = savedLabel; // Keep the saved label
+            let finalScheduleLabel = savedLabel;
 
-            // If we have a saved label, try to fetch prayer times for it
             if (savedLabel) {
               const scheduleTimes = await fetchPrayerTimesFromSchedule(
                 savedLabel
@@ -590,7 +239,6 @@ export default function MasjidEditorPanel({
               if (scheduleTimes) {
                 finalPrayerTimes = scheduleTimes;
               } else {
-                // If schedule doesn't exist, fall back to default
                 const easternTimes = await fetchPrayerTimesFromSchedule(
                   "default - EASTERN"
                 );
@@ -600,7 +248,6 @@ export default function MasjidEditorPanel({
                 }
               }
             } else {
-              // No saved label, use default
               const easternTimes = await fetchPrayerTimesFromSchedule(
                 "default - EASTERN"
               );
@@ -610,7 +257,6 @@ export default function MasjidEditorPanel({
               }
             }
 
-            // Apply any custom overrides from saved config
             if (
               savedConfig.prayerTimes &&
               Object.keys(savedConfig.prayerTimes).length > 0
@@ -630,7 +276,6 @@ export default function MasjidEditorPanel({
               },
               masjidName: savedConfig.masjidName || displayName,
               prayerTimes: finalPrayerTimes,
-              // FIX: Always preserve the schedule label, even if empty
               prayerScheduleLabel: finalScheduleLabel,
               iqamahOffsets: {
                 ...defaultConfig.iqamahOffsets,
@@ -651,7 +296,6 @@ export default function MasjidEditorPanel({
             onConfigChange(mergedConfig);
             setHasInitialized(true);
           } else {
-            // No saved config found
             const easternTimes = await fetchPrayerTimesFromSchedule(
               "default - EASTERN"
             );
@@ -670,7 +314,6 @@ export default function MasjidEditorPanel({
             setHasInitialized(true);
           }
         } else {
-          // Error fetching config
           const easternTimes = await fetchPrayerTimesFromSchedule(
             "default - EASTERN"
           );
@@ -856,7 +499,6 @@ export default function MasjidEditorPanel({
         </div>
       </CollapsibleSection>
 
-      {/* ONLY CHANGE: Replace the Prayer Times section with extracted component */}
       <CollapsibleSection title="Prayer Times">
         <PrayerTimesManager
           displayId={displayId}
@@ -868,16 +510,12 @@ export default function MasjidEditorPanel({
             updateConfig({ iqamahOffsets: offsets })
           }
           onLabelChange={async (label) => {
-            // Fetch prayer times for the new label
             const newPrayerTimes = await fetchPrayerTimesForToday(label);
-
-            // Update BOTH label AND prayer times together
             const newConfig = {
               ...customization,
               prayerScheduleLabel: label,
               prayerTimes: newPrayerTimes || customization.prayerTimes,
             };
-
             setCustomization(newConfig);
             onConfigChange(newConfig);
           }}
