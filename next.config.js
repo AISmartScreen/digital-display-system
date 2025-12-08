@@ -1,14 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // ❌ eslint config NOT allowed here anymore
+  // Move to eslint.config.js instead
+
+  // ✔ Typescript ignore still allowed
   typescript: {
     ignoreBuildErrors: true,
   },
-  experimental: {
-    esmExternals: false,
-  },
+
+  // ❌ Remove all experimental.esmExternals — Turbopack ignores it
 };
 
 module.exports = nextConfig;
