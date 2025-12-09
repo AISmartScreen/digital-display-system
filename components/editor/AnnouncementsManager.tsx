@@ -23,6 +23,23 @@ interface AnnouncementsManagerProps {
 
 // Predefined schedule options
 const SCHEDULE_OPTIONS: Array<{ label: string; value: string[] }> = [
+  {
+    label: "Every 5 minutes",
+    value: [
+      "00",
+      "05",
+      "10",
+      "15",
+      "20",
+      "25",
+      "30",
+      "35",
+      "40",
+      "45",
+      "50",
+      "55",
+    ],
+  },
   { label: "Every 10 minutes", value: ["00", "10", "20", "30", "40", "50"] },
   { label: "Every 15 minutes", value: ["00", "15", "30", "45"] },
   { label: "Every 20 minutes", value: ["00", "20", "40"] },
