@@ -997,66 +997,154 @@ export default function PrayerTimesManager({
                         {/* Example suggestions for Fajr */}
                         {key === "fajr" && (
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {["Subah", "Fajr", "Morning Prayer", "صبح"].map(
-                              (suggestion) => (
-                                <button
-                                  key={suggestion}
-                                  type="button"
-                                  onClick={() => {
-                                    const newNames = { ...prayerNames };
-                                    newNames.fajr = suggestion;
-                                    onPrayerNamesChange(newNames);
-                                  }}
-                                  className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 transition-colors"
-                                >
-                                  {suggestion}
-                                </button>
-                              )
-                            )}
+                            {[
+                              "Subah",
+                              "Fajr",
+                              "Morning Prayer",
+                              "صبح",
+                              "சுபஹ்",
+                              "பஜ்ர்",
+                            ].map((suggestion) => (
+                              <button
+                                key={suggestion}
+                                type="button"
+                                onClick={() => {
+                                  const newNames = { ...prayerNames };
+                                  newNames.fajr = suggestion;
+                                  onPrayerNamesChange(newNames);
+                                }}
+                                className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 transition-colors"
+                              >
+                                {suggestion}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        {key === "maghrib" && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {[
+                              "Maghrib",
+                              "Sunset Prayer",
+                              "مغرب",
+                              "Maghrib",
+                              "மக்ரிப்",
+                            ].map((suggestion) => (
+                              <button
+                                key={suggestion}
+                                type="button"
+                                onClick={() => {
+                                  const newNames = { ...prayerNames };
+                                  newNames.maghrib = suggestion;
+                                  onPrayerNamesChange(newNames);
+                                }}
+                                className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 transition-colors"
+                              >
+                                {suggestion}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        {key === "asr" && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {[
+                              "Asr",
+                              "Afternoon Prayer",
+                              "عصر",
+                              "Asr",
+                              "அஸ்ர்",
+                            ].map((suggestion) => (
+                              <button
+                                key={suggestion}
+                                type="button"
+                                onClick={() => {
+                                  const newNames = { ...prayerNames };
+                                  newNames.asr = suggestion;
+                                  onPrayerNamesChange(newNames);
+                                }}
+                                className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 transition-colors"
+                              >
+                                {suggestion}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        {key === "sunrise" && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {[
+                              "Sunrise",
+                              "Shuruq",
+                              "شروق",
+                              "Sunup",
+                              "சூரிய உதயம்",
+                            ].map((suggestion) => (
+                              <button
+                                key={suggestion}
+                                type="button"
+                                onClick={() => {
+                                  const newNames = { ...prayerNames };
+                                  newNames.sunrise = suggestion;
+                                  onPrayerNamesChange(newNames);
+                                }}
+                                className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 transition-colors"
+                              >
+                                {suggestion}
+                              </button>
+                            ))}
                           </div>
                         )}
 
                         {/* Example suggestions for Isha */}
                         {key === "isha" && (
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {["Isha", "Night Prayer", "عشاء", "Esha"].map(
-                              (suggestion) => (
-                                <button
-                                  key={suggestion}
-                                  type="button"
-                                  onClick={() => {
-                                    const newNames = { ...prayerNames };
-                                    newNames.isha = suggestion;
-                                    onPrayerNamesChange(newNames);
-                                  }}
-                                  className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 transition-colors"
-                                >
-                                  {suggestion}
-                                </button>
-                              )
-                            )}
+                            {[
+                              "Isha",
+                              "Night Prayer",
+                              "عشاء",
+                              "Esha",
+                              "இஷா",
+                            ].map((suggestion) => (
+                              <button
+                                key={suggestion}
+                                type="button"
+                                onClick={() => {
+                                  const newNames = { ...prayerNames };
+                                  newNames.isha = suggestion;
+                                  onPrayerNamesChange(newNames);
+                                }}
+                                className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 transition-colors"
+                              >
+                                {suggestion}
+                              </button>
+                            ))}
                           </div>
                         )}
 
                         {/* Example suggestions for Dhuhr */}
                         {key === "dhuhr" && (
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {["Dhuhr", "Noon Prayer", "ظهر", "Zuhr"].map(
-                              (suggestion) => (
-                                <button
-                                  key={suggestion}
-                                  type="button"
-                                  onClick={() => {
-                                    const newNames = { ...prayerNames };
-                                    newNames.dhuhr = suggestion;
-                                    onPrayerNamesChange(newNames);
-                                  }}
-                                  className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 transition-colors"
-                                >
-                                  {suggestion}
-                                </button>
-                              )
-                            )}
+                            {[
+                              "Dhuhr",
+                              "Noon Prayer",
+                              "ظهر",
+                              "Zuhr",
+                              "ழுஹர்",
+                            ].map((suggestion) => (
+                              <button
+                                key={suggestion}
+                                type="button"
+                                onClick={() => {
+                                  const newNames = { ...prayerNames };
+                                  newNames.dhuhr = suggestion;
+                                  onPrayerNamesChange(newNames);
+                                }}
+                                className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 transition-colors"
+                              >
+                                {suggestion}
+                              </button>
+                            ))}
                           </div>
                         )}
                       </div>
