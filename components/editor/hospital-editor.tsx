@@ -1,10 +1,15 @@
-// Editor component for managing ad schedules
 "use client";
 
 import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Trash2, Plus, Calendar, Clock } from "lucide-react";
+import {
+  Trash2,
+  Plus,
+  Calendar,
+  Clock,
+  Image as ImageIcon,
+} from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -12,7 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { GalleryMediaLibrary } from "./GalleryMediaLibrary";
 import { ImageUploader } from "./ImageUploader";
 import CollapsibleSection from "./CollapsibleSection";
 
@@ -27,6 +31,34 @@ interface HospitalEditorProps {
   layout?: "Advanced" | "Authentic";
 }
 
+type FrequencyOption = {
+  value: number;
+  label: string;
+  description: string;
+};
+
+const frequencyOptions: FrequencyOption[] = [
+  { value: 60, label: "Every 1 minute", description: "Every minute" },
+  { value: 300, label: "Every 5 minutes", description: "5-minute intervals" },
+  { value: 600, label: "Every 10 minutes", description: "10-minute intervals" },
+  { value: 900, label: "Every 15 minutes", description: "15-minute intervals" },
+  {
+    value: 1800,
+    label: "Every 30 minutes",
+    description: "30-minute intervals",
+  },
+  { value: 3600, label: "Every 1 hour", description: "Hourly intervals" },
+  { value: 7200, label: "Every 2 hours", description: "2-hour intervals" },
+  { value: 14400, label: "Every 4 hours", description: "4-hour intervals" },
+  { value: 43200, label: "Every 12 hours", description: "12-hour intervals" },
+  { value: 86400, label: "Every 24 hours", description: "Daily intervals" },
+  {
+    value: "custom",
+    label: "Custom interval",
+    description: "Set custom seconds",
+  },
+];
+
 export function HospitalEditor({
   displayId,
   displayName,
@@ -40,6 +72,9 @@ export function HospitalEditor({
   const [currentUserId, setCurrentUserId] = useState<string | undefined>(
     userId
   );
+  const [customFrequency, setCustomFrequency] = useState<{
+    [key: string]: string;
+  }>({});
 
   // Helper functions for date/time conversion
   const localToISO = (localDatetimeString: string) => {
@@ -123,36 +158,95 @@ export function HospitalEditor({
   const enableSlideshow = config.enableSlideshow || false;
   const slideshowSpeed = config.slideshowSpeed || 10000;
   const layoutConfig = config.layout || layout || "Advanced";
-  const galleryItems = config.galleryItems || [];
-  const backgroundImages = config.backgroundImages || [];
-  const enableFullscreen = config.enableFullscreen || false;
-  const fullscreenDuration = config.fullscreenDuration || 10000;
-  const adSchedules = config.adSchedules || [];
+
+  // Gallery and Ads (completely separate)
+  const galleryImages = config.galleryImages || []; // Simple array of image URLs for 1:1 gallery
+  const advertisements = config.advertisements || []; // Array of ad objects with full scheduling
 
   // Handle basic field updates
   const handleFieldChange = (field: string, value: any) => {
     onConfigChange({ ...config, [field]: value });
   };
 
-  // Ad Schedule Management
-  const handleAddAdSchedule = () => {
+  // Format seconds to human-readable time
+  const formatSeconds = (seconds: number): string => {
+    if (seconds < 60) return `${seconds} seconds`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours`;
+    return `${Math.floor(seconds / 86400)} days`;
+  };
+
+  // Find the selected frequency option
+  const getSelectedFrequencyOption = (frequency: number) => {
+    return (
+      frequencyOptions.find((opt) => opt.value === frequency) ||
+      frequencyOptions.find((opt) => opt.value === "custom")
+    );
+  };
+
+  // Handle frequency change
+  const handleFrequencyChange = (idx: number, value: string | number) => {
+    if (value === "custom") {
+      // Keep the current value but mark as custom
+      const currentFreq = advertisements[idx].frequency || 300;
+      setCustomFrequency((prev) => ({
+        ...prev,
+        [idx]: currentFreq.toString(),
+      }));
+      handleUpdateAdvertisement(idx, "frequency", currentFreq);
+    } else {
+      handleUpdateAdvertisement(idx, "frequency", Number(value));
+      // Clear custom frequency if not custom
+      setCustomFrequency((prev) => {
+        const newFreq = { ...prev };
+        delete newFreq[idx];
+        return newFreq;
+      });
+    }
+  };
+
+  // Handle custom frequency input
+  const handleCustomFrequencyChange = (idx: number, value: string) => {
+    const numValue = parseInt(value) || 300;
+    setCustomFrequency((prev) => ({
+      ...prev,
+      [idx]: value,
+    }));
+    handleUpdateAdvertisement(idx, "frequency", numValue);
+  };
+
+  // ==============================
+  // GALLERY MANAGEMENT (1:1 Simple)
+  // ==============================
+  const handleGalleryImagesChange = (imgs: string[]) => {
+    onConfigChange({ ...config, galleryImages: imgs });
+  };
+
+  const removeGalleryImage = (index: number) => {
+    const updated = galleryImages.filter((_: string, i: number) => i !== index);
+    handleFieldChange("galleryImages", updated);
+  };
+
+  // ==============================
+  // ADVERTISEMENT MANAGEMENT (16:9 with Scheduling)
+  // ==============================
+  const handleAddAdvertisement = () => {
     const defaultStartDate = new Date();
     const defaultEndDate = new Date();
     defaultEndDate.setDate(defaultEndDate.getDate() + 7);
 
     onConfigChange({
       ...config,
-      adSchedules: [
-        ...adSchedules,
+      advertisements: [
+        ...advertisements,
         {
           id: `ad-${Date.now()}`,
           enabled: true,
           title: "",
           image: "",
           caption: "",
-          fullScreen: true,
-          frequency: 300, // 5 minutes
-          duration: 30, // 30 seconds
+          frequency: 300, // 5 minutes (how often to show)
+          duration: 30, // 30 seconds (how long to display)
           dateRange: {
             start: defaultStartDate.toISOString(),
             end: defaultEndDate.toISOString(),
@@ -167,8 +261,12 @@ export function HospitalEditor({
     });
   };
 
-  const handleUpdateAdSchedule = (idx: number, field: string, value: any) => {
-    const updated = [...adSchedules];
+  const handleUpdateAdvertisement = (
+    idx: number,
+    field: string,
+    value: any
+  ) => {
+    const updated = [...advertisements];
 
     if (field.startsWith("dateRange.")) {
       const subField = field.split(".")[1];
@@ -192,11 +290,11 @@ export function HospitalEditor({
       updated[idx] = { ...updated[idx], [field]: value };
     }
 
-    onConfigChange({ ...config, adSchedules: updated });
+    onConfigChange({ ...config, advertisements: updated });
   };
 
   const handleUpdateAdDays = (idx: number, day: number, checked: boolean) => {
-    const updated = [...adSchedules];
+    const updated = [...advertisements];
     const currentDays = updated[idx].daysOfWeek || [];
 
     if (checked) {
@@ -211,13 +309,24 @@ export function HospitalEditor({
       };
     }
 
-    onConfigChange({ ...config, adSchedules: updated });
+    onConfigChange({ ...config, advertisements: updated });
   };
 
-  const handleRemoveAdSchedule = (idx: number) => {
-    const updated = adSchedules.filter((_: any, i: number) => i !== idx);
-    onConfigChange({ ...config, adSchedules: updated });
+  const handleRemoveAdvertisement = (idx: number) => {
+    const updated = advertisements.filter((_: any, i: number) => i !== idx);
+    onConfigChange({ ...config, advertisements: updated });
   };
+
+  // Days of week labels
+  const daysOfWeek = [
+    { id: 0, label: "Sun", full: "Sunday" },
+    { id: 1, label: "Mon", full: "Monday" },
+    { id: 2, label: "Tue", full: "Tuesday" },
+    { id: 3, label: "Wed", full: "Wednesday" },
+    { id: 4, label: "Thu", full: "Thursday" },
+    { id: 5, label: "Fri", full: "Friday" },
+    { id: 6, label: "Sat", full: "Saturday" },
+  ];
 
   // Doctor Schedule Management
   const handleAddSchedule = () => {
@@ -324,328 +433,8 @@ export function HospitalEditor({
     onConfigChange({ ...config, appointments: updated });
   };
 
-  // Gallery Items Management
-  const handleGalleryItemsChange = (items: any[]) => {
-    onConfigChange({ ...config, galleryItems: items });
-  };
-
-  // Days of week labels
-  const daysOfWeek = [
-    { id: 0, label: "Sun", full: "Sunday" },
-    { id: 1, label: "Mon", full: "Monday" },
-    { id: 2, label: "Tue", full: "Tuesday" },
-    { id: 3, label: "Wed", full: "Wednesday" },
-    { id: 4, label: "Thu", full: "Thursday" },
-    { id: 5, label: "Fri", full: "Friday" },
-    { id: 6, label: "Sat", full: "Saturday" },
-  ];
-
   return (
     <div className="space-y-8">
-      {/* Ad Schedules Section */}
-      <CollapsibleSection title="📅 Ad Schedules" defaultOpen={true}>
-        <div className="space-y-4">
-          <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-            <p className="text-sm text-blue-400">
-              <strong>Schedule-Based Ads:</strong> Ads will only display when
-              the schedule is enabled and within the specified date/time range.
-              The ad will show according to the frequency and duration settings.
-            </p>
-          </div>
-
-          <div className="flex justify-end mb-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleAddAdSchedule}
-              className="border-blue-500 text-blue-400 h-7 bg-transparent hover:bg-blue-500/10"
-            >
-              <Plus className="w-3 h-3 mr-1" />
-              Add Ad Schedule
-            </Button>
-          </div>
-
-          {adSchedules.map((schedule: any, idx: number) => (
-            <div
-              key={schedule.id}
-              className="bg-slate-700/50 p-4 rounded-lg space-y-4 border border-slate-600"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={schedule.enabled}
-                      onChange={(e) =>
-                        handleUpdateAdSchedule(idx, "enabled", e.target.checked)
-                      }
-                      className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-green-500"
-                    />
-                    <span className="text-sm font-medium text-slate-300">
-                      Schedule #{idx + 1} {schedule.enabled ? "✓" : "✗"}
-                    </span>
-                  </div>
-                  <div
-                    className={`px-2 py-1 rounded text-xs ${
-                      schedule.fullScreen
-                        ? "bg-purple-500/20 text-purple-400"
-                        : "bg-slate-600/50 text-slate-400"
-                    }`}
-                  >
-                    {schedule.fullScreen ? "Full Screen" : "Normal"}
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleRemoveAdSchedule(idx)}
-                  className="text-red-400 hover:bg-red-500/10"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </Button>
-              </div>
-
-              <div className="space-y-3">
-                <Input
-                  value={schedule.title}
-                  onChange={(e) =>
-                    handleUpdateAdSchedule(idx, "title", e.target.value)
-                  }
-                  placeholder="Ad Title"
-                  className="bg-slate-700 border-slate-600 text-slate-50"
-                />
-
-                <Input
-                  value={schedule.caption}
-                  onChange={(e) =>
-                    handleUpdateAdSchedule(idx, "caption", e.target.value)
-                  }
-                  placeholder="Ad Caption/Description"
-                  className="bg-slate-700 border-slate-600 text-slate-50"
-                />
-
-                <div>
-                  <label className="text-xs text-slate-400 mb-1 block">
-                    Ad Image
-                  </label>
-                  <ImageUploader
-                    images={schedule.image ? [schedule.image] : []}
-                    onChange={(imgs) =>
-                      handleUpdateAdSchedule(idx, "image", imgs[0] || "")
-                    }
-                    maxImages={1}
-                    userId={currentUserId}
-                    displayId={displayId}
-                    imageType="ad"
-                    environment={environment}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-slate-400 mb-1 block">
-                      Frequency (seconds)
-                    </label>
-                    <Input
-                      type="number"
-                      value={schedule.frequency}
-                      onChange={(e) =>
-                        handleUpdateAdSchedule(
-                          idx,
-                          "frequency",
-                          parseInt(e.target.value) || 300
-                        )
-                      }
-                      min="60"
-                      max="3600"
-                      className="bg-slate-700 border-slate-600 text-slate-50"
-                    />
-                    <p className="text-xs text-slate-500 mt-1">
-                      How often to show this ad
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-slate-400 mb-1 block">
-                      Duration (seconds)
-                    </label>
-                    <Input
-                      type="number"
-                      value={schedule.duration}
-                      onChange={(e) =>
-                        handleUpdateAdSchedule(
-                          idx,
-                          "duration",
-                          parseInt(e.target.value) || 30
-                        )
-                      }
-                      min="5"
-                      max="300"
-                      className="bg-slate-700 border-slate-600 text-slate-50"
-                    />
-                    <p className="text-xs text-slate-500 mt-1">
-                      How long to display the ad
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-slate-400 mb-1 block flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      Start Date
-                    </label>
-                    <Input
-                      type="date"
-                      value={
-                        schedule.dateRange.start
-                          ? schedule.dateRange.start.split("T")[0]
-                          : ""
-                      }
-                      onChange={(e) =>
-                        handleUpdateAdSchedule(
-                          idx,
-                          "dateRange.start",
-                          new Date(e.target.value).toISOString()
-                        )
-                      }
-                      className="bg-slate-700 border-slate-600 text-slate-50"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-slate-400 mb-1 block flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      End Date
-                    </label>
-                    <Input
-                      type="date"
-                      value={
-                        schedule.dateRange.end
-                          ? schedule.dateRange.end.split("T")[0]
-                          : ""
-                      }
-                      onChange={(e) =>
-                        handleUpdateAdSchedule(
-                          idx,
-                          "dateRange.end",
-                          new Date(e.target.value).toISOString()
-                        )
-                      }
-                      className="bg-slate-700 border-slate-600 text-slate-50"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-slate-400 mb-1 block flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      Start Time
-                    </label>
-                    <Input
-                      type="time"
-                      value={schedule.timeRange.start || "09:00"}
-                      onChange={(e) =>
-                        handleUpdateAdSchedule(
-                          idx,
-                          "timeRange.start",
-                          e.target.value
-                        )
-                      }
-                      className="bg-slate-700 border-slate-600 text-slate-50"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-slate-400 mb-1 block flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      End Time
-                    </label>
-                    <Input
-                      type="time"
-                      value={schedule.timeRange.end || "17:00"}
-                      onChange={(e) =>
-                        handleUpdateAdSchedule(
-                          idx,
-                          "timeRange.end",
-                          e.target.value
-                        )
-                      }
-                      className="bg-slate-700 border-slate-600 text-slate-50"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs text-slate-400 mb-2 block">
-                    Days of Week
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {daysOfWeek.map((day) => (
-                      <label
-                        key={day.id}
-                        className={`cursor-pointer px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                          schedule.daysOfWeek?.includes(day.id)
-                            ? "bg-blue-500 text-white"
-                            : "bg-slate-700 text-slate-400 hover:bg-slate-600"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={
-                            schedule.daysOfWeek?.includes(day.id) || false
-                          }
-                          onChange={(e) =>
-                            handleUpdateAdDays(idx, day.id, e.target.checked)
-                          }
-                          className="hidden"
-                        />
-                        {day.label}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-600/50">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id={`fullscreen-${idx}`}
-                      checked={schedule.fullScreen}
-                      onChange={(e) =>
-                        handleUpdateAdSchedule(
-                          idx,
-                          "fullScreen",
-                          e.target.checked
-                        )
-                      }
-                      className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-purple-500"
-                    />
-                    <label
-                      htmlFor={`fullscreen-${idx}`}
-                      className="text-xs text-slate-300 cursor-pointer"
-                    >
-                      Display as fullscreen overlay
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {adSchedules.length === 0 && (
-            <div className="text-center py-8 text-slate-500 border-2 border-dashed border-slate-700 rounded-lg">
-              <Calendar className="w-12 h-12 mx-auto mb-3 text-slate-600" />
-              <p className="text-sm mb-2">No ad schedules configured</p>
-              <p className="text-xs text-slate-500">
-                Ads will only display when enabled and within schedule ranges
-              </p>
-            </div>
-          )}
-        </div>
-      </CollapsibleSection>
-
       {/* Layout Configuration */}
       <CollapsibleSection title="🎛️ Layout Configuration">
         <div className="space-y-3">
@@ -940,7 +729,7 @@ export function HospitalEditor({
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs text-slate-400 font-medium">
-                Slideshow Images ({backgroundImages.length})
+                Slideshow Images ({config.backgroundImages?.length || 0})
               </label>
               <button
                 onClick={() =>
@@ -959,7 +748,7 @@ export function HospitalEditor({
             {enableSlideshow && (
               <div className="space-y-3">
                 <ImageUploader
-                  images={backgroundImages}
+                  images={config.backgroundImages || []}
                   onChange={(imgs) =>
                     handleFieldChange("backgroundImages", imgs)
                   }
@@ -998,13 +787,13 @@ export function HospitalEditor({
             )}
           </div>
 
-          {enableSlideshow && backgroundImages.length > 0 && (
+          {enableSlideshow && config.backgroundImages?.length > 0 && (
             <div className="p-2 bg-blue-500/10 border border-blue-500/30 rounded-lg">
               <p className="text-xs text-blue-400">
                 Slideshow rotation: {slideshowSpeed / 1000} seconds per image
-                {backgroundImages.length > 0 &&
+                {config.backgroundImages?.length > 0 &&
                   ` | Full cycle: ${(
-                    (backgroundImages.length * slideshowSpeed) /
+                    (config.backgroundImages.length * slideshowSpeed) /
                     1000
                   ).toFixed(0)}s`}
               </p>
@@ -1013,140 +802,398 @@ export function HospitalEditor({
         </div>
       </CollapsibleSection>
 
-      {/* Gallery Images */}
-      {layoutConfig !== "Advanced" && (
-        <CollapsibleSection title="🖼️ Hospital Gallery Images">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <label className="text-xs text-slate-400 font-medium">
-                  Gallery Images ({galleryItems.length})
-                </label>
-                <p className="text-xs text-slate-500">
-                  Images are stored securely and cannot be edited directly
-                </p>
-              </div>
-            </div>
+      {/* Advertisement Schedules Section - 16:9 Full Screen with Scheduling */}
+      <CollapsibleSection
+        title="📺 Advertisement Schedules (16:9 Fullscreen)"
+        defaultOpen={true}
+      >
+        <div className="space-y-4">
+          <div className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+            <p className="text-sm text-purple-400">
+              <strong>Full Screen Advertisements:</strong> Schedule 16:9 ads to
+              display in fullscreen mode with complete scheduling controls. Ads
+              will only show when enabled and within their schedule range.
+            </p>
+          </div>
 
-            {/* Gallery Media Library */}
-            <GalleryMediaLibrary
-              selectedItems={galleryItems}
-              onItemsChange={handleGalleryItemsChange}
-              userId={currentUserId}
-              displayId={displayId}
-              environment={environment}
-              enableFullscreen={enableFullscreen}
-            />
+          <div className="flex justify-end mb-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleAddAdvertisement}
+              className="border-purple-500 text-purple-400 h-7 bg-transparent hover:bg-purple-500/10"
+            >
+              <Plus className="w-3 h-3 mr-1" />
+              Add Advertisement
+            </Button>
+          </div>
 
-            {/* Display existing gallery items */}
-            {galleryItems.length > 0 && (
-              <div className="mt-4 space-y-3">
-                <label className="text-xs text-slate-400 font-medium block">
-                  Gallery Items ({galleryItems.length})
-                </label>
-                <div className="space-y-2">
-                  {galleryItems.map((item: any, idx: number) => (
-                    <div
-                      key={idx}
-                      className="bg-slate-700/30 p-3 rounded-lg space-y-3"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 flex-1">
-                          <div className="relative">
-                            {item.image ? (
-                              <img
-                                src={item.image}
-                                alt={`Gallery ${idx + 1}`}
-                                className="w-16 h-16 object-cover rounded border border-slate-600"
-                              />
-                            ) : (
-                              <div className="w-16 h-16 bg-slate-600/50 rounded border border-slate-600 flex items-center justify-center">
-                                <span className="text-xs text-slate-400">
-                                  Image #{idx + 1}
-                                </span>
-                              </div>
-                            )}
-                            {item.fullScreen && (
-                              <div className="absolute -top-1 -right-1">
-                                <div className="w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
-                                  <span className="text-xs text-white font-bold">
-                                    F
-                                  </span>
+          {advertisements.map((ad: any, idx: number) => {
+            const isCustomFrequency = !frequencyOptions.some(
+              (opt) => opt.value === ad.frequency
+            );
+            const selectedValue = isCustomFrequency ? "custom" : ad.frequency;
+
+            return (
+              <div
+                key={ad.id}
+                className="bg-slate-700/50 p-4 rounded-lg space-y-4 border border-slate-600"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={ad.enabled}
+                        onChange={(e) =>
+                          handleUpdateAdvertisement(
+                            idx,
+                            "enabled",
+                            e.target.checked
+                          )
+                        }
+                        className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-green-500"
+                      />
+                      <span className="text-sm font-medium text-slate-300">
+                        Ad #{idx + 1} {ad.enabled ? "✓" : "✗"}
+                      </span>
+                    </div>
+                    <div className="px-2 py-1 rounded text-xs bg-purple-500/20 text-purple-400">
+                      16:9 Fullscreen
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleRemoveAdvertisement(idx)}
+                    className="text-red-400 hover:bg-red-500/10"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+
+                <div className="space-y-3">
+                  <Input
+                    value={ad.title}
+                    onChange={(e) =>
+                      handleUpdateAdvertisement(idx, "title", e.target.value)
+                    }
+                    placeholder="Advertisement Title"
+                    className="bg-slate-700 border-slate-600 text-slate-50"
+                  />
+
+                  <Input
+                    value={ad.caption}
+                    onChange={(e) =>
+                      handleUpdateAdvertisement(idx, "caption", e.target.value)
+                    }
+                    placeholder="Advertisement Description"
+                    className="bg-slate-700 border-slate-600 text-slate-50"
+                  />
+
+                  <div>
+                    <label className="text-xs text-slate-400 mb-1 block">
+                      Advertisement Image (16:9 recommended)
+                    </label>
+                    <ImageUploader
+                      images={ad.image ? [ad.image] : []}
+                      onChange={(imgs) =>
+                        handleUpdateAdvertisement(idx, "image", imgs[0] || "")
+                      }
+                      maxImages={1}
+                      userId={currentUserId}
+                      displayId={displayId}
+                      imageType="advertisement"
+                      environment={environment}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block">
+                        Display Frequency
+                      </label>
+                      <Select
+                        value={selectedValue.toString()}
+                        onValueChange={(value) =>
+                          handleFrequencyChange(
+                            idx,
+                            value === "custom" ? "custom" : parseInt(value)
+                          )
+                        }
+                      >
+                        <SelectTrigger className="bg-slate-700 border-slate-600 text-slate-50">
+                          <SelectValue>
+                            {isCustomFrequency
+                              ? `Custom (${formatSeconds(ad.frequency)})`
+                              : frequencyOptions.find(
+                                  (opt) => opt.value === ad.frequency
+                                )?.label || "Select frequency"}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-800 border-slate-700">
+                          {frequencyOptions.map((option) => (
+                            <SelectItem
+                              key={option.value.toString()}
+                              value={option.value.toString()}
+                              className="text-slate-200 hover:bg-slate-700"
+                            >
+                              <div>
+                                <div className="font-medium">
+                                  {option.label}
                                 </div>
+                                {option.description && (
+                                  <div className="text-xs text-slate-400">
+                                    {option.description}
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <Input
-                              value={item.caption || ""}
-                              onChange={(e) => {
-                                const updated = [...galleryItems];
-                                updated[idx] = {
-                                  ...updated[idx],
-                                  caption: e.target.value,
-                                };
-                                handleFieldChange("galleryItems", updated);
-                              }}
-                              placeholder="Image caption..."
-                              className="bg-slate-700 border-slate-600 text-slate-50 text-sm"
-                            />
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => {
-                            const updated = galleryItems.filter(
-                              (_: any, i: number) => i !== idx
-                            );
-                            handleFieldChange("galleryItems", updated);
-                          }}
-                          className="ml-2 px-3 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded text-sm hover:bg-red-500/30 flex-shrink-0"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
 
-                      {/* Fullscreen Toggle */}
-                      <div className="flex items-center justify-between pt-2 border-t border-slate-600/50">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            id={`fullscreen-${idx}`}
-                            checked={item.fullScreen || false}
-                            onChange={(e) => {
-                              const updated = [...galleryItems];
-                              updated[idx] = {
-                                ...updated[idx],
-                                fullScreen: e.target.checked,
-                              };
-                              handleFieldChange("galleryItems", updated);
-                            }}
-                            className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-purple-500 focus:ring-purple-500"
-                          />
-                          <label
-                            htmlFor={`fullscreen-${idx}`}
-                            className="text-xs text-slate-300 cursor-pointer"
-                          >
-                            Display as fullscreen overlay ad
+                      {selectedValue === "custom" && (
+                        <div className="mt-2">
+                          <label className="text-xs text-slate-400 mb-1 block">
+                            Custom Interval (seconds)
                           </label>
+                          <Input
+                            type="number"
+                            value={customFrequency[idx] || ad.frequency}
+                            onChange={(e) =>
+                              handleCustomFrequencyChange(idx, e.target.value)
+                            }
+                            min="30"
+                            max="2592000"
+                            className="bg-slate-700 border-slate-600 text-slate-50"
+                          />
+                          <p className="text-xs text-slate-500 mt-1">
+                            Current: {formatSeconds(ad.frequency)} (
+                            {ad.frequency}s)
+                          </p>
                         </div>
-                        <div
-                          className={`px-2 py-1 rounded text-xs font-medium ${
-                            item.fullScreen
-                              ? "bg-purple-500/20 text-purple-400"
-                              : "bg-slate-600/50 text-slate-400"
+                      )}
+
+                      {selectedValue !== "custom" && (
+                        <p className="text-xs text-slate-500 mt-1">
+                          Show every {formatSeconds(ad.frequency)}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block">
+                        Duration (seconds)
+                      </label>
+                      <Input
+                        type="number"
+                        value={ad.duration}
+                        onChange={(e) =>
+                          handleUpdateAdvertisement(
+                            idx,
+                            "duration",
+                            parseInt(e.target.value) || 30
+                          )
+                        }
+                        min="5"
+                        max="300"
+                        className="bg-slate-700 border-slate-600 text-slate-50"
+                      />
+                      <p className="text-xs text-slate-500 mt-1">
+                        Display for {ad.duration}s
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        Start Date
+                      </label>
+                      <Input
+                        type="date"
+                        value={
+                          ad.dateRange.start
+                            ? ad.dateRange.start.split("T")[0]
+                            : ""
+                        }
+                        onChange={(e) =>
+                          handleUpdateAdvertisement(
+                            idx,
+                            "dateRange.start",
+                            new Date(e.target.value).toISOString()
+                          )
+                        }
+                        className="bg-slate-700 border-slate-600 text-slate-50"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        End Date
+                      </label>
+                      <Input
+                        type="date"
+                        value={
+                          ad.dateRange.end ? ad.dateRange.end.split("T")[0] : ""
+                        }
+                        onChange={(e) =>
+                          handleUpdateAdvertisement(
+                            idx,
+                            "dateRange.end",
+                            new Date(e.target.value).toISOString()
+                          )
+                        }
+                        className="bg-slate-700 border-slate-600 text-slate-50"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        Start Time
+                      </label>
+                      <Input
+                        type="time"
+                        value={ad.timeRange.start || "09:00"}
+                        onChange={(e) =>
+                          handleUpdateAdvertisement(
+                            idx,
+                            "timeRange.start",
+                            e.target.value
+                          )
+                        }
+                        className="bg-slate-700 border-slate-600 text-slate-50"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        End Time
+                      </label>
+                      <Input
+                        type="time"
+                        value={ad.timeRange.end || "17:00"}
+                        onChange={(e) =>
+                          handleUpdateAdvertisement(
+                            idx,
+                            "timeRange.end",
+                            e.target.value
+                          )
+                        }
+                        className="bg-slate-700 border-slate-600 text-slate-50"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-slate-400 mb-2 block">
+                      Active Days
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {daysOfWeek.map((day) => (
+                        <label
+                          key={day.id}
+                          className={`cursor-pointer px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                            ad.daysOfWeek?.includes(day.id)
+                              ? "bg-purple-500 text-white"
+                              : "bg-slate-700 text-slate-400 hover:bg-slate-600"
                           }`}
                         >
-                          {item.fullScreen ? "Fullscreen" : "Normal"}
-                        </div>
-                      </div>
+                          <input
+                            type="checkbox"
+                            checked={ad.daysOfWeek?.includes(day.id) || false}
+                            onChange={(e) =>
+                              handleUpdateAdDays(idx, day.id, e.target.checked)
+                            }
+                            className="hidden"
+                          />
+                          {day.label}
+                        </label>
+                      ))}
                     </div>
-                  ))}
+                  </div>
                 </div>
               </div>
-            )}
+            );
+          })}
+
+          {advertisements.length === 0 && (
+            <div className="text-center py-8 text-slate-500 border-2 border-dashed border-slate-700 rounded-lg">
+              <Calendar className="w-12 h-12 mx-auto mb-3 text-slate-600" />
+              <p className="text-sm mb-2">No advertisements configured</p>
+              <p className="text-xs text-slate-500">
+                Add fullscreen 16:9 ads with custom schedules
+              </p>
+            </div>
+          )}
+        </div>
+      </CollapsibleSection>
+
+      {/* Gallery Images Section - Simple 1:1 Images */}
+      <CollapsibleSection title="🖼️ Gallery Images (1:1 Ratio)">
+        <div className="space-y-3">
+          <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+            <p className="text-sm text-blue-400">
+              <strong>1:1 Square Gallery:</strong> Upload square images (1:1
+              ratio) for the hospital gallery. Images will cover the entire
+              display area and rotate automatically. No scheduling or fullscreen
+              options.
+            </p>
           </div>
-        </CollapsibleSection>
-      )}
+
+          <div>
+            <label className="text-xs text-slate-400 font-medium block mb-2">
+              Gallery Images ({galleryImages.length})
+            </label>
+            <ImageUploader
+              images={galleryImages}
+              onChange={handleGalleryImagesChange}
+              maxImages={20}
+              userId={currentUserId}
+              displayId={displayId}
+              imageType="gallery"
+              environment={environment}
+            />
+          </div>
+
+          {galleryImages.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <label className="text-xs text-slate-400 font-medium block">
+                Gallery Images ({galleryImages.length})
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {galleryImages.map((img: string, idx: number) => (
+                  <div key={idx} className="relative group">
+                    <img
+                      src={img}
+                      alt={`Gallery ${idx + 1}`}
+                      className="w-full aspect-square object-cover rounded border-2 border-slate-600"
+                    />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center">
+                      <span className="text-white text-xs font-medium">
+                        Image #{idx + 1}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => removeGalleryImage(idx)}
+                      className="absolute top-1 right-1 p-1 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                    >
+                      <Trash2 className="w-3 h-3 text-white" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </CollapsibleSection>
 
       {/* Ticker Messages */}
       <CollapsibleSection title="📰 Ticker Messages">
@@ -1323,16 +1370,8 @@ export function HospitalEditor({
               </label>
               <div className="p-2 bg-slate-700/30 rounded">
                 <p className="text-xs text-slate-300">
-                  {enableFullscreen
-                    ? `Fullscreen mode: ${fullscreenDuration / 1000}s per image`
-                    : galleryItems.length > 3
-                    ? "6 seconds per image (auto-rotates when 4+ images)"
-                    : galleryItems.length === 3
-                    ? "Static display (Large + 2 small layout)"
-                    : galleryItems.length === 2
-                    ? "Static display (Stacked vertically)"
-                    : galleryItems.length === 1
-                    ? "Static display (Full screen)"
+                  {galleryImages.length > 0
+                    ? `Auto-rotates every 6 seconds (${galleryImages.length} images)`
                     : "No gallery images configured"}
                 </p>
               </div>
