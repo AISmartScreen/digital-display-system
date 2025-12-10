@@ -13,6 +13,7 @@ import {
 import { MasjidTemplate } from "@/components/templates/masjid-template";
 import { HospitalTemplate } from "@/components/templates/hospital-template";
 import { CorporateTemplate } from "@/components/templates/corporate-template";
+import { supabase } from "@/lib/supabase-client";
 import type React from "react";
 
 interface LivePageProps {
@@ -95,194 +96,181 @@ export default function LivePage({ params }: LivePageProps) {
     checkUserRole();
   }, []);
 
-  // Check device authorization (only if not admin)
+  // Add this new useEffect for device authorization realtime
   useEffect(() => {
     if (isCheckingAuth) return;
+    if (userData?.role === "admin") return; // Skip for admins
 
-    // Skip device auth check for admins
-    if (userData?.role === "admin") {
-      return;
-    }
+    const deviceId = localStorage.getItem("device_id");
+    if (!deviceId) return;
 
+    // Initial device auth check
     checkDeviceAuth();
 
-    // Re-check authorization every 30 seconds
-    const authInterval = setInterval(checkDeviceAuth, 30000);
+    // Setup realtime subscription for THIS device's status changes
+    console.log(`🔴 Setting up device auth realtime for: ${deviceId}`);
 
-    return () => clearInterval(authInterval);
-  }, [id, isCheckingAuth, userData]);
+    const deviceChannel = supabase
+      .channel(`device-auth-${deviceId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*", // Listen to all events
+          schema: "public",
+          table: "devices",
+          filter: `device_id=eq.${deviceId}`, // Only this device
+        },
+        (payload) => {
+          console.log("🔴 Device status update received:", payload);
 
-  const checkDeviceAuth = async () => {
-    try {
-      setDeviceAuth((prev) => ({ ...prev, isLoading: true, error: null }));
+          // Check the new status
+          if (payload.eventType === "UPDATE") {
+            const newStatus = payload.new.status;
+            const newName = payload.new.name;
 
-      // Get or create device ID
-      let deviceId = localStorage.getItem("device_id");
+            console.log(`Device status changed to: ${newStatus}`);
 
-      if (!deviceId) {
-        // Generate unique device ID
-        deviceId = `device_${Date.now()}_${Math.random()
-          .toString(36)
-          .substr(2, 9)}`;
-        localStorage.setItem("device_id", deviceId);
-      }
-
-      // Check if device is authorized
-      const response = await fetch("/api/admin/device/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          deviceId,
-          displayId: id,
-          userAgent: navigator.userAgent,
-          screenResolution: `${window.screen.width}x${window.screen.height}`,
-        }),
+            // Update device auth state immediately
+            setDeviceAuth((prev) => ({
+              ...prev,
+              status: newStatus,
+              deviceName: newName,
+              isAuthorized: newStatus === "approved",
+              needsRegistration: false,
+            }));
+          } else if (payload.eventType === "DELETE") {
+            console.log("Device was deleted");
+            // Reset to registration state
+            setDeviceAuth({
+              isAuthorized: false,
+              isLoading: false,
+              error: "Device registration was removed",
+              deviceId,
+              deviceName: null,
+              needsRegistration: true,
+              status: null,
+            });
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          console.log("✅ Device auth realtime connected");
+        } else if (status === "CHANNEL_ERROR") {
+          console.error("❌ Device auth realtime error");
+        }
       });
+
+    // Cleanup
+    return () => {
+      console.log("🔴 Cleaning up device auth realtime");
+      supabase.removeChannel(deviceChannel);
+    };
+  }, [deviceAuth.deviceId, isCheckingAuth, userData]);
+
+  // Fetch config function (extracted for reuse)
+  const fetchConfig = async () => {
+    try {
+      // Only show loading on initial fetch
+      if (!customization) {
+        setIsLoading(true);
+      }
+      setError(null);
+
+      const response = await fetch(`/api/displays/${id}/config`);
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch display configuration");
+      }
 
       const result = await response.json();
 
-      if (result.success) {
-        setDeviceAuth({
-          isAuthorized: result.authorized,
-          isLoading: false,
-          error: null,
-          deviceId,
-          deviceName: result.deviceName,
-          needsRegistration: result.needsRegistration,
-          status: result.status,
-        });
+      if (!result.success || !result.data) {
+        throw new Error("Invalid configuration data");
+      }
+
+      const config = result.data.config;
+      const status = result.data.status;
+      const name = result.data.name;
+
+      // Check if display is disabled
+      if (status === "disabled") {
+        setIsDisabled(true);
+        setDisplayName(name || "Display");
+        setIsLoading(false);
+        return;
+      }
+
+      setIsDisabled(false);
+
+      // Normalize color configuration - prioritize colorTheme over colors
+      if (config.colorTheme) {
+        config.colors = config.colorTheme;
+      } else if (!config.colors) {
+        // Fallback to default colors if neither exists
+        config.colors = {
+          primary: "#10b981",
+          secondary: "#059669",
+          text: "#ffffff",
+          accent: "#fbbf24",
+        };
+      }
+
+      // Only update state if config actually changed
+      const newConfigString = JSON.stringify(config);
+      if (newConfigString !== previousConfigRef.current) {
+        console.log("Config changed, updating display");
+        previousConfigRef.current = newConfigString;
+        setCustomization(config);
       } else {
-        setDeviceAuth((prev) => ({
-          ...prev,
-          isLoading: false,
-          error: result.message || "Authorization failed",
-        }));
+        console.log("Config unchanged, skipping update");
       }
     } catch (err) {
-      setDeviceAuth((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: err instanceof Error ? err.message : "Failed to verify device",
-      }));
-    }
-  };
-
-  const handleRegisterDevice = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!registrationName.trim()) {
-      alert("Please enter a device name");
-      return;
-    }
-
-    setIsRegistering(true);
-
-    try {
-      const deviceId = localStorage.getItem("device_id");
-
-      const response = await fetch("/api/admin/device/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          deviceId,
-          displayId: id,
-          deviceName: registrationName,
-          userAgent: navigator.userAgent,
-          screenResolution: `${window.screen.width}x${window.screen.height}`,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        await checkDeviceAuth();
-        setRegistrationName("");
-      } else {
-        alert(result.message || "Registration failed");
-      }
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Registration failed");
+      console.error("Error fetching config:", err);
+      setError(err instanceof Error ? err.message : "Failed to load display");
     } finally {
-      setIsRegistering(false);
+      setIsLoading(false);
     }
   };
 
-  // Fetch config from database (only if device is authorized)
+  // Fetch config and setup Realtime subscription (only if device is authorized)
   useEffect(() => {
     if (!deviceAuth.isAuthorized) {
       return;
     }
 
-    const fetchConfig = async () => {
-      try {
-        // Only show loading on initial fetch
-        if (!customization) {
-          setIsLoading(true);
-        }
-        setError(null);
-
-        const response = await fetch(`/api/displays/${id}/config`);
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch display configuration");
-        }
-
-        const result = await response.json();
-
-        if (!result.success || !result.data) {
-          throw new Error("Invalid configuration data");
-        }
-
-        const config = result.data.config;
-        const status = result.data.status;
-        const name = result.data.name;
-
-        // Check if display is disabled
-        if (status === "disabled") {
-          setIsDisabled(true);
-          setDisplayName(name || "Display");
-          setIsLoading(false);
-          return;
-        }
-
-        setIsDisabled(false);
-
-        // Normalize color configuration - prioritize colorTheme over colors
-        if (config.colorTheme) {
-          config.colors = config.colorTheme;
-        } else if (!config.colors) {
-          // Fallback to default colors if neither exists
-          config.colors = {
-            primary: "#10b981",
-            secondary: "#059669",
-            text: "#ffffff",
-            accent: "#fbbf24",
-          };
-        }
-
-        // Only update state if config actually changed
-        const newConfigString = JSON.stringify(config);
-        if (newConfigString !== previousConfigRef.current) {
-          console.log("Config changed, updating display");
-          previousConfigRef.current = newConfigString;
-          setCustomization(config);
-        } else {
-          console.log("Config unchanged, skipping update");
-        }
-      } catch (err) {
-        console.error("Error fetching config:", err);
-        setError(err instanceof Error ? err.message : "Failed to load display");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
+    // Initial fetch
     fetchConfig();
 
-    // Poll every 5 minutes for updates
-    const interval = setInterval(fetchConfig, 300000);
+    // Setup Supabase Realtime subscription
+    console.log(`Setting up realtime subscription for display: ${id}`);
 
-    return () => clearInterval(interval);
+    const channel = supabase
+      .channel(`display-${id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*", // Listen to all events (INSERT, UPDATE, DELETE)
+          schema: "public",
+          table: "displays", // Replace with your actual table name
+          filter: `id=eq.${id}`, // Only listen to changes for this specific display
+        },
+        (payload) => {
+          console.log("Realtime update received:", payload);
+
+          // Refetch config when any change is detected
+          fetchConfig();
+        }
+      )
+      .subscribe((status) => {
+        console.log("Realtime subscription status:", status);
+      });
+
+    // Cleanup subscription on unmount
+    return () => {
+      console.log("Cleaning up realtime subscription");
+      supabase.removeChannel(channel);
+    };
   }, [id, deviceAuth.isAuthorized]);
 
   // Perfect scaling with correct 16:9 landscape preview
