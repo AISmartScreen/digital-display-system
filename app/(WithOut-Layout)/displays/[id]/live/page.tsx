@@ -96,23 +96,6 @@ export default function LivePage({ params }: LivePageProps) {
     checkUserRole();
   }, []);
 
-  // Check device authorization (only if not admin)
-  useEffect(() => {
-    if (isCheckingAuth) return;
-
-    // Skip device auth check for admins
-    if (userData?.role === "admin") {
-      return;
-    }
-
-    checkDeviceAuth();
-
-    // Re-check authorization every 30 seconds
-    const authInterval = setInterval(checkDeviceAuth, 30000);
-
-    return () => clearInterval(authInterval);
-  }, [id, isCheckingAuth, userData]);
-
   const checkDeviceAuth = async () => {
     try {
       setDeviceAuth((prev) => ({ ...prev, isLoading: true, error: null }));
@@ -278,7 +261,7 @@ export default function LivePage({ params }: LivePageProps) {
       console.log("🔴 Cleaning up device auth realtime");
       supabase.removeChannel(deviceChannel);
     };
-  }, [deviceAuth.deviceId, isCheckingAuth, userData]);
+  }, [deviceAuth.deviceId, isCheckingAuth, userData, id]);
 
   // Fetch config function (extracted for reuse)
   const fetchConfig = async () => {
