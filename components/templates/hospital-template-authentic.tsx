@@ -165,7 +165,27 @@ function HospitalTemplateAuthentic({
       "https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=800&h=800&fit=crop",
       "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800&h=800&fit=crop",
     ],
-    advertisements: customization.advertisements || [],
+    advertisements: customization.advertisements || [
+      {
+        id: "ad1",
+        enabled: true,
+        title: "Free Health Checkup Camp",
+        image:
+          "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=800&h=600&fit=crop",
+        caption: "Join us for a free health checkup camp this weekend!",
+        frequency: 300,
+        duration: 15,
+        dateRange: {
+          start: "2024-01-01",
+          end: "2024-12-31",
+        },
+        timeRange: {
+          start: "08:00",
+          end: "18:00",
+        },
+        daysOfWeek: [1, 2, 3, 4, 5, 6, 0],
+      },
+    ],
     layout: customization.layout || "Authentic",
     doctorRotationSpeed: customization.doctorRotationSpeed || 6000,
   };
