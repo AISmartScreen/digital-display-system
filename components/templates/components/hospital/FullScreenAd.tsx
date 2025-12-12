@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import { X, Play } from "lucide-react";
+import { X, Play, Loader2 } from "lucide-react";
 
 interface FullScreenAdProps {
   title: string;
@@ -23,66 +23,6 @@ interface FullScreenAdProps {
   onClose?: () => void;
   onDurationEnd?: () => void;
 }
-
-// Utility function to detect video source type
-const detectVideoSource = (
-  url: string
-): "youtube" | "cloudinary" | "direct" => {
-  if (!url) return "direct";
-
-  // YouTube detection
-  if (url.includes("youtube.com") || url.includes("youtu.be")) {
-    return "youtube";
-  }
-
-  // Cloudinary detection
-  if (url.includes("cloudinary.com") || url.includes("res.cloudinary.com")) {
-    return "cloudinary";
-  }
-
-  return "direct";
-};
-
-// Extract YouTube video ID
-const extractYouTubeId = (url: string): string | null => {
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
-    /youtube\.com\/watch\?.*v=([^&\n?#]+)/,
-  ];
-
-  for (const pattern of patterns) {
-    const match = url.match(pattern);
-    if (match && match[1]) {
-      return match[1];
-    }
-  }
-
-  return null;
-};
-
-// Convert YouTube URL to embed URL
-const getYouTubeEmbedUrl = (url: string): string | null => {
-  const videoId = extractYouTubeId(url);
-  if (!videoId) return null;
-
-  return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&controls=0&rel=0&modestbranding=1&playsinline=1&enablejsapi=1`;
-};
-
-// Optimize Cloudinary URL for video playback
-const optimizeCloudinaryUrl = (url: string): string => {
-  // If already optimized, return as is
-  if (url.includes("/upload/") && url.includes("q_auto")) {
-    return url;
-  }
-
-  // Add video optimization parameters
-  const urlParts = url.split("/upload/");
-  if (urlParts.length === 2) {
-    return `${urlParts[0]}/upload/q_auto,f_auto/${urlParts[1]}`;
-  }
-
-  return url;
-};
 
 const getAnimationClass = (animation: string) => {
   const animations: { [key: string]: string } = {
@@ -123,41 +63,35 @@ export default function FullScreenAd({
   const [isVideoReady, setIsVideoReady] = useState(false);
   const [showPlayButton, setShowPlayButton] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [videoSource, setVideoSource] = useState<
-    "youtube" | "cloudinary" | "direct"
-  >("direct");
-  const [processedVideoUrl, setProcessedVideoUrl] = useState<string>("");
+  const [isVideoLoading, setIsVideoLoading] = useState(false);
+  const [hasVideoError, setHasVideoError] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const playPromiseRef = useRef<Promise<void> | null>(null);
   const animationClass = getAnimationClass(animation);
 
-  // Process video URL on mount or when it changes
-  useEffect(() => {
-    if (videoUrl) {
-      const source = detectVideoSource(videoUrl);
-      setVideoSource(source);
+  // Store initial values in refs to prevent re-renders
+  const durationRef = useRef(duration);
+  const playCountRef = useRef(playCount);
+  const videoUrlRef = useRef(videoUrl);
+  const onDurationEndRef = useRef(onDurationEnd);
 
-      if (source === "youtube") {
-        const embedUrl = getYouTubeEmbedUrl(videoUrl);
-        setProcessedVideoUrl(embedUrl || videoUrl);
-      } else if (source === "cloudinary") {
-        setProcessedVideoUrl(optimizeCloudinaryUrl(videoUrl));
-      } else {
-        setProcessedVideoUrl(videoUrl);
-      }
-    }
-  }, [videoUrl]);
-
-  // Image timer functionality
+  // Update refs when props change
   useEffect(() => {
-    if (mediaType === "image" && showTimer) {
+    durationRef.current = duration;
+    playCountRef.current = playCount;
+    videoUrlRef.current = videoUrl;
+    onDurationEndRef.current = onDurationEnd;
+  }, [duration, playCount, videoUrl, onDurationEnd]);
+
+  // Image timer functionality - SIMPLIFIED
+  useEffect(() => {
+    if (mediaType === "image" && showTimer && duration > 0) {
+      setTimeRemaining(duration);
       const interval = setInterval(() => {
         setTimeRemaining((prev) => {
           if (prev <= 100) {
             clearInterval(interval);
-            if (onDurationEnd) onDurationEnd();
+            onDurationEndRef.current?.();
             return 0;
           }
           return prev - 100;
@@ -166,96 +100,58 @@ export default function FullScreenAd({
 
       return () => clearInterval(interval);
     }
-  }, [duration, showTimer, mediaType, onDurationEnd]);
+  }, [mediaType, showTimer]);
 
-  // Safe video play function
-  const playVideo = useCallback(async () => {
-    if (!videoRef.current || !isVideoReady) return;
-
-    try {
-      if (playPromiseRef.current) {
-        try {
-          await playPromiseRef.current;
-        } catch (e) {
-          // Ignore previous promise errors
-        }
-      }
-
-      playPromiseRef.current = videoRef.current.play();
-      await playPromiseRef.current;
-      setIsPlaying(true);
-      setShowPlayButton(false);
-    } catch (error: any) {
-      console.error("Video play failed:", error);
-      if (error.name === "NotAllowedError") {
-        setShowPlayButton(true);
-      } else {
-        if (onDurationEnd) {
-          onDurationEnd();
-        }
-      }
-    } finally {
-      playPromiseRef.current = null;
-    }
-  }, [isVideoReady, onDurationEnd]);
-
-  const pauseVideo = useCallback(async () => {
-    if (!videoRef.current) return;
-
-    try {
-      if (playPromiseRef.current) {
-        await playPromiseRef.current;
-      }
-      videoRef.current.pause();
-      setIsPlaying(false);
-    } catch (error) {
-      console.error("Video pause failed:", error);
-    }
-  }, []);
-
-  // Direct video (MP4, Cloudinary) initialization
+  // Video initialization - SIMPLIFIED VERSION
   useEffect(() => {
-    if (
-      mediaType !== "video" ||
-      !processedVideoUrl ||
-      videoSource === "youtube" ||
-      !videoRef.current
-    )
+    if (mediaType !== "video" || !videoUrl || !videoRef.current) {
       return;
+    }
 
     const video = videoRef.current;
     let isMounted = true;
+    let cleanupTimeout: NodeJS.Timeout;
 
-    setCurrentPlayCount(0);
-    setIsVideoReady(false);
-    setIsPlaying(false);
-    setShowPlayButton(false);
+    console.log("Setting up video player");
 
     const handleCanPlay = () => {
-      if (isMounted) {
-        setIsVideoReady(true);
-      }
+      if (!isMounted) return;
+      console.log("Video can play");
+      setIsVideoReady(true);
+      setIsVideoLoading(false);
+    };
+
+    const handlePlaying = () => {
+      if (!isMounted) return;
+      console.log("Video playing");
+      setIsPlaying(true);
+      setIsVideoLoading(false);
+    };
+
+    const handleWaiting = () => {
+      if (!isMounted) return;
+      console.log("Video waiting");
+      setIsVideoLoading(true);
     };
 
     const handleEnded = () => {
       if (!isMounted) return;
+      console.log("Video ended");
 
       setCurrentPlayCount((prev) => {
         const newCount = prev + 1;
+        const totalPlays = playCountRef.current;
 
-        if (newCount >= playCount) {
+        if (newCount >= totalPlays) {
           setIsPlaying(false);
-          if (onDurationEnd) {
-            onDurationEnd();
-          }
+          onDurationEndRef.current?.();
         } else {
+          // Restart video
           if (video) {
             video.currentTime = 0;
-            setTimeout(() => {
-              if (isMounted) {
-                playVideo();
-              }
-            }, 100);
+            video.play().catch((error) => {
+              console.error("Error replaying video:", error);
+            });
           }
         }
         return newCount;
@@ -263,120 +159,113 @@ export default function FullScreenAd({
     };
 
     const handleError = (e: Event) => {
+      if (!isMounted) return;
       const videoElement = e.target as HTMLVideoElement;
-      const errorDetails = {
-        error: videoElement.error,
-        code: videoElement.error?.code,
-        message: videoElement.error?.message,
-        videoUrl: processedVideoUrl,
-        videoSource: videoSource,
-        networkState: videoElement.networkState,
-        readyState: videoElement.readyState,
-      };
-      console.error("Video error details:", errorDetails);
-
-      if (videoSource === "cloudinary") {
-        console.warn(
-          "Cloudinary video failed. Check: 1) URL is accessible, 2) Format is supported, 3) CORS is configured"
-        );
-      } else {
-        console.warn(
-          "Failed to load video. Check: 1) URL is valid, 2) File format is MP4, 3) CORS headers if external"
-        );
-      }
-
-      if (isMounted && onDurationEnd) {
-        onDurationEnd();
-      }
+      console.error("Video error:", videoElement.error);
+      setIsVideoLoading(false);
+      setHasVideoError(true);
+      setIsVideoReady(false);
     };
 
-    video.addEventListener("canplay", handleCanPlay);
-    video.addEventListener("ended", handleEnded);
-    video.addEventListener("error", handleError);
+    // Reset states
+    setIsVideoReady(false);
+    setIsPlaying(false);
+    setIsVideoLoading(true);
+    setHasVideoError(false);
+    setShowPlayButton(false);
+    setCurrentPlayCount(0);
 
-    video.src = processedVideoUrl;
+    // Setup video element
+    video.src = videoUrl;
     video.preload = "auto";
     video.muted = true;
     video.playsInline = true;
+    video.crossOrigin = "anonymous";
     video.loop = playCount > 1;
 
-    const playTimeout = setTimeout(() => {
-      if (isMounted && video.readyState >= 2) {
-        playVideo();
-      }
-    }, 300);
+    // Add event listeners
+    video.addEventListener("canplay", handleCanPlay);
+    video.addEventListener("playing", handlePlaying);
+    video.addEventListener("waiting", handleWaiting);
+    video.addEventListener("ended", handleEnded);
+    video.addEventListener("error", handleError);
 
+    // Try to play after a delay
+    cleanupTimeout = setTimeout(() => {
+      if (isMounted && video.readyState >= 2) {
+        video
+          .play()
+          .then(() => {
+            if (isMounted) {
+              setIsPlaying(true);
+            }
+          })
+          .catch((error) => {
+            console.log("Autoplay blocked, showing manual play button:", error);
+            if (isMounted) {
+              setShowPlayButton(true);
+            }
+          });
+      }
+    }, 500);
+
+    // Cleanup function
     return () => {
+      console.log("Cleaning up video player");
       isMounted = false;
-      clearTimeout(playTimeout);
+      clearTimeout(cleanupTimeout);
+
+      // Remove event listeners
       video.removeEventListener("canplay", handleCanPlay);
+      video.removeEventListener("playing", handlePlaying);
+      video.removeEventListener("waiting", handleWaiting);
       video.removeEventListener("ended", handleEnded);
       video.removeEventListener("error", handleError);
-      pauseVideo();
-      video.src = "";
-      video.load();
-    };
-  }, [
-    mediaType,
-    processedVideoUrl,
-    videoSource,
-    playCount,
-    onDurationEnd,
-    playVideo,
-    pauseVideo,
-  ]);
 
-  // YouTube iframe handling
-  useEffect(() => {
-    if (
-      mediaType !== "video" ||
-      videoSource !== "youtube" ||
-      !processedVideoUrl
-    )
-      return;
-
-    let isMounted = true;
-    setIsPlaying(true);
-
-    // Auto-end after duration for YouTube videos
-    const timeout = setTimeout(() => {
-      if (isMounted && onDurationEnd) {
-        console.log("YouTube video duration ended");
-        onDurationEnd();
+      // Clean up video element
+      if (video) {
+        video.pause();
+        video.src = "";
+        video.load();
       }
-    }, duration);
-
-    return () => {
-      isMounted = false;
-      clearTimeout(timeout);
     };
-  }, [mediaType, videoSource, processedVideoUrl, duration, onDurationEnd]);
+  }, [mediaType, videoUrl]); // Only depend on mediaType and videoUrl
 
-  // Fallback timer for direct videos
+  // Fallback timer for videos
   useEffect(() => {
-    if (
-      mediaType === "video" &&
-      videoSource !== "youtube" &&
-      duration > 0 &&
-      isPlaying
-    ) {
+    if (mediaType === "video" && duration > 0 && isPlaying) {
+      console.log("Starting fallback timer for video");
       const timeout = setTimeout(() => {
-        if (onDurationEnd) {
-          console.log("Ad duration ended automatically");
-          onDurationEnd();
-        }
+        console.log("Video fallback timer expired");
+        onDurationEndRef.current?.();
       }, duration);
 
-      return () => clearTimeout(timeout);
+      return () => {
+        console.log("Clearing fallback timer");
+        clearTimeout(timeout);
+      };
     }
-  }, [mediaType, videoSource, duration, isPlaying, onDurationEnd]);
+  }, [mediaType, duration, isPlaying]);
 
-  const handleManualPlay = async () => {
-    await playVideo();
-  };
+  const handleManualPlay = useCallback(async () => {
+    if (!videoRef.current) return;
+
+    try {
+      setIsVideoLoading(true);
+      await videoRef.current.play();
+      setIsPlaying(true);
+      setShowPlayButton(false);
+      setIsVideoLoading(false);
+    } catch (error) {
+      console.error("Manual play failed:", error);
+      setIsVideoLoading(false);
+    }
+  }, []);
 
   const progressPercentage =
-    mediaType === "image" ? ((duration - timeRemaining) / duration) * 100 : 0;
+    mediaType === "image" && duration > 0
+      ? ((duration - timeRemaining) / duration) * 100
+      : 0;
 
   const formatTime = (ms: number) => {
     const seconds = Math.ceil(ms / 1000);
@@ -492,6 +381,14 @@ export default function FullScreenAd({
             opacity: 1;
           }
         }
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
         .animate-fadeIn {
           animation: fadeIn 0.8s ease-out;
         }
@@ -522,6 +419,9 @@ export default function FullScreenAd({
         .animate-rotateIn {
           animation: rotateIn 0.8s ease-out;
         }
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
       `}</style>
 
       <div
@@ -539,53 +439,92 @@ export default function FullScreenAd({
         )}
 
         <div className="absolute inset-0 flex items-center justify-center">
-          {mediaType === "video" && processedVideoUrl ? (
+          {mediaType === "video" && videoUrl ? (
             <>
-              {videoSource === "youtube" ? (
-                <iframe
-                  ref={iframeRef}
-                  src={processedVideoUrl}
-                  className="w-full h-full"
-                  allow="autoplay; encrypted-media; fullscreen"
-                  allowFullScreen
-                  style={{ border: "none" }}
-                  title={`YouTube video: ${title}`}
-                />
-              ) : (
-                <>
-                  <video
-                    ref={videoRef}
-                    className="w-full h-full object-cover"
-                    muted
-                    playsInline
-                    preload="auto"
-                    aria-label={`Video ad: ${title}`}
-                  >
-                    <source src={processedVideoUrl} type="video/mp4" />
-                    Your browser does not support the video tag.
-                  </video>
+              <video
+                ref={videoRef}
+                className={`w-full h-full object-cover ${
+                  isVideoLoading ? "opacity-50" : "opacity-100"
+                } transition-opacity duration-300`}
+                muted
+                playsInline
+                preload="auto"
+                crossOrigin="anonymous"
+                aria-label={`Video ad: ${title}`}
+              >
+                <source src={videoUrl} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
 
-                  {showPlayButton && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-                      <button
-                        onClick={handleManualPlay}
-                        className="px-10 py-6 rounded-2xl bg-white/20 hover:bg-white/30 backdrop-blur-lg transition-all duration-300 hover:scale-105 flex flex-col items-center gap-4"
-                        style={{ border: `2px solid ${accentColor}` }}
-                        aria-label="Play video"
-                      >
-                        <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center">
-                          <Play className="w-12 h-12 text-white ml-2" />
-                        </div>
-                        <span className="text-white text-xl font-semibold">
-                          Click to Play Video
-                        </span>
-                        <span className="text-white/70 text-sm">
-                          Autoplay was blocked by your browser
-                        </span>
-                      </button>
+              {/* Loading overlay */}
+              {(isVideoLoading || !isVideoReady) &&
+                !hasVideoError &&
+                !showPlayButton && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                    <div className="flex flex-col items-center gap-4">
+                      <Loader2
+                        className="w-10 h-10 text-white animate-spin"
+                        style={{ color: accentColor }}
+                      />
+                      <span className="text-white text-lg">
+                        Loading video...
+                      </span>
                     </div>
-                  )}
-                </>
+                  </div>
+                )}
+
+              {/* Manual play overlay */}
+              {showPlayButton && !hasVideoError && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+                  <button
+                    onClick={handleManualPlay}
+                    className="px-10 py-6 rounded-2xl bg-white/20 hover:bg-white/30 backdrop-blur-lg transition-all duration-300 hover:scale-105 flex flex-col items-center gap-4"
+                    style={{ border: `2px solid ${accentColor}` }}
+                    aria-label="Play video"
+                  >
+                    <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center">
+                      <Play className="w-12 h-12 text-white ml-2" />
+                    </div>
+                    <span className="text-white text-xl font-semibold">
+                      Click to Play Video
+                    </span>
+                    <span className="text-white/70 text-sm">
+                      Autoplay was blocked by your browser
+                    </span>
+                  </button>
+                </div>
+              )}
+
+              {/* Error overlay */}
+              {hasVideoError && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+                  <div className="text-center p-8 max-w-md">
+                    <div
+                      className="text-5xl mb-4"
+                      style={{ color: accentColor }}
+                    >
+                      ⚠️
+                    </div>
+                    <h3 className="text-2xl font-bold text-white mb-2">
+                      Video Failed to Load
+                    </h3>
+                    <p className="text-white/70 mb-6">
+                      Unable to load the video content.
+                    </p>
+                    {onDurationEnd && (
+                      <button
+                        onClick={onDurationEnd}
+                        className="px-6 py-3 rounded-lg font-medium"
+                        style={{
+                          backgroundColor: accentColor,
+                          color: "white",
+                        }}
+                      >
+                        Continue
+                      </button>
+                    )}
+                  </div>
+                </div>
               )}
             </>
           ) : (
@@ -601,7 +540,9 @@ export default function FullScreenAd({
               />
             )
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />
+
+          {/* Gradient overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 p-8 z-10">
@@ -616,13 +557,13 @@ export default function FullScreenAd({
               {caption}
             </p>
 
-            {mediaType === "image" && showTimer && (
+            {mediaType === "image" && showTimer && duration > 0 && (
               <div className="mb-4">
                 <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden">
                   <div
                     className="h-full transition-all duration-100 ease-linear rounded-full"
                     style={{
-                      width: `${progressPercentage}%`,
+                      width: `${Math.min(progressPercentage, 100)}%`,
                       background: `linear-gradient(90deg, ${primaryColor}, ${accentColor})`,
                     }}
                   />
@@ -635,23 +576,32 @@ export default function FullScreenAd({
               </div>
             )}
 
-            {mediaType === "video" && videoSource !== "youtube" && (
+            {mediaType === "video" && (
               <div className="mb-4">
                 <div className="flex items-center gap-2">
                   <div className="text-white/70 text-sm">
-                    {isPlaying ? "Now playing" : "Paused"}:{" "}
-                    {Math.min(currentPlayCount + 1, playCount)} of {playCount}
+                    {isVideoLoading
+                      ? "Loading..."
+                      : isPlaying
+                      ? "Now playing"
+                      : showPlayButton
+                      ? "Click to play"
+                      : "Ready"}
+                    : {Math.min(currentPlayCount + 1, playCount)} of {playCount}
                   </div>
                   <div className="flex gap-1">
                     {Array.from({ length: playCount }).map((_, idx) => (
                       <div
                         key={idx}
-                        className={`w-2 h-2 rounded-full ${
+                        className={`w-2 h-2 rounded-full transition-colors duration-300 ${
                           idx < currentPlayCount ? "bg-white" : "bg-white/30"
                         }`}
                       />
                     ))}
                   </div>
+                  {isVideoLoading && (
+                    <Loader2 className="w-3 h-3 text-white animate-spin ml-2" />
+                  )}
                 </div>
               </div>
             )}
