@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ImageUploader } from "./ImageUploader";
+import { VideoUploader } from "./VideoUploader";
 
 interface Advertisement {
   id: string;
@@ -518,23 +519,17 @@ export function AdvertisementEditor({
                 ) : (
                   <div>
                     <label className="text-xs text-slate-400 mb-1 block">
-                      Video URL (MP4, WebM, OGG)
+                      Advertisement Video (16:9 recommended)
                     </label>
-                    <Input
-                      value={ad.video || ""}
-                      onChange={(e) =>
-                        handleUpdateAdvertisement(
-                          originalIdx,
-                          "video",
-                          e.target.value
-                        )
+                    <VideoUploader
+                      videoUrl={ad.video || ""}
+                      onChange={(url) =>
+                        handleUpdateAdvertisement(originalIdx, "video", url)
                       }
-                      placeholder="https://example.com/video.mp4"
-                      className="bg-slate-700 border-slate-600 text-slate-50"
+                      userId={userId}
+                      displayId={displayId}
+                      environment={environment}
                     />
-                    <p className="text-xs text-slate-500 mt-1">
-                      Supported: .mp4, .webm, .ogg formats
-                    </p>
                   </div>
                 )}
 

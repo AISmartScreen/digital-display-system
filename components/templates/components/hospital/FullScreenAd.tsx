@@ -83,7 +83,7 @@ export default function FullScreenAd({
     onDurationEndRef.current = onDurationEnd;
   }, [duration, playCount, videoUrl, onDurationEnd]);
 
-  // Image timer functionality - SIMPLIFIED
+  // Image timer functionality
   useEffect(() => {
     if (mediaType === "image" && showTimer && duration > 0) {
       setTimeRemaining(duration);
@@ -100,9 +100,9 @@ export default function FullScreenAd({
 
       return () => clearInterval(interval);
     }
-  }, [mediaType, showTimer]);
+  }, [mediaType, showTimer, duration]);
 
-  // Video initialization - SIMPLIFIED VERSION
+  // Video initialization - MODIFIED to use playCount
   useEffect(() => {
     if (mediaType !== "video" || !videoUrl || !videoRef.current) {
       return;
@@ -112,7 +112,7 @@ export default function FullScreenAd({
     let isMounted = true;
     let cleanupTimeout: NodeJS.Timeout;
 
-    console.log("Setting up video player");
+    console.log("Setting up video player with playCount:", playCount);
 
     const handleCanPlay = () => {
       if (!isMounted) return;
@@ -142,16 +142,23 @@ export default function FullScreenAd({
         const newCount = prev + 1;
         const totalPlays = playCountRef.current;
 
+        console.log(`Play ${newCount} of ${totalPlays} completed`);
+
         if (newCount >= totalPlays) {
+          console.log(`All ${totalPlays} plays completed, ending video`);
           setIsPlaying(false);
           onDurationEndRef.current?.();
         } else {
-          // Restart video
+          console.log(`Replaying video (${newCount + 1}/${totalPlays})`);
+          // Restart video for next play
           if (video) {
             video.currentTime = 0;
-            video.play().catch((error) => {
-              console.error("Error replaying video:", error);
-            });
+            setTimeout(() => {
+              video.play().catch((error) => {
+                console.error("Error replaying video:", error);
+                setShowPlayButton(true);
+              });
+            }, 100);
           }
         }
         return newCount;
@@ -181,7 +188,8 @@ export default function FullScreenAd({
     video.muted = true;
     video.playsInline = true;
     video.crossOrigin = "anonymous";
-    video.loop = playCount > 1;
+    // Don't use loop as we handle it manually with playCount
+    video.loop = false;
 
     // Add event listeners
     video.addEventListener("canplay", handleCanPlay);
@@ -229,24 +237,9 @@ export default function FullScreenAd({
         video.load();
       }
     };
-  }, [mediaType, videoUrl]); // Only depend on mediaType and videoUrl
+  }, [mediaType, videoUrl, playCount]); // Added playCount dependency
 
-  // Fallback timer for videos
-  useEffect(() => {
-    if (mediaType === "video" && duration > 0 && isPlaying) {
-      console.log("Starting fallback timer for video");
-      const timeout = setTimeout(() => {
-        console.log("Video fallback timer expired");
-        onDurationEndRef.current?.();
-      }, duration);
-
-      return () => {
-        console.log("Clearing fallback timer");
-        clearTimeout(timeout);
-      };
-    }
-  }, [mediaType, duration, isPlaying]);
-
+  // Manual play handler
   const handleManualPlay = useCallback(async () => {
     if (!videoRef.current) return;
 
@@ -260,6 +253,12 @@ export default function FullScreenAd({
       console.error("Manual play failed:", error);
       setIsVideoLoading(false);
     }
+  }, []);
+
+  // Skip button handler (for testing)
+  const handleSkipVideo = useCallback(() => {
+    console.log("Skipping video early");
+    onDurationEndRef.current?.();
   }, []);
 
   const progressPercentage =
@@ -277,6 +276,7 @@ export default function FullScreenAd({
   return (
     <>
       <style jsx>{`
+        /* Animation styles remain the same */
         @keyframes fadeIn {
           from {
             opacity: 0;
@@ -438,6 +438,17 @@ export default function FullScreenAd({
           </button>
         )}
 
+        {/* Optional skip button for video (for testing) */}
+        {mediaType === "video" && onDurationEnd && (
+          <button
+            onClick={handleSkipVideo}
+            className="absolute top-6 left-6 z-50 px-4 py-2 rounded-full bg-black/50 hover:bg-black/70 backdrop-blur-sm flex items-center justify-center transition-all text-white text-sm font-medium"
+            style={{ borderColor: accentColor, borderWidth: "2px" }}
+          >
+            Skip Video
+          </button>
+        )}
+
         <div className="absolute inset-0 flex items-center justify-center">
           {mediaType === "video" && videoUrl ? (
             <>
@@ -489,7 +500,11 @@ export default function FullScreenAd({
                       Click to Play Video
                     </span>
                     <span className="text-white/70 text-sm">
-                      Autoplay was blocked by your browser
+                      {playCount > 1
+                        ? `Will play ${playCount} time${
+                            playCount > 1 ? "s" : ""
+                          }`
+                        : "Autoplay was blocked by your browser"}
                     </span>
                   </button>
                 </div>
@@ -578,30 +593,38 @@ export default function FullScreenAd({
 
             {mediaType === "video" && (
               <div className="mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="text-white/70 text-sm">
-                    {isVideoLoading
-                      ? "Loading..."
-                      : isPlaying
-                      ? "Now playing"
-                      : showPlayButton
-                      ? "Click to play"
-                      : "Ready"}
-                    : {Math.min(currentPlayCount + 1, playCount)} of {playCount}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="text-white/70 text-sm">
+                      {isVideoLoading
+                        ? "Loading..."
+                        : isPlaying
+                        ? "Now playing"
+                        : showPlayButton
+                        ? "Click to play"
+                        : hasVideoError
+                        ? "Error loading video"
+                        : "Ready"}
+                    </div>
+                    <div className="flex gap-1">
+                      {Array.from({ length: playCount }).map((_, idx) => (
+                        <div
+                          key={idx}
+                          className={`w-3 h-3 rounded-full transition-colors duration-300 ${
+                            idx < currentPlayCount ? "bg-white" : "bg-white/30"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    {isVideoLoading && (
+                      <Loader2 className="w-3 h-3 text-white animate-spin ml-2" />
+                    )}
                   </div>
-                  <div className="flex gap-1">
-                    {Array.from({ length: playCount }).map((_, idx) => (
-                      <div
-                        key={idx}
-                        className={`w-2 h-2 rounded-full transition-colors duration-300 ${
-                          idx < currentPlayCount ? "bg-white" : "bg-white/30"
-                        }`}
-                      />
-                    ))}
+                  <div className="text-white/70 text-sm font-medium">
+                    Play {Math.min(currentPlayCount + 1, playCount)} of{" "}
+                    {playCount}
+                    {playCount > 1 ? " times" : " time"}
                   </div>
-                  {isVideoLoading && (
-                    <Loader2 className="w-3 h-3 text-white animate-spin ml-2" />
-                  )}
                 </div>
               </div>
             )}
