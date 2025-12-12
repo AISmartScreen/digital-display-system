@@ -1,7 +1,6 @@
 // components/VideoUploader.tsx
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Upload, Video as VideoIcon, X, Play, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 interface VideoUploaderProps {
   videoUrl: string;
@@ -20,8 +19,45 @@ export function VideoUploader({
 }: VideoUploaderProps) {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [mediaUploadedVideos, setMediaUploadedVideos] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch uploaded videos from media library
+  useEffect(() => {
+    const fetchVideos = async () => {
+      if (!userId) return;
+
+      setIsLoading(true);
+      try {
+        const response = await fetch(`/api/media`);
+        if (!response.ok) {
+          console.error("Failed to fetch videos:", await response.text());
+          return;
+        }
+
+        const allMedia = await response.json();
+        // Filter for videos of type "advertisement"
+        const filteredVideos = allMedia
+          .filter(
+            (item: any) =>
+              item.fileType === "video" && item.type === "advertisement"
+          )
+          .map((item: any) => item.fileUrl);
+
+        setMediaUploadedVideos(filteredVideos);
+      } catch (err) {
+        console.error("Error fetching videos:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (userId) {
+      fetchVideos();
+    }
+  }, [userId]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -90,7 +126,9 @@ export function VideoUploader({
 
   const uploadVideo = async (file: File) => {
     const formData = new FormData();
-    formData.append("files", file); // Note: Using "files" instead of "file"
+
+    // Use "file" field name as shown in your logs
+    formData.append("file", file);
     formData.append("userId", userId!);
     formData.append("displayId", displayId);
     formData.append("type", "advertisement");
@@ -107,8 +145,24 @@ export function VideoUploader({
     }
 
     const data = await response.json();
+
     if (data.urls && data.urls.length > 0) {
       onChange(data.urls[0]);
+
+      // Refresh video library
+      const videosResponse = await fetch(`/api/media`);
+      if (videosResponse.ok) {
+        const allMedia = await videosResponse.json();
+        const newVideos = allMedia
+          .filter(
+            (item: any) =>
+              item.fileType === "video" && item.type === "advertisement"
+          )
+          .map((item: any) => item.fileUrl);
+        setMediaUploadedVideos(newVideos);
+      }
+    } else if (data.url) {
+      onChange(data.url);
     } else {
       throw new Error("No URL returned from upload");
     }
@@ -119,114 +173,186 @@ export function VideoUploader({
     setPreviewUrl(null);
   };
 
-  const handlePreview = () => {
-    if (videoUrl) {
-      setPreviewUrl(videoUrl);
-    }
+  const handleVideoClick = (url: string) => {
+    onChange(url);
+  };
+
+  const handlePreview = (url: string) => {
+    setPreviewUrl(url);
   };
 
   const supportedFormats = ".mp4,.webm,.ogg,.mov,.avi,.m4v";
 
   return (
     <div className="space-y-3">
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept={supportedFormats}
-        onChange={handleFileSelect}
-        className="hidden"
-      />
-
-      {videoUrl ? (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <VideoIcon className="w-4 h-4 text-blue-400" />
-              <span className="text-sm text-slate-300 truncate">
-                {videoUrl.split("/").pop() || "Uploaded video"}
-              </span>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handlePreview}
-                className="h-7 text-xs bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600"
-              >
-                <Play className="w-3 h-3 mr-1" />
-                Preview
-              </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={handleRemoveVideo}
-                className="h-7 text-xs"
-              >
-                <X className="w-3 h-3" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="relative aspect-video bg-slate-900 rounded-lg overflow-hidden border border-slate-700">
-            <video
-              src={videoUrl}
-              className="w-full h-full object-cover"
-              controls={false}
-              muted
-              onMouseEnter={(e) => {
-                const video = e.currentTarget as HTMLVideoElement;
-                video.play().catch(console.error);
-              }}
-              onMouseLeave={(e) => {
-                const video = e.currentTarget as HTMLVideoElement;
-                video.pause();
-                video.currentTime = 0;
-              }}
-            />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-              <div className="p-3 bg-black/50 rounded-full hover:bg-black/70 transition-colors">
-                <Play className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </div>
-          <p className="text-xs text-slate-500">Hover to preview video</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading || !userId}
-            className="w-full border-blue-500/50 hover:border-blue-400 hover:bg-blue-500/10 text-blue-400 h-20 flex flex-col items-center justify-center gap-2"
-          >
-            {isUploading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Uploading video...</span>
-              </>
-            ) : (
-              <>
-                <Upload className="w-5 h-5" />
-                <div className="text-center">
-                  <div className="font-medium">Upload Video</div>
-                  <div className="text-xs font-normal text-blue-300/70">
-                    Click to select a video file
-                  </div>
-                </div>
-              </>
-            )}
-          </Button>
-          <div className="text-xs text-slate-500 text-center space-y-1">
-            <p>Supported formats: MP4, WebM, OGG, MOV, AVI, M4V</p>
-            <p>Maximum size: 100MB • Maximum duration: 5 minutes</p>
-          </div>
-        </div>
-      )}
+      {/* Upload Button */}
+      <div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={supportedFormats}
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isUploading || !userId || !displayId}
+          className="w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed border-blue-600 rounded-lg hover:border-blue-500 hover:bg-blue-700/30 text-blue-400 hover:text-blue-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isUploading ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <Upload className="w-5 h-5" />
+          )}
+          <span className="text-sm font-medium">
+            {isUploading ? "Uploading..." : "Upload Video"}
+          </span>
+        </button>
+        <p className="text-xs text-slate-500 mt-2 text-center">
+          Supported: MP4, WebM, OGG, MOV, AVI (max 100MB, 5 minutes)
+        </p>
+      </div>
 
       {uploadError && (
         <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
           <p className="text-sm text-red-400">{uploadError}</p>
+        </div>
+      )}
+
+      {/* Selected Video */}
+      {videoUrl && (
+        <div>
+          <label className="text-xs text-slate-400 font-medium block mb-2">
+            Currently Selected Video
+          </label>
+          <div className="bg-slate-700/50 p-3 rounded-lg border border-slate-600">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <VideoIcon className="w-4 h-4 text-blue-400" />
+                <span className="text-sm text-slate-300 truncate">
+                  {videoUrl.split("/").pop() || "Selected video"}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => handlePreview(videoUrl)}
+                  className="p-1.5 bg-slate-700 rounded hover:bg-slate-600"
+                  title="Preview video"
+                >
+                  <Play className="w-3 h-3 text-slate-300" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRemoveVideo}
+                  className="p-1.5 bg-red-500/20 rounded hover:bg-red-500/30"
+                  title="Remove video"
+                >
+                  <X className="w-3 h-3 text-red-400" />
+                </button>
+              </div>
+            </div>
+
+            <div className="relative aspect-video bg-slate-900 rounded overflow-hidden">
+              <video
+                src={videoUrl}
+                className="w-full h-full object-cover"
+                controls={false}
+                muted
+                onMouseEnter={(e) => {
+                  const video = e.currentTarget as HTMLVideoElement;
+                  video.play().catch(console.error);
+                }}
+                onMouseLeave={(e) => {
+                  const video = e.currentTarget as HTMLVideoElement;
+                  video.pause();
+                  video.currentTime = 0;
+                }}
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="p-3 bg-black/50 rounded-full">
+                  <Play className="w-6 h-6 text-white" />
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-slate-500 mt-2">
+              Hover to preview • Click play button for fullscreen
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Video Library */}
+      {(isLoading || mediaUploadedVideos.length > 0) && (
+        <div className="mt-4 pt-4 border-t border-slate-700">
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs font-medium flex items-center gap-2">
+              <span className="inline-block w-2 h-2 bg-blue-500 rounded-full"></span>
+              <span className="text-blue-400">
+                Video Library ({mediaUploadedVideos.length})
+              </span>
+            </label>
+          </div>
+
+          {isLoading ? (
+            <div className="text-center py-6">
+              <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-blue-400 border-t-transparent"></div>
+              <p className="text-xs text-slate-400 mt-2">
+                Loading video library...
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto custom-scrollbar">
+              {mediaUploadedVideos.map((url, idx) => (
+                <div
+                  key={idx}
+                  className="relative group cursor-pointer"
+                  onClick={() => handleVideoClick(url)}
+                >
+                  <div className="relative aspect-video bg-slate-900 rounded border-2 transition-colors overflow-hidden">
+                    <video
+                      src={url}
+                      className={`w-full h-full object-cover ${
+                        videoUrl === url
+                          ? "opacity-100"
+                          : "opacity-90 group-hover:opacity-100"
+                      }`}
+                      controls={false}
+                      muted
+                      onMouseEnter={(e) => {
+                        const video = e.currentTarget as HTMLVideoElement;
+                        video.play().catch(console.error);
+                      }}
+                      onMouseLeave={(e) => {
+                        const video = e.currentTarget as HTMLVideoElement;
+                        video.pause();
+                        video.currentTime = 0;
+                      }}
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="p-2 bg-black/50 rounded-full">
+                        <Play className="w-4 h-4 text-white" />
+                      </div>
+                    </div>
+                    <div
+                      className={`absolute inset-0 border-2 rounded transition-colors ${
+                        videoUrl === url
+                          ? "border-blue-500"
+                          : "border-slate-600 group-hover:border-blue-400"
+                      }`}
+                    />
+                  </div>
+                  <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                    Video {idx + 1}
+                  </div>
+                  <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                    {videoUrl === url ? "✓ Selected" : "Click to use"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -242,14 +368,13 @@ export function VideoUploader({
           >
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
               <h3 className="text-lg font-medium text-white">Video Preview</h3>
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
+                type="button"
                 onClick={() => setPreviewUrl(null)}
-                className="h-8 w-8 p-0 hover:bg-slate-800"
+                className="p-2 hover:bg-slate-800 rounded-lg"
               >
-                <X className="w-4 h-4 text-slate-300" />
-              </Button>
+                <X className="w-5 h-5 text-slate-300" />
+              </button>
             </div>
             <div className="p-2">
               <video
@@ -262,6 +387,24 @@ export function VideoUploader({
           </div>
         </div>
       )}
+
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #1e293b;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #475569;
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #64748b;
+        }
+      `}</style>
     </div>
   );
 }
+
+export default VideoUploader;
