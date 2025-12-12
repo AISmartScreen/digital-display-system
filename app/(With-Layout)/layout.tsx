@@ -36,12 +36,12 @@ export default function RootLayout({
         className="bg-gray-950 text-gray-50 antialiased"
         suppressHydrationWarning
       >
-        <ThemeProvider>
-          <div className="flex">
-            <Sidebar />
-            <main className="flex-1 ml-16 sm:ml-20">{children}</main>
-          </div>
-        </ThemeProvider>
+        {/* <ThemeProvider> */}
+        <div className="flex">
+          <Sidebar />
+          <main className="flex-1 ml-16 sm:ml-20">{children}</main>
+        </div>
+        {/* </ThemeProvider> */}
       </body>
     </html>
   );

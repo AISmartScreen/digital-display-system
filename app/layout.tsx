@@ -192,13 +192,13 @@ export default function RootLayout({
         itemProp="mainEntity"
         itemType="https://schema.org/SoftwareApplication"
       >
-        <ThemeProvider>
-          <div className="flex">
-            <main className="flex-1" itemScope itemProp="mainContentOfPage">
-              {children}
-            </main>
-          </div>
-        </ThemeProvider>
+        {/* <ThemeProvider> */}
+        <div className="flex">
+          <main className="flex-1" itemScope itemProp="mainContentOfPage">
+            {children}
+          </main>
+        </div>
+        {/* </ThemeProvider> */}
 
         {/* Performance optimizations */}
         <script

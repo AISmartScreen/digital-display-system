@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Heart } from "lucide-react";
 import { GalleryCarousel } from "./components/hospital/GalleryCarousel";
-import { FullScreenAd } from "./components/hospital/FullScreenAd";
+import FullScreenAd from "./components/hospital/FullScreenAd";
 import { DoctorCarousel } from "./components/hospital/DoctorCarousel.tsx";
 
 interface Doctor {
