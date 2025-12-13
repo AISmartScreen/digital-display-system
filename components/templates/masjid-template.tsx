@@ -1175,9 +1175,9 @@ export function MasjidTemplate({
     return (
       <div className="w-full h-full flex flex-col justify-between px-12 py-8 overflow-hidden">
         {/* Top Section - Current Time & Date - Full Width Card */}
-        <div className="mb-6">
+        <div className="mb-12">
           <div
-            className="p-12 rounded-[4rem] backdrop-blur-lg relative overflow-hidden"
+            className="px-12 py-4 rounded-[4rem] backdrop-blur-lg relative overflow-hidden"
             style={{
               backgroundColor: `${customization.colors.primary}50`,
               border: `3px solid ${customization.colors.accent}80`,
