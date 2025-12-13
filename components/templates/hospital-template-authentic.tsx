@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Heart } from "lucide-react";
 import { GalleryCarousel } from "./components/hospital/GalleryCarousel";
 import FullScreenAd from "./components/hospital/FullScreenAd";
@@ -39,6 +39,7 @@ interface AdSchedule {
   };
   daysOfWeek: number[];
   animation?: string;
+  priority?: number;
 }
 
 interface HospitalCustomization {
@@ -63,69 +64,12 @@ interface HospitalCustomization {
   doctorRotationSpeed: number;
 }
 
-const getNextRoundedInterval = (frequencySeconds: number): Date => {
-  const now = new Date();
-  const currentSeconds = now.getSeconds();
-  const currentMinutes = now.getMinutes();
-  const currentHours = now.getHours();
-  const frequencyMinutes = frequencySeconds / 60;
-
-  if (frequencyMinutes < 1) {
-    const totalSeconds = currentMinutes * 60 + currentSeconds;
-    const nextRoundedSeconds =
-      Math.ceil(totalSeconds / frequencySeconds) * frequencySeconds;
-    const nextMinutes = Math.floor(nextRoundedSeconds / 60) % 60;
-    const nextSeconds = nextRoundedSeconds % 60;
-    const extraHours = Math.floor(nextRoundedSeconds / 3600);
-
-    const nextTime = new Date(now);
-    nextTime.setHours(currentHours + extraHours);
-    nextTime.setMinutes(nextMinutes);
-    nextTime.setSeconds(nextSeconds);
-    nextTime.setMilliseconds(0);
-
-    if (nextTime <= now) {
-      nextTime.setSeconds(nextTime.getSeconds() + frequencySeconds);
-    }
-
-    return nextTime;
-  }
-
-  const totalMinutes = currentHours * 60 + currentMinutes;
-  const nextRoundedMinutes =
-    Math.ceil(totalMinutes / frequencyMinutes) * frequencyMinutes;
-
-  const nextHours = Math.floor(nextRoundedMinutes / 60) % 24;
-  const nextMinutes = nextRoundedMinutes % 60;
-
-  const nextTime = new Date(now);
-  nextTime.setHours(nextHours);
-  nextTime.setMinutes(nextMinutes);
-  nextTime.setSeconds(0);
-  nextTime.setMilliseconds(0);
-
-  if (nextTime <= now) {
-    nextTime.setMinutes(nextTime.getMinutes() + frequencyMinutes);
-  }
-
-  return nextTime;
-};
-
-const isAtRoundedInterval = (frequencySeconds: number): boolean => {
-  const now = new Date();
-  const currentSeconds = now.getSeconds();
-  const currentMinutes = now.getMinutes();
-  const currentHours = now.getHours();
-  const frequencyMinutes = frequencySeconds / 60;
-
-  if (frequencyMinutes < 1) {
-    const totalSeconds = currentMinutes * 60 + currentSeconds;
-    return totalSeconds % frequencySeconds === 0;
-  }
-
-  const totalMinutes = currentHours * 60 + currentMinutes;
-  return totalMinutes % frequencyMinutes === 0 && currentSeconds === 0;
-};
+interface AdQueueState {
+  queue: AdSchedule[];
+  currentAd: AdSchedule | null;
+  isPlaying: boolean;
+  currentIndex: number;
+}
 
 function HospitalTemplateAuthentic({
   customization = {},
@@ -151,24 +95,8 @@ function HospitalTemplateAuthentic({
       "Welcome to OLIVIA Hospital - Compassionate Care, Advanced Medicine",
     tickerRightMessage:
       customization.tickerRightMessage || "Contact Us: (123) 456-7890",
-    doctors: customization.doctors || [
-      {
-        name: "Dr. Sarah Johnson",
-        specialty: "Cardiology",
-        qualifications: "MD, PhD",
-        consultationDays: "Mon, Wed, Fri",
-        consultationTime: "9:00 AM - 5:00 PM",
-        experience: "15+ Years",
-        image:
-          "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop",
-        available: "Mon-Fri, 9 AM - 5 PM",
-      },
-    ],
-    galleryImages: customization.galleryImages || [
-      "https://images.unsplash.com/photo-1538108149393-fbbd81895907?w=800&h=800&fit=crop",
-      "https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=800&h=800&fit=crop",
-      "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800&h=800&fit=crop",
-    ],
+    doctors: customization.doctors || [],
+    galleryImages: customization.galleryImages || [],
     advertisements: customization.advertisements || [],
     layout: customization.layout || "Authentic",
     doctorRotationSpeed: customization.doctorRotationSpeed || 6000,
@@ -176,11 +104,16 @@ function HospitalTemplateAuthentic({
 
   const [currentTime, setCurrentTime] = useState(new Date());
   const [currentBgIndex, setCurrentBgIndex] = useState(0);
-  const [activeAd, setActiveAd] = useState<AdSchedule | null>(null);
-  const [showAd, setShowAd] = useState(false);
-  const adCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const adDurationRef = useRef<NodeJS.Timeout | null>(null);
-  const lastTriggeredAdRef = useRef<Map<string, number>>(new Map());
+  const [adQueueState, setAdQueueState] = useState<AdQueueState>({
+    queue: [],
+    currentAd: null,
+    isPlaying: false,
+    currentIndex: 0,
+  });
+
+  const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const scheduledAdsRef = useRef<Set<string>>(new Set());
+  const lastCheckTimeRef = useRef<number>(0);
 
   const bgImages =
     settings.enableSlideshow &&
@@ -189,108 +122,200 @@ function HospitalTemplateAuthentic({
       ? settings.backgroundImages
       : [settings.backgroundImage];
 
-  const isWithinSchedule = (schedule: AdSchedule): boolean => {
-    if (!schedule.enabled) return false;
+  // Check if ad should play now based on schedule
+  const isAdScheduledNow = useCallback((ad: AdSchedule, now: Date): boolean => {
+    if (!ad.enabled) return false;
+
+    // Check date range
+    const startDate = new Date(ad.dateRange.start);
+    const endDate = new Date(ad.dateRange.end);
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
+
+    if (now < startDate || now > endDate) {
+      return false;
+    }
+
+    // Check day of week
+    const currentDay = now.getDay();
+    if (!ad.daysOfWeek.includes(currentDay)) {
+      return false;
+    }
+
+    // Check time range
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+    const [startHour, startMin] = ad.timeRange.start.split(":").map(Number);
+    const [endHour, endMin] = ad.timeRange.end.split(":").map(Number);
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+
+    if (currentTime < startMinutes || currentTime > endMinutes) {
+      return false;
+    }
+
+    // Check frequency interval
+    const totalSeconds =
+      now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    const isAtInterval = totalSeconds % ad.frequency === 0;
+
+    if (!isAtInterval) return false;
+
+    // Check if already scheduled in this frequency window
+    const secondsSinceLastCheck =
+      (now.getTime() - lastCheckTimeRef.current) / 1000;
+    if (secondsSinceLastCheck < ad.frequency) {
+      if (scheduledAdsRef.current.has(ad.id)) {
+        return false;
+      }
+    } else {
+      // New frequency window - clear scheduled ads
+      scheduledAdsRef.current.clear();
+    }
+
+    return true;
+  }, []);
+
+  // Find all ads that should play now
+  const findScheduledAds = useCallback(
+    (now: Date): AdSchedule[] => {
+      const matchingAds = settings.advertisements.filter((ad) =>
+        isAdScheduledNow(ad, now)
+      );
+
+      // Sort by priority (lower number = higher priority)
+      return matchingAds.sort(
+        (a, b) => (a.priority || 999) - (b.priority || 999)
+      );
+    },
+    [settings.advertisements, isAdScheduledNow]
+  );
+
+  // Play next ad in queue
+  const playNext = useCallback(() => {
+    setAdQueueState((prev) => {
+      // No more ads in queue
+      if (prev.currentIndex >= prev.queue.length) {
+        console.log("✅ Ad queue completed, returning to normal display");
+        return {
+          queue: [],
+          currentAd: null,
+          isPlaying: false,
+          currentIndex: 0,
+        };
+      }
+
+      const nextAd = prev.queue[prev.currentIndex];
+      console.log(
+        `▶️ Playing ad ${prev.currentIndex + 1}/${prev.queue.length}:`,
+        {
+          title: nextAd.title,
+          type: nextAd.mediaType,
+          duration:
+            nextAd.mediaType === "image"
+              ? `${nextAd.duration}s`
+              : `${nextAd.playCount} plays`,
+        }
+      );
+
+      return {
+        ...prev,
+        currentAd: nextAd,
+        isPlaying: true,
+      };
+    });
+  }, []);
+
+  // Handle ad completion
+  const handleAdComplete = useCallback(() => {
+    console.log("✓ Ad completed");
+
+    setAdQueueState((prev) => ({
+      ...prev,
+      currentAd: null,
+      isPlaying: false,
+      currentIndex: prev.currentIndex + 1,
+    }));
+
+    // Small delay before next ad
+    setTimeout(() => {
+      playNext();
+    }, 300);
+  }, [playNext]);
+
+  // Check schedule periodically
+  const checkSchedule = useCallback(() => {
+    // Don't check if currently playing
+    if (adQueueState.isPlaying) {
+      return;
+    }
 
     const now = new Date();
-    const scheduleStartDate = new Date(schedule.dateRange.start);
-    const scheduleEndDate = new Date(schedule.dateRange.end);
+    const matchingAds = findScheduledAds(now);
 
-    scheduleStartDate.setHours(0, 0, 0, 0);
-    scheduleEndDate.setHours(23, 59, 59, 999);
+    if (matchingAds.length > 0) {
+      console.log(
+        `🎬 Found ${matchingAds.length} scheduled ad(s):`,
+        matchingAds.map((ad) => ({ title: ad.title, priority: ad.priority }))
+      );
 
-    if (now < scheduleStartDate || now > scheduleEndDate) {
-      return false;
+      // Mark these ads as scheduled for this frequency window
+      matchingAds.forEach((ad) => scheduledAdsRef.current.add(ad.id));
+
+      // Start the queue
+      setAdQueueState({
+        queue: matchingAds,
+        currentAd: null,
+        isPlaying: false,
+        currentIndex: 0,
+      });
+
+      // Update last check time
+      lastCheckTimeRef.current = now.getTime();
+
+      // Start playing first ad
+      setTimeout(() => {
+        playNext();
+      }, 100);
     }
+  }, [adQueueState.isPlaying, findScheduledAds, playNext]);
 
-    const currentDay = now.getDay();
-    if (!schedule.daysOfWeek.includes(currentDay)) {
-      return false;
-    }
-
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
-    const currentTimeInMinutes = currentHour * 60 + currentMinute;
-
-    const [startHour, startMinute] = schedule.timeRange.start
-      .split(":")
-      .map(Number);
-    const [endHour, endMinute] = schedule.timeRange.end.split(":").map(Number);
-
-    const startTimeInMinutes = startHour * 60 + startMinute;
-    const endTimeInMinutes = endHour * 60 + endMinute;
-
-    return (
-      currentTimeInMinutes >= startTimeInMinutes &&
-      currentTimeInMinutes <= endTimeInMinutes
-    );
-  };
-
-  const findActiveAdScheduleToShow = (): AdSchedule | null => {
-    const now = Date.now();
-
-    const eligibleAds = settings.advertisements.filter((schedule) => {
-      if (!isWithinSchedule(schedule)) return false;
-      if (!isAtRoundedInterval(schedule.frequency)) return false;
-
-      const lastTriggered = lastTriggeredAdRef.current.get(schedule.id) || 0;
-      if (now - lastTriggered < 2000) return false;
-
-      return true;
-    });
-
-    if (eligibleAds.length === 0) return null;
-
-    eligibleAds.sort((a, b) => a.frequency - b.frequency);
-    return eligibleAds[0];
-  };
-
+  // Auto-play next ad when currentIndex changes
   useEffect(() => {
-    if (adCheckIntervalRef.current) {
-      clearInterval(adCheckIntervalRef.current);
+    if (
+      adQueueState.currentIndex > 0 &&
+      !adQueueState.isPlaying &&
+      adQueueState.currentIndex < adQueueState.queue.length
+    ) {
+      playNext();
     }
-    if (adDurationRef.current) {
-      clearTimeout(adDurationRef.current);
-    }
+  }, [
+    adQueueState.currentIndex,
+    adQueueState.isPlaying,
+    adQueueState.queue.length,
+    playNext,
+  ]);
 
-    const checkAndTriggerAds = () => {
-      const scheduleToShow = findActiveAdScheduleToShow();
+  // Set up periodic schedule checking
+  useEffect(() => {
+    console.log("🔄 Starting ad schedule checker");
 
-      if (scheduleToShow && !showAd) {
-        console.log(
-          `Triggering ad: ${
-            scheduleToShow.title
-          } at ${new Date().toLocaleTimeString()}`
-        );
+    // Initial check
+    checkSchedule();
 
-        lastTriggeredAdRef.current.set(scheduleToShow.id, Date.now());
-
-        setActiveAd(scheduleToShow);
-        setShowAd(true);
-
-        // For videos, use playCount; for images, use duration
-        const displayDuration =
-          scheduleToShow.mediaType === "video"
-            ? scheduleToShow.playCount * 1000 // Will be handled by video player
-            : scheduleToShow.duration * 1000;
-
-        adDurationRef.current = setTimeout(() => {
-          console.log(`Ad duration finished: ${scheduleToShow.title}`);
-          setShowAd(false);
-          setActiveAd(null);
-        }, displayDuration);
-      }
-    };
-
-    checkAndTriggerAds();
-    adCheckIntervalRef.current = setInterval(checkAndTriggerAds, 1000);
+    // Check every second for precise timing
+    checkIntervalRef.current = setInterval(() => {
+      checkSchedule();
+    }, 1000);
 
     return () => {
-      if (adCheckIntervalRef.current) clearInterval(adCheckIntervalRef.current);
-      if (adDurationRef.current) clearTimeout(adDurationRef.current);
+      console.log("🛑 Stopping ad schedule checker");
+      if (checkIntervalRef.current) {
+        clearInterval(checkIntervalRef.current);
+      }
     };
-  }, [settings.advertisements, showAd]);
+  }, [checkSchedule]);
 
+  // Update clock
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -298,6 +323,7 @@ function HospitalTemplateAuthentic({
     return () => clearInterval(timer);
   }, []);
 
+  // Background slideshow
   useEffect(() => {
     if (!settings.enableSlideshow || bgImages.length <= 1) return;
 
@@ -326,28 +352,7 @@ function HospitalTemplateAuthentic({
     });
   };
 
-  const getNextAdTriggerTime = () => {
-    if (!settings.advertisements || settings.advertisements.length === 0)
-      return null;
-
-    const eligibleAds = settings.advertisements.filter((schedule) =>
-      isWithinSchedule(schedule)
-    );
-
-    if (eligibleAds.length === 0) return null;
-
-    let nearestTime: Date | null = null;
-    eligibleAds.forEach((schedule) => {
-      const nextInterval = getNextRoundedInterval(schedule.frequency);
-      if (!nearestTime || nextInterval < nearestTime) {
-        nearestTime = nextInterval;
-      }
-    });
-
-    return nearestTime;
-  };
-
-  const nextAdTime = getNextAdTriggerTime();
+  const showAd = adQueueState.isPlaying && adQueueState.currentAd;
 
   return (
     <div
@@ -370,17 +375,12 @@ function HospitalTemplateAuthentic({
         <div
           className="absolute inset-0 bg-black/20 backdrop-blur-sm"
           style={{ zIndex: 2 }}
-        ></div>
+        />
       </div>
 
       {/* Main Content */}
       <div className="relative z-10 h-full flex flex-col">
-        {settings.backgroundImage && (
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-900/70 via-slate-800/60 to-slate-900/70"></div>
-        )}
-        {!settings.backgroundImage && (
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"></div>
-        )}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/70 via-slate-800/60 to-slate-900/70" />
 
         {/* Header */}
         <header
@@ -434,10 +434,14 @@ function HospitalTemplateAuthentic({
 
         {/* Main Content Area */}
         <div className="flex-1 relative overflow-hidden">
-          {/* When ad is NOT showing: Show normal content */}
-          {!showAd ? (
+          {/* Normal Display Content */}
+          <div
+            className={`transition-opacity duration-300 h-full ${
+              showAd ? "opacity-0 pointer-events-none" : "opacity-100"
+            }`}
+          >
             <div className="flex gap-8 px-8 pb-8 pt-8 h-full overflow-hidden">
-              {/* Left Side - Doctors Display using extracted component */}
+              {/* Left Side - Doctors Display */}
               <DoctorCarousel
                 doctors={settings.doctors}
                 layout={settings.layout}
@@ -461,48 +465,62 @@ function HospitalTemplateAuthentic({
                     images={settings.galleryImages}
                     transitionSpeed={settings.galleryTransitionSpeed}
                     accentColor={settings.accentColor}
-                    isAdShowing={showAd}
+                    isAdShowing={!!showAd}
                   />
                 </div>
               </div>
             </div>
-          ) : null}
+          </div>
 
-          {/* When ad IS showing: Show ad content */}
-          {showAd && activeAd && (
+          {/* Ad Display Overlay */}
+          {showAd && adQueueState.currentAd && (
             <div className="absolute inset-0 flex items-center justify-center z-40">
               <FullScreenAd
-                title={activeAd.title}
-                caption={activeAd.caption}
-                imageUrl={activeAd.image}
-                videoUrl={activeAd.video}
-                mediaType={activeAd.mediaType}
-                playCount={activeAd.playCount}
-                animation={activeAd.animation || "fade"}
+                title={adQueueState.currentAd.title}
+                caption={adQueueState.currentAd.caption}
+                imageUrl={adQueueState.currentAd.image}
+                videoUrl={adQueueState.currentAd.video}
+                mediaType={adQueueState.currentAd.mediaType}
+                playCount={adQueueState.currentAd.playCount}
+                animation={adQueueState.currentAd.animation || "fade"}
                 accentColor={settings.accentColor}
                 primaryColor={settings.primaryColor}
                 secondaryColor={settings.secondaryColor}
-                duration={activeAd.duration * 1000}
-                showTimer={true}
-                showScheduleInfo={true}
-                scheduleInfo={{
-                  timeRange: activeAd.timeRange,
-                  frequency: activeAd.frequency,
-                  daysOfWeek: activeAd.daysOfWeek,
-                }}
-                onClose={() => {
-                  console.log("Closing ad manually");
-                  setShowAd(false);
-                  setActiveAd(null);
-                  if (adDurationRef.current)
-                    clearTimeout(adDurationRef.current);
-                }}
-                onDurationEnd={() => {
-                  console.log("Ad duration ended automatically");
-                  setShowAd(false);
-                  setActiveAd(null);
-                }}
+                duration={adQueueState.currentAd.duration * 1000}
+                showTimer={adQueueState.currentAd.mediaType === "image"}
+                showScheduleInfo={false}
+                onDurationEnd={handleAdComplete}
               />
+
+              {/* Queue Progress Indicator */}
+              {adQueueState.queue.length > 1 && (
+                <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50">
+                  <div className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20">
+                    <div className="flex items-center gap-2">
+                      <span className="text-white text-sm font-medium">
+                        Ad {adQueueState.currentIndex + 1} of{" "}
+                        {adQueueState.queue.length}
+                      </span>
+                      <div className="flex gap-1">
+                        {Array.from({ length: adQueueState.queue.length }).map(
+                          (_, idx) => (
+                            <div
+                              key={idx}
+                              className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                                idx < adQueueState.currentIndex + 1
+                                  ? "bg-white"
+                                  : idx === adQueueState.currentIndex
+                                  ? "bg-white/80 scale-125"
+                                  : "bg-white/30"
+                              }`}
+                            />
+                          )
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -523,21 +541,18 @@ function HospitalTemplateAuthentic({
         </div>
       </div>
 
-      {/* Ad Status Indicator */}
-      {settings.advertisements.length > 0 && !showAd && nextAdTime && (
-        <div className="absolute bottom-20 right-8 z-40">
-          <div className="bg-black/50 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/20">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
-              <span className="text-white/80 text-sm">
-                Next ad at{" "}
-                {nextAdTime.toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  second: "2-digit",
-                })}
-              </span>
-            </div>
+      {/* Debug Info */}
+      {process.env.NODE_ENV === "development" && (
+        <div className="absolute bottom-20 right-8 z-50">
+          <div className="bg-black/80 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/20 text-xs text-white space-y-1">
+            <div>Ads in queue: {adQueueState.queue.length}</div>
+            <div>Currently playing: {showAd ? "Yes" : "No"}</div>
+            {showAd && (
+              <div>
+                Position: {adQueueState.currentIndex + 1}/
+                {adQueueState.queue.length}
+              </div>
+            )}
           </div>
         </div>
       )}

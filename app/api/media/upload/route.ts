@@ -12,6 +12,7 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     
+    // Accept files from both 'images' and 'files' fields
     let files = formData.getAll('images') as File[];
     if (files.length === 0) {
       files = formData.getAll('files') as File[];
@@ -20,12 +21,14 @@ export async function POST(request: Request) {
     const userId = formData.get('userId') as string;
     const displayId = formData.get('displayId') as string;
     const type = (formData.get('type') as string) || 'default';
+    const fileType = formData.get('fileType') as string; // 'video' or undefined
     
     console.log('Upload request:', {
       filesCount: files.length,
       userId,
       displayId,
       type,
+      fileType,
       formDataKeys: Array.from(formData.keys())
     });
     
@@ -51,18 +54,32 @@ export async function POST(request: Request) {
     }
 
     const uploadPromises = files.map(async (file) => {
-      if (!file.type.startsWith('image/')) {
-        throw new Error(`${file.name} is not an image file`);
+      const isVideo = file.type.startsWith('video/');
+      const isImage = file.type.startsWith('image/');
+      
+      // Validate file type
+      if (!isVideo && !isImage) {
+        throw new Error(`${file.name} is not a valid image or video file`);
       }
 
       const timestamp = Date.now();
       const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
       
-      // Cloudinary folder structure: userId/displayId/type
-      const folder = `${userId}/${displayId}/${type}`;
+      // Build folder structure: userId/displayId/type OR userId/displayId/type/video
+      let folder = `${userId}/${displayId}/${type}`;
+      if (isVideo) {
+        folder = `${folder}/video`;
+      }
+      
       const publicId = `${timestamp}-${fileNameWithoutExt}`;
       
-      console.log('Uploading file to folder:', folder);
+      console.log('Uploading file:', {
+        name: file.name,
+        type: file.type,
+        isVideo,
+        folder,
+        publicId
+      });
       
       // Convert File to base64
       const arrayBuffer = await file.arrayBuffer();
@@ -70,14 +87,25 @@ export async function POST(request: Request) {
       const base64 = buffer.toString('base64');
       const dataUri = `data:${file.type};base64,${base64}`;
       
-      // Upload to Cloudinary
+      // Upload to Cloudinary with appropriate resource type
       const result = await cloudinary.uploader.upload(dataUri, {
         folder: folder,
         public_id: publicId,
-        resource_type: 'auto',
+        resource_type: isVideo ? 'video' : 'image',
+        // For videos, you might want to add additional options
+        ...(isVideo && {
+          chunk_size: 6000000, // 6MB chunks for large videos
+          eager: [
+            { width: 640, height: 360, crop: 'pad', format: 'mp4' }
+          ], // Optional: create a preview version
+        }),
       });
       
-      console.log('Upload successful:', result.secure_url);
+      console.log('Upload successful:', {
+        url: result.secure_url,
+        publicId: result.public_id,
+        resourceType: result.resource_type
+      });
       
       return {
         url: result.secure_url,
@@ -85,12 +113,16 @@ export async function POST(request: Request) {
         userId: userId,
         displayId: displayId,
         type: type,
+        resourceType: result.resource_type,
+        fileType: isVideo ? 'video' : 'image',
       };
     });
 
     const uploadedFiles = await Promise.all(uploadPromises);
 
-    console.log(`Successfully uploaded ${uploadedFiles.length} files`);
+    console.log(`Successfully uploaded ${uploadedFiles.length} file(s):`, 
+      uploadedFiles.map(f => ({ url: f.url, type: f.fileType }))
+    );
 
     return NextResponse.json({
       success: true,
@@ -110,6 +142,7 @@ export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const publicId = searchParams.get('publicId');
+    const resourceType = searchParams.get('resourceType') as 'image' | 'video' | undefined;
     
     if (!publicId) {
       return NextResponse.json(
@@ -118,9 +151,12 @@ export async function DELETE(request: Request) {
       );
     }
 
-    await cloudinary.uploader.destroy(publicId);
+    // Delete with appropriate resource type (defaults to 'image' if not specified)
+    await cloudinary.uploader.destroy(publicId, {
+      resource_type: resourceType || 'image',
+    });
 
-    console.log('Successfully deleted:', publicId);
+    console.log('Successfully deleted:', publicId, 'type:', resourceType || 'image');
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -31,21 +31,37 @@ export function VideoUploader({
 
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/media`);
+        const response = await fetch(
+          `/api/media?userId=${userId}&fileType=video`
+        );
         if (!response.ok) {
           console.error("Failed to fetch videos:", await response.text());
           return;
         }
 
         const allMedia = await response.json();
-        // Filter for videos of type "advertisement"
+
+        console.log("Fetched videos:", allMedia.length);
+
+        // Filter for videos of type "advertisement" AND fileType "video"
         const filteredVideos = allMedia
-          .filter(
-            (item: any) =>
-              item.fileType === "video" && item.type === "advertisement"
-          )
+          .filter((item: any) => {
+            const isCorrectType = item.type === "advertisement";
+            const isVideo = item.fileType === "video";
+            console.log("Video item:", {
+              url: item.fileUrl,
+              type: item.type,
+              fileType: item.fileType,
+              matches: isCorrectType && isVideo,
+            });
+            return isCorrectType && isVideo;
+          })
           .map((item: any) => item.fileUrl);
 
+        console.log(
+          "Filtered videos for advertisement:",
+          filteredVideos.length
+        );
         setMediaUploadedVideos(filteredVideos);
       } catch (err) {
         console.error("Error fetching videos:", err);
@@ -127,14 +143,13 @@ export function VideoUploader({
   const uploadVideo = async (file: File) => {
     const formData = new FormData();
 
-    // Use "file" field name as shown in your logs
-    formData.append("file", file);
+    formData.append("images", file);
     formData.append("userId", userId!);
     formData.append("displayId", displayId);
     formData.append("type", "advertisement");
     formData.append("environment", environment);
 
-    const response = await fetch("/api/media/uploadMedia", {
+    const response = await fetch("/api/media/upload", {
       method: "POST",
       body: formData,
     });
@@ -150,13 +165,15 @@ export function VideoUploader({
       onChange(data.urls[0]);
 
       // Refresh video library
-      const videosResponse = await fetch(`/api/media`);
+      const videosResponse = await fetch(
+        `/api/media?userId=${userId}&fileType=video`
+      );
       if (videosResponse.ok) {
         const allMedia = await videosResponse.json();
         const newVideos = allMedia
           .filter(
             (item: any) =>
-              item.fileType === "video" && item.type === "advertisement"
+              item.type === "advertisement" && item.fileType === "video"
           )
           .map((item: any) => item.fileUrl);
         setMediaUploadedVideos(newVideos);
@@ -300,6 +317,13 @@ export function VideoUploader({
               <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-blue-400 border-t-transparent"></div>
               <p className="text-xs text-slate-400 mt-2">
                 Loading video library...
+              </p>
+            </div>
+          ) : mediaUploadedVideos.length === 0 ? (
+            <div className="text-center py-6 bg-slate-800 rounded-lg border border-slate-700">
+              <VideoIcon className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+              <p className="text-xs text-slate-400">
+                No advertisement videos yet
               </p>
             </div>
           ) : (

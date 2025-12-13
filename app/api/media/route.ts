@@ -58,24 +58,80 @@ export async function GET(request: Request) {
     console.log(`Fetched ${allResources.length} total resources (${imageResult.resources?.length || 0} images, ${videoResult.resources?.length || 0} videos)`);
 
     const mediaItems = allResources.map((resource: any) => {
+      // Parse folder structure based on resource type
+      // Images: environment/userId/displayId/type/filename
+      // Videos: environment/userId/displayId/type/video/filename
       const pathParts = resource.public_id.split('/');
       const fileName = pathParts[pathParts.length - 1];
+      
+      let environment = '';
+      let userId = '';
+      let displayId = '';
+      let actualType = '';
+      let hasVideoFolder = false;
+      
+      // Determine if this is a video based on the resource_type
+      const isVideo = resource.resource_type === 'video';
+      
+      if (isVideo) {
+        // Video path: environment/userId/displayId/type/video/filename
+        if (pathParts.length >= 6 && pathParts[4] === 'video') {
+          // New format with environment and /video folder
+          environment = pathParts[0] || '';
+          userId = pathParts[1] || '';
+          displayId = pathParts[2] || '';
+          actualType = pathParts[3] || '';
+          hasVideoFolder = true;
+        } else if (pathParts.length === 5 && pathParts[3] === 'video') {
+          // Legacy format without environment: userId/displayId/type/video/filename
+          userId = pathParts[0] || '';
+          displayId = pathParts[1] || '';
+          actualType = pathParts[2] || '';
+          hasVideoFolder = true;
+        } else if (pathParts.length >= 4) {
+          // Old video format without /video folder
+          environment = pathParts[0] || '';
+          userId = pathParts[1] || '';
+          displayId = pathParts[2] || '';
+          actualType = pathParts[3] || '';
+        }
+      } else {
+        // Image path: environment/userId/displayId/type/filename
+        if (pathParts.length >= 5) {
+          // New format with environment
+          environment = pathParts[0] || '';
+          userId = pathParts[1] || '';
+          displayId = pathParts[2] || '';
+          actualType = pathParts[3] || '';
+        } else if (pathParts.length === 4) {
+          // Legacy format without environment: userId/displayId/type/filename
+          userId = pathParts[0] || '';
+          displayId = pathParts[1] || '';
+          actualType = pathParts[2] || '';
+        } else if (pathParts.length === 3) {
+          // Very old format: userId/displayId/filename
+          userId = pathParts[0] || '';
+          displayId = pathParts[1] || '';
+        }
+      }
       
       return {
         id: resource.public_id,
         fileName: fileName,
-        fileType: resource.fileType, // 'image' or 'video'
+        fileType: resource.fileType, // 'image' or 'video' from resource_type
         fileUrl: resource.secure_url,
         fileSize: resource.bytes,
         uploadedAt: resource.created_at,
-        userId: pathParts[0] || '',
-        displayId: pathParts[1] || '',
-        type: pathParts[2] || '',
+        environment: environment,
+        userId: userId,
+        displayId: displayId,
+        type: actualType,
         format: resource.format,
         width: resource.width,
         height: resource.height,
         duration: resource.duration,
-        resourceType: resource.resource_type
+        resourceType: resource.resource_type,
+        hasVideoFolder: hasVideoFolder,
       };
     });
 
@@ -95,6 +151,13 @@ export async function GET(request: Request) {
     }
 
     console.log(`Total resources: ${mediaItems.length}, Filtered: ${filteredItems.length}`);
+    console.log('Sample items:', filteredItems.slice(0, 3).map(i => ({ 
+      id: i.id, 
+      type: i.fileType, 
+      userId: i.userId,
+      displayId: i.displayId,
+      contentType: i.type 
+    })));
 
     return NextResponse.json(filteredItems);
   } catch (error) {
