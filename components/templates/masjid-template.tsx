@@ -1246,7 +1246,7 @@ export function MasjidTemplate({
                 }}
               >
                 <p
-                  className="text-8xl font-bold tracking-wide text-right whitespace-nowrap"
+                  className="text-7xl font-bold tracking-wide text-right whitespace-nowrap"
                   style={{
                     color: "#FF4444",
                     textShadow:
@@ -1435,7 +1435,6 @@ export function MasjidTemplate({
         </div>
 
         <div className="flex-1 w-full max-w-8xl space-y-12">
-          {/* Current Time Display - Centered and Prominent */}
           {/* Current Time Display - Updated with prayer card style but same layout */}
           <div
             className="flex flex-col items-center justify-center p-8 rounded-3xl backdrop-blur-md transition-all text-center"
