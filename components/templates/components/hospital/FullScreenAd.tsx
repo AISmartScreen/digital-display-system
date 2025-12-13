@@ -311,7 +311,7 @@ export default function FullScreenAd({
             }
           });
       }
-    }, 1000);
+    }, 2000);
 
     // Cleanup function
     return () => {
