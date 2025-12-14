@@ -1270,6 +1270,13 @@ export function MasjidTemplate({
   const renderVerticalLayout = () => {
     const isAdhanSoon = isCloseToAdhan();
 
+    const formatTimeNoAMPM = (time: string) => {
+      const [hours, minutes] = time.split(":");
+      const hour = Number.parseInt(hours);
+      const displayHour = hour % 12 || 12;
+      return `${displayHour.toString().padStart(2, "0")}:${minutes}`;
+    };
+
     return (
       <div className="w-full h-[100%] flex flex-col p-10 overflow-hidden">
         <MasjidHeader />
@@ -1278,80 +1285,75 @@ export function MasjidTemplate({
             {prayers.map((prayer) => (
               <div
                 key={getPrayerDisplayName(prayer.name, customization.language)}
-                className="flex items-center justify-between p-7 rounded-xl backdrop-blur-sm"
+                className="grid grid-cols-[2fr_1.5fr_1.5fr] items-center gap-4 p-6 rounded-xl backdrop-blur-sm"
                 style={{
                   backgroundColor: `${customization.colors.primary}40`,
                   borderLeft: `7px solid ${customization.colors.accent}`,
                 }}
               >
-                <div className="flex-1">
+                {/* Prayer Name Section */}
+                <div className="flex items-center justify-center">
                   <h3
-                    className="text-5xl font-extrabold leading-tight"
+                    className="text-5xl font-extrabold leading-tight uppercase"
                     style={textStyle}
                   >
-                    {getPrayerDisplayName(prayer.name, customization.language)}{" "}
+                    {getPrayerDisplayName(prayer.name, customization.language)}
                   </h3>
-                  <p
-                    className="text-3xl opacity-85 leading-tight mt-1"
-                    style={textStyle}
-                  >
-                    {t.iqamah}:{" "}
-                    {formatTime(
-                      calculateIqamahTime(prayer.time, prayer.offset)
-                    )}
-                  </p>
                 </div>
-                <div
-                  className="text-6xl font-bold"
-                  style={{ ...textStyle, color: customization.colors.accent }}
-                >
-                  {formatTime(prayer.time)}
+
+                {/* Adhan Time Section */}
+                <div className="flex flex-col items-center justify-center">
+                  <div
+                    className="px-6 py-3 rounded-lg"
+                    style={{ backgroundColor: "rgba(255, 255, 255, 0.9)" }}
+                  >
+                    <p
+                      className="text-5xl font-bold font-mono leading-none"
+                      style={{
+                        color: customization.colors.primary,
+                        textShadow: "none",
+                      }}
+                    >
+                      {formatTimeNoAMPM(prayer.time)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Iqamah Time Section */}
+                <div className="flex flex-col items-center justify-center">
+                  <div
+                    className="px-6 py-3 rounded-lg"
+                    style={{
+                      backgroundColor: `${customization.colors.accent}`,
+                    }}
+                  >
+                    <p
+                      className="text-5xl font-bold font-mono leading-none"
+                      style={{
+                        color: "#FFFFFF",
+                        textShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)",
+                      }}
+                    >
+                      {formatTimeNoAMPM(
+                        calculateIqamahTime(prayer.time, prayer.offset)
+                      )}
+                    </p>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
 
           <div className="flex flex-col justify-between h-full">
-            {nextEvent && (
-              <div
-                className="rounded-3xl backdrop-blur-sm text-center transition-all flex-1 flex flex-col justify-center p-8"
-                style={{ backgroundColor: `${customization.colors.accent}DD` }}
-              >
-                <p
-                  className={`mb-3 ${isAdhanSoon ? "text-4xl" : "text-3xl"}`}
-                  style={textStyle}
-                >
-                  {nextEvent.type === "adhan"
-                    ? `${t.nextAdhan}: ${nextEvent.name}`
-                    : `${nextEvent.name} ${t.nextIqamah}`}
-                </p>
-                <p
-                  className={`font-extrabold font-mono ${
-                    isAdhanSoon ? "text-[8rem]" : "text-7xl"
-                  }`}
-                  style={textStyle}
-                >
-                  {nextEvent.timeUntil}
-                </p>
-                {isAdhanSoon && (
-                  <p className="text-3xl mt-3 animate-pulse" style={textStyle}>
-                    🕌 {t.adhanIn}
-                  </p>
-                )}
-              </div>
-            )}
-
-            <div
-              className="p-8 rounded-3xl backdrop-blur-sm text-center flex-1 flex flex-col justify-center mt-6"
-              style={{ backgroundColor: `${customization.colors.primary}60` }}
-            >
+            <div className="p-8 rounded-3xl backdrop-blur-sm text-center flex-1 flex flex-col justify-center mt-6">
               <p
-                className="text-7xl font-bold font-mono mb-2"
+                className="text-8xl font-bold font-mono mb-2"
                 style={textStyle}
               >
                 {currentTime.toLocaleTimeString("en-US", {
                   hour: "2-digit",
                   minute: "2-digit",
+                  second: "2-digit",
                   hour12: true,
                 })}
               </p>
