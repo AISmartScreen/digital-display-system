@@ -31,11 +31,16 @@ export function DoctorCarouselEditor({
     number | null
   >(null);
 
+  // Separate enabled and disabled doctors
   const doctors = config.doctors || [];
-  const doctorRotationSpeed =
-    config.doctors && config.doctors.length
-      ? (3 * config.slideshowSpeed) / config.doctors.length
-      : 6000;
+  const disabledDoctors = config.disabledDoctors || [];
+  const allDoctors = [...doctors, ...disabledDoctors];
+  const slideSpeed = config.slideSpeed || 20;
+  const doctorRotationSpeed = config.doctorRotationSpeed || 6000;
+
+  // Count enabled doctors (doctors array only has enabled ones)
+  const enabledCount = doctors.length;
+  const totalCount = allDoctors.length;
 
   // Fetch user ID if not provided
   useEffect(() => {
@@ -68,33 +73,86 @@ export function DoctorCarouselEditor({
 
   // Doctor Management
   const handleAddDoctor = () => {
+    const newDoctor = {
+      id: `doctor-${Date.now()}`,
+      name: "",
+      specialty: "",
+      qualifications: "",
+      consultationDays: "",
+      consultationTime: "",
+      image: "",
+      available: "",
+      enabled: true,
+    };
+
     onConfigChange({
       ...config,
-      doctors: [
-        ...doctors,
-        {
-          id: `doctor-${Date.now()}`,
-          name: "",
-          specialty: "",
-          qualifications: "",
-          consultationDays: "",
-          consultationTime: "",
-          image: "",
-          available: "",
-        },
-      ],
+      doctors: [...doctors, newDoctor],
     });
   };
 
   const handleUpdateDoctor = (idx: number, field: string, value: any) => {
-    const updated = [...doctors];
-    updated[idx] = { ...updated[idx], [field]: value };
-    onConfigChange({ ...config, doctors: updated });
+    const doctor = allDoctors[idx];
+    const isEnabled = doctor.enabled !== false;
+
+    if (isEnabled) {
+      const doctorIndex = doctors.findIndex((d: any) => d.id === doctor.id);
+      const updated = [...doctors];
+      updated[doctorIndex] = { ...updated[doctorIndex], [field]: value };
+      onConfigChange({ ...config, doctors: updated });
+    } else {
+      const doctorIndex = disabledDoctors.findIndex(
+        (d: any) => d.id === doctor.id
+      );
+      const updated = [...disabledDoctors];
+      updated[doctorIndex] = { ...updated[doctorIndex], [field]: value };
+      onConfigChange({ ...config, disabledDoctors: updated });
+    }
   };
 
   const handleRemoveDoctor = (idx: number) => {
-    const updated = doctors.filter((_: any, i: number) => i !== idx);
-    onConfigChange({ ...config, doctors: updated });
+    const doctor = allDoctors[idx];
+    const isEnabled = doctor.enabled !== false;
+
+    if (isEnabled) {
+      const updated = doctors.filter((d: any) => d.id !== doctor.id);
+      onConfigChange({ ...config, doctors: updated });
+    } else {
+      const updated = disabledDoctors.filter((d: any) => d.id !== doctor.id);
+      onConfigChange({ ...config, disabledDoctors: updated });
+    }
+  };
+
+  // Toggle doctor enabled/disabled
+  const handleToggleDoctorEnabled = (idx: number) => {
+    const doctor = allDoctors[idx];
+    const isCurrentlyEnabled = doctor.enabled !== false;
+
+    if (isCurrentlyEnabled) {
+      // Move from doctors to disabledDoctors
+      const updatedDoctor = { ...doctor, enabled: false };
+      const updatedDoctors = doctors.filter((d: any) => d.id !== doctor.id);
+      const updatedDisabledDoctors = [...disabledDoctors, updatedDoctor];
+
+      onConfigChange({
+        ...config,
+        doctors: updatedDoctors,
+        disabledDoctors: updatedDisabledDoctors,
+      });
+    } else {
+      // Move from disabledDoctors to doctors
+      const updatedDoctor = { ...doctor, enabled: true };
+      const updatedDisabledDoctors = disabledDoctors.filter(
+        (d: any) => d.id !== doctor.id
+      );
+      const updatedDoctors = [...doctors, updatedDoctor];
+
+      onConfigChange({
+        ...config,
+        doctors: updatedDoctors,
+        disabledDoctors: updatedDisabledDoctors,
+      });
+    }
   };
 
   // Handle doctor image upload
@@ -106,7 +164,13 @@ export function DoctorCarouselEditor({
   return (
     <CollapsibleSection title="👨‍⚕️ Featured Doctors (Carousel)">
       <div className="space-y-3">
-        <div className="flex justify-end mb-2">
+        {/* Header with Add Doctor and Stats */}
+        <div className="flex justify-between items-center mb-2">
+          <div className="text-xs text-slate-400">
+            <span className="font-medium text-slate-300">{enabledCount}</span>{" "}
+            of <span className="font-medium text-slate-300">{totalCount}</span>{" "}
+            doctors enabled
+          </div>
           <Button
             size="sm"
             variant="outline"
@@ -118,15 +182,140 @@ export function DoctorCarouselEditor({
           </Button>
         </div>
 
-        {doctors.map((doctor: any, idx: number) => (
+        {/* Carousel Speed Controls - Always Visible */}
+        <div className="space-y-3 p-3 bg-slate-700/30 rounded-lg border border-slate-600">
+          <h4 className="text-xs font-semibold text-slate-300 mb-2">
+            Carousel Speed Settings
+          </h4>
+
+          {/* Carousel Scroll Speed (for Authentic layout) */}
+          {layoutConfig === "Authentic" && (
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block flex items-center justify-between">
+                <span>Carousel Scroll Speed</span>
+                <span className="text-slate-500">{slideSpeed}</span>
+              </label>
+              <input
+                type="range"
+                min="5"
+                max="50"
+                value={slideSpeed}
+                onChange={(e) =>
+                  handleFieldChange("slideSpeed", parseInt(e.target.value))
+                }
+                className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+              />
+              <div className="flex justify-between text-xs text-slate-500 mt-1">
+                <span>Slow (5)</span>
+                <span>Fast (50)</span>
+              </div>
+            </div>
+          )}
+
+          {/* Doctor Rotation Speed (for Advanced layout) */}
+          {layoutConfig === "Advanced" && (
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block flex items-center justify-between">
+                <span>Doctor Rotation Speed</span>
+                <span className="text-slate-500">
+                  {doctorRotationSpeed / 1000}s
+                </span>
+              </label>
+              <input
+                type="range"
+                min="2000"
+                max="10000"
+                step="1000"
+                value={doctorRotationSpeed}
+                onChange={(e) =>
+                  handleFieldChange(
+                    "doctorRotationSpeed",
+                    parseInt(e.target.value)
+                  )
+                }
+                className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+              />
+              <div className="flex justify-between text-xs text-slate-500 mt-1">
+                <span>2s</span>
+                <span>10s</span>
+              </div>
+              {enabledCount > 0 && (
+                <p className="text-xs text-slate-500 mt-1">
+                  Full cycle: {(doctorRotationSpeed * enabledCount) / 1000}s for{" "}
+                  {enabledCount} enabled doctor
+                  {enabledCount !== 1 ? "s" : ""}
+                </p>
+              )}
+            </div>
+          )}
+
+          {enabledCount === 0 && totalCount > 0 && (
+            <p className="text-xs text-amber-400 bg-amber-500/10 p-2 rounded">
+              ⚠️ No doctors are currently enabled. Enable at least one doctor to
+              see them in the carousel.
+            </p>
+          )}
+
+          {/* Config Structure Info */}
+          <div className="p-2 bg-blue-500/10 border border-blue-500/30 rounded">
+            <p className="text-xs text-blue-400">
+              <strong>Config Structure:</strong> Active doctors → config.doctors
+              | Disabled doctors → config.disabledDoctors
+            </p>
+          </div>
+        </div>
+
+        {/* Doctor Cards */}
+        {allDoctors.map((doctor: any, idx: number) => (
           <div
             key={doctor.id}
-            className="bg-slate-700/50 p-4 rounded-lg space-y-4 border border-slate-600"
+            className={`p-4 rounded-lg space-y-4 border transition-all ${
+              doctor.enabled === false
+                ? "bg-slate-800/30 border-slate-700 opacity-60"
+                : "bg-slate-700/50 border-slate-600"
+            }`}
           >
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-slate-300">
-                Doctor #{idx + 1}
-              </span>
+              <div className="flex items-center gap-3">
+                {/* Enable/Disable Toggle */}
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={doctor.enabled !== false}
+                    onChange={() => handleToggleDoctorEnabled(idx)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                </label>
+
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-slate-300">
+                      Doctor #{idx + 1}
+                    </span>
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        doctor.enabled === false
+                          ? "bg-slate-600 text-slate-400"
+                          : "bg-green-600 text-white"
+                      }`}
+                    >
+                      {doctor.enabled === false ? "Disabled" : "Active"}
+                    </span>
+                  </div>
+                  {doctor.enabled === false && (
+                    <span className="text-xs text-slate-500">
+                      (Stored in config.disabledDoctors)
+                    </span>
+                  )}
+                  {doctor.enabled !== false && (
+                    <span className="text-xs text-green-500/70">
+                      (Stored in config.doctors)
+                    </span>
+                  )}
+                </div>
+              </div>
+
               <Button
                 size="sm"
                 variant="ghost"
@@ -192,7 +381,7 @@ export function DoctorCarouselEditor({
                         maxImages={1}
                         userId={currentUserId}
                         displayId={displayId}
-                        imageType="doctors" // Changed from "doctor" to "doctors"
+                        imageType="doctors"
                         environment={environment}
                         customFolder={`doctors/${doctor.id || `doctor-${idx}`}`}
                       />
@@ -207,7 +396,7 @@ export function DoctorCarouselEditor({
                 {doctor.image && (
                   <div className="mt-2">
                     <p className="text-xs text-slate-500 truncate">
-                      Image URL saved in config
+                      Image URL saved
                     </p>
                   </div>
                 )}
@@ -330,20 +519,27 @@ export function DoctorCarouselEditor({
                     name={`doctor-${idx}-id`}
                     value={doctor.id || `doctor-${idx}`}
                   />
+                  <input
+                    type="hidden"
+                    name={`doctor-${idx}-enabled`}
+                    value={doctor.enabled !== false ? "true" : "false"}
+                  />
                 </div>
               </div>
             </div>
 
             {/* Configuration Summary */}
             <div className="p-2 bg-slate-800/50 rounded text-xs text-slate-400">
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 <div>
                   <span className="text-slate-500">ID:</span>
-                  <span className="ml-1 font-mono">{doctor.id}</span>
+                  <span className="ml-1 font-mono text-[10px]">
+                    {doctor.id}
+                  </span>
                 </div>
                 <div>
                   <span className="text-slate-500">Image:</span>
-                  <span className="ml-1 truncate">
+                  <span className="ml-1">
                     {doctor.image ? "✓ Uploaded" : "✗ Not set"}
                   </span>
                 </div>
@@ -362,12 +558,24 @@ export function DoctorCarouselEditor({
                     /5 filled
                   </span>
                 </div>
+                <div>
+                  <span className="text-slate-500">Config:</span>
+                  <span
+                    className={`ml-1 font-medium ${
+                      doctor.enabled === false
+                        ? "text-slate-500"
+                        : "text-green-400"
+                    }`}
+                  >
+                    {doctor.enabled === false ? "disabled" : "doctors"}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         ))}
 
-        {doctors.length === 0 && (
+        {totalCount === 0 && (
           <div className="text-center py-8 text-slate-500 border-2 border-dashed border-slate-700 rounded-lg">
             <div className="w-16 h-16 rounded-full bg-slate-700 flex items-center justify-center mx-auto mb-3">
               <Plus className="w-8 h-8 text-slate-600" />
@@ -378,37 +586,9 @@ export function DoctorCarouselEditor({
             </p>
           </div>
         )}
-
-        {layoutConfig !== "Authentic" && doctors.length > 0 && (
-          <div className="mt-4 p-3 bg-slate-700/30 rounded-lg">
-            <label className="text-xs text-slate-400 mb-1 block">
-              Carousel Rotation Speed (milliseconds)
-            </label>
-            <Input
-              type="number"
-              value={doctorRotationSpeed}
-              onChange={(e) =>
-                handleFieldChange(
-                  "doctorRotationSpeed",
-                  parseInt(e.target.value)
-                )
-              }
-              min="2000"
-              max="20000"
-              step="1000"
-              className="bg-slate-700 border-slate-600 text-slate-50"
-            />
-            <p className="text-xs text-slate-500 mt-1">
-              Current: {doctorRotationSpeed / 1000} seconds per doctor
-              {doctors.length > 0 && (
-                <span className="ml-2 text-slate-600">
-                  | Full cycle: {(doctorRotationSpeed * doctors.length) / 1000}s
-                </span>
-              )}
-            </p>
-          </div>
-        )}
       </div>
     </CollapsibleSection>
   );
 }
+
+export default DoctorCarouselEditor;

@@ -1270,7 +1270,7 @@ export function MasjidTemplate({
         </div>
 
         {/* Middle Section - Next Adhan and Iqamah Times */}
-        <div className="grid grid-cols-2 gap-12 mb-6">
+        <div className="grid grid-cols-2 gap-12 mb-4">
           {/* Next Adhan */}
           <div
             className="p-8 rounded-[4rem] backdrop-blur-sm text-center relative overflow-hidden"
@@ -1308,7 +1308,7 @@ export function MasjidTemplate({
                   fontFamily: customization.font,
                 }}
               >
-                {nextPrayerInfo.adhanHours}:{nextPrayerInfo.adhanMins}
+                {nextPrayerInfo.adhanMins}:{nextPrayerInfo.adhanSecs}
               </span>
             </div>
           </div>
@@ -1343,7 +1343,7 @@ export function MasjidTemplate({
                   fontFamily: customization.font,
                 }}
               >
-                {nextPrayerInfo.iqamahHours}:{nextPrayerInfo.iqamahMins}
+                {nextPrayerInfo.iqamahMins}:{nextPrayerInfo.iqamahSecs}
               </span>
             </div>
           </div>

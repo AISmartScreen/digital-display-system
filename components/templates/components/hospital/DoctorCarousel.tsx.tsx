@@ -12,6 +12,7 @@ interface Doctor {
   experience?: string;
   image: string;
   available?: string;
+  enabled?: boolean;
 }
 
 interface DoctorCarouselProps {
@@ -42,9 +43,13 @@ export function DoctorCarousel({
   const defaultDoctorImage =
     "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=400&fit=crop";
 
+  // Filter only enabled doctors (config should already have only enabled doctors)
+  // But we add this as a safety measure in case enabled field exists
+  const activeDoctors = doctors.filter((d) => d.enabled !== false);
+
   // Handle scrolling animation for Authentic layout
   useEffect(() => {
-    if (layout !== "Authentic") return;
+    if (layout !== "Authentic" || activeDoctors.length === 0) return;
 
     const animate = (timestamp: number) => {
       if (!lastTimeRef.current) lastTimeRef.current = timestamp;
@@ -65,36 +70,54 @@ export function DoctorCarousel({
     return () => {
       cancelAnimationFrame(animationRef.current);
     };
-  }, [layout, slideSpeed]);
+  }, [layout, slideSpeed, activeDoctors.length]);
 
   // Handle doctor rotation for Advanced layout
   useEffect(() => {
-    if (layout === "Advanced" && doctors.length > 1) {
+    if (layout === "Advanced" && activeDoctors.length > 1) {
       if (doctorRotationRef.current) clearInterval(doctorRotationRef.current);
 
       doctorRotationRef.current = setInterval(() => {
-        setCurrentDoctorIndex((prev) => (prev + 1) % doctors.length);
+        setCurrentDoctorIndex((prev) => (prev + 1) % activeDoctors.length);
       }, doctorRotationSpeed);
 
       return () => {
         if (doctorRotationRef.current) clearInterval(doctorRotationRef.current);
       };
     }
-  }, [layout, doctors.length, doctorRotationSpeed]);
+  }, [layout, activeDoctors.length, doctorRotationSpeed]);
 
   const getCurrentDoctor = () => {
-    if (layout === "Advanced" && doctors.length > 0) {
-      return doctors[currentDoctorIndex];
+    if (layout === "Advanced" && activeDoctors.length > 0) {
+      return activeDoctors[currentDoctorIndex];
     }
-    return doctors[0];
+    return activeDoctors[0];
   };
 
-  const duplicatedDoctors = [...doctors, ...doctors, ...doctors, ...doctors];
-  const itemHeight = 260; // Increased from 220
-  const totalHeight = doctors.length * itemHeight;
+  const duplicatedDoctors = [
+    ...activeDoctors,
+    ...activeDoctors,
+    ...activeDoctors,
+    ...activeDoctors,
+  ];
+  const itemHeight = 260;
+  const totalHeight = activeDoctors.length * itemHeight;
 
   // Render Authentic layout (scrolling carousel)
   const renderAuthenticLayout = () => {
+    if (activeDoctors.length === 0) {
+      return (
+        <div className="relative flex-1 overflow-hidden rounded-3xl shadow-2xl border-2 bg-slate-800/50 flex items-center justify-center">
+          <div className="text-center text-gray-400 p-8">
+            <p className="text-2xl mb-2">No Active Doctors</p>
+            <p className="text-lg">
+              Enable doctors in the editor to display them here
+            </p>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div
         className="relative flex-1 overflow-hidden rounded-3xl shadow-2xl border-2"
@@ -166,6 +189,28 @@ export function DoctorCarousel({
 
   // Render Advanced layout (single doctor with rotation)
   const renderAdvancedLayout = () => {
+    if (activeDoctors.length === 0) {
+      return (
+        <div
+          className="relative flex-1 overflow-hidden rounded-3xl shadow-2xl border-2"
+          style={{
+            backgroundColor: "rgba(0, 0, 0, 0.75)",
+            backdropFilter: "blur(20px)",
+            borderColor: `${accentColor}40`,
+          }}
+        >
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
+            <div className="text-center text-gray-400">
+              <p className="text-2xl mb-2">No Active Doctors</p>
+              <p className="text-lg">
+                Enable doctors in the editor to display them here
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     const doctor = getCurrentDoctor();
 
     return (
@@ -178,99 +223,92 @@ export function DoctorCarousel({
         }}
       >
         <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
-          {doctors.length > 0 ? (
-            <div className="w-full max-w-4xl">
-              <div className="flex flex-col md:flex-row items-center gap-8">
-                {/* Doctor Image - Larger size */}
-                <div className="relative">
-                  <div className="relative w-80 h-80 rounded-3xl overflow-hidden shadow-2xl">
-                    <img
-                      src={doctor.image || defaultDoctorImage}
-                      alt={doctor.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.src = defaultDoctorImage;
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                  </div>
-
-                  {/* Dots indicator for rotation */}
-                  {doctors.length > 1 && (
-                    <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-                      {doctors.map((_, idx) => (
-                        <div
-                          key={idx}
-                          className="w-3 h-3 rounded-full transition-all"
-                          style={{
-                            backgroundColor:
-                              idx === currentDoctorIndex
-                                ? accentColor
-                                : "rgba(255,255,255,0.3)",
-                            width: idx === currentDoctorIndex ? "20px" : "12px",
-                          }}
-                        />
-                      ))}
-                    </div>
-                  )}
+          <div className="w-full max-w-4xl">
+            <div className="flex flex-col md:flex-row items-center gap-8">
+              {/* Doctor Image */}
+              <div className="relative">
+                <div className="relative w-80 h-80 rounded-3xl overflow-hidden shadow-2xl">
+                  <img
+                    src={doctor.image || defaultDoctorImage}
+                    alt={doctor.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = defaultDoctorImage;
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                 </div>
 
-                {/* Doctor Details - Text sizes kept as before */}
-                <div className="flex-1 text-center md:text-left">
-                  <h3 className="text-5xl font-bold text-white mb-3">
-                    {doctor.name}
-                  </h3>
-
-                  {/* Specialty with icon */}
-                  <div className="flex items-center gap-3 mb-4">
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: primaryColor }}
-                    >
-                      <span className="text-white text-xl">🩺</span>
-                    </div>
-                    <p className="text-2xl text-gray-300">{doctor.specialty}</p>
+                {/* Dots indicator for rotation */}
+                {activeDoctors.length > 1 && (
+                  <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+                    {activeDoctors.map((_, idx) => (
+                      <div
+                        key={idx}
+                        className="w-3 h-3 rounded-full transition-all"
+                        style={{
+                          backgroundColor:
+                            idx === currentDoctorIndex
+                              ? accentColor
+                              : "rgba(255,255,255,0.3)",
+                          width: idx === currentDoctorIndex ? "20px" : "12px",
+                        }}
+                      />
+                    ))}
                   </div>
+                )}
+              </div>
 
-                  {/* Qualifications */}
-                  {doctor.qualifications && (
-                    <p className="text-xl text-gray-400 mb-2">
-                      <strong>Qualifications:</strong> {doctor.qualifications}
-                    </p>
-                  )}
+              {/* Doctor Details */}
+              <div className="flex-1 text-center md:text-left">
+                <h3 className="text-5xl font-bold text-white mb-3">
+                  {doctor.name}
+                </h3>
 
-                  {/* Consultation Schedule */}
-                  {(doctor.consultationDays || doctor.consultationTime) && (
-                    <div className="mb-3">
-                      <p className="text-xl text-gray-400">
-                        <strong>Consultation:</strong> {doctor.consultationDays}{" "}
-                        {doctor.consultationTime}
-                      </p>
-                    </div>
-                  )}
+                {/* Specialty with icon */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: primaryColor }}
+                  >
+                    <span className="text-white text-xl">🩺</span>
+                  </div>
+                  <p className="text-2xl text-gray-300">{doctor.specialty}</p>
+                </div>
 
-                  {/* Experience */}
-                  {doctor.experience && (
-                    <p className="text-xl text-gray-400 mb-2">
-                      <strong>Experience:</strong> {doctor.experience}
-                    </p>
-                  )}
+                {/* Qualifications */}
+                {doctor.qualifications && (
+                  <p className="text-xl text-gray-400 mb-2">
+                    <strong>Qualifications:</strong> {doctor.qualifications}
+                  </p>
+                )}
 
-                  {/* Availability */}
-                  {doctor.available && (
+                {/* Consultation Schedule */}
+                {(doctor.consultationDays || doctor.consultationTime) && (
+                  <div className="mb-3">
                     <p className="text-xl text-gray-400">
-                      <strong>Available:</strong> {doctor.available}
+                      <strong>Consultation:</strong> {doctor.consultationDays}{" "}
+                      {doctor.consultationTime}
                     </p>
-                  )}
-                </div>
+                  </div>
+                )}
+
+                {/* Experience */}
+                {doctor.experience && (
+                  <p className="text-xl text-gray-400 mb-2">
+                    <strong>Experience:</strong> {doctor.experience}
+                  </p>
+                )}
+
+                {/* Availability */}
+                {doctor.available && (
+                  <p className="text-xl text-gray-400">
+                    <strong>Available:</strong> {doctor.available}
+                  </p>
+                )}
               </div>
             </div>
-          ) : (
-            <div className="text-center text-gray-400">
-              <p className="text-2xl">No doctors configured</p>
-              <p className="text-lg mt-2">Add doctors in the editor</p>
-            </div>
-          )}
+          </div>
         </div>
       </div>
     );
@@ -311,7 +349,7 @@ function DoctorCard({
         }}
       >
         <div className="flex items-center h-full gap-6">
-          {/* Doctor Image - Larger size only */}
+          {/* Doctor Image */}
           <div className="relative flex-shrink-0">
             <div className="relative w-56 h-56 rounded-2xl overflow-hidden shadow-2xl group-hover:shadow-3xl transition-all duration-500">
               <div
@@ -337,7 +375,7 @@ function DoctorCard({
                 }}
               />
 
-              {/* Experience Badge - Same size as before */}
+              {/* Experience Badge */}
               {doctor.experience && (
                 <div
                   className="absolute bottom-3 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-full text-sm font-bold shadow-2xl whitespace-nowrap z-20"
@@ -355,7 +393,7 @@ function DoctorCard({
             </div>
           </div>
 
-          {/* Doctor Details - All text sizes kept as before */}
+          {/* Doctor Details */}
           <div className="flex-1 space-y-2">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
@@ -403,7 +441,7 @@ function DoctorCard({
               </div>
             )}
 
-            {/* Qualifications (new field) */}
+            {/* Qualifications */}
             {doctor.qualifications && (
               <div className="space-y-1">
                 <div className="flex items-center gap-3">
@@ -428,7 +466,7 @@ function DoctorCard({
               </div>
             )}
 
-            {/* Consultation Days & Time (new fields) */}
+            {/* Consultation Days & Time */}
             {(doctor.consultationDays || doctor.consultationTime) && (
               <div className="space-y-1">
                 <div className="flex items-center gap-3">
