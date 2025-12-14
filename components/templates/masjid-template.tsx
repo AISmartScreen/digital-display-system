@@ -1177,9 +1177,9 @@ export function MasjidTemplate({
         {/* Top Section - Current Time & Date - Full Width Card */}
         <div className="mb-12">
           <div
-            className="px-12 py-4 rounded-[4rem] backdrop-blur-lg relative overflow-hidden"
+            className="px-12 py-2 rounded-[4rem] backdrop-blur-sm relative overflow-hidden"
             style={{
-              backgroundColor: `${customization.colors.primary}50`,
+              backgroundColor: `${customization.colors.primary}40`,
               border: `3px solid ${customization.colors.accent}80`,
               boxShadow: `0 8px 32px ${customization.colors.primary}60, inset 0 0 40px ${customization.colors.accent}20`,
             }}
@@ -1189,7 +1189,7 @@ export function MasjidTemplate({
                 <div className="flex items-baseline leading-none">
                   {/* Hours & Minutes */}
                   <span
-                    className="text-[20rem] px-4 font-extrabold font-mono tracking-wide"
+                    className="text-[24rem] px-4 font-extrabold font-mono tracking-wide"
                     style={{
                       color: "#00FF00",
                       textShadow:
@@ -1214,9 +1214,7 @@ export function MasjidTemplate({
                       fontFamily: customization.font,
                     }}
                   >
-                    {currentTime.toLocaleTimeString("en-US", {
-                      second: "2-digit",
-                    })}
+                    {String(currentTime.getSeconds()).padStart(2, "0")}
                   </span>
 
                   {/* AM/PM */}
@@ -1240,7 +1238,7 @@ export function MasjidTemplate({
 
               {/* Date - positioned on the right with high z-index */}
               <div
-                className="absolute right-40 top-1/4 transform -translate-y-1/2 z-50"
+                className="absolute right-8 top-1/4 transform -translate-y-1/2 z-50"
                 style={{
                   maxWidth: "40%",
                 }}
@@ -1257,14 +1255,14 @@ export function MasjidTemplate({
                   {currentTime.toLocaleDateString("en-US", {
                     day: "numeric",
                   })}
-                  {" / "}
+                  {" - "}
                   {currentTime.toLocaleDateString("en-US", {
                     month: "long",
                   })}
-                  {" / "}
+                  {/* {" / "}
                   {currentTime.toLocaleDateString("en-US", {
                     year: "numeric",
-                  })}
+                  })} */}
                 </p>
               </div>
             </div>
@@ -1275,9 +1273,9 @@ export function MasjidTemplate({
         <div className="grid grid-cols-2 gap-12 mb-6">
           {/* Next Adhan */}
           <div
-            className="p-12 rounded-[4rem] backdrop-blur-lg text-center relative overflow-hidden"
+            className="p-8 rounded-[4rem] backdrop-blur-sm text-center relative overflow-hidden"
             style={{
-              backgroundColor: `${customization.colors.primary}50`,
+              backgroundColor: `${customization.colors.primary}40`,
               border: `3px solid ${customization.colors.accent}80`,
               boxShadow: `0 8px 32px ${customization.colors.primary}60, inset 0 0 40px ${customization.colors.accent}20`,
             }}
@@ -1302,12 +1300,12 @@ export function MasjidTemplate({
             </div>
             <div className="flex items-center justify-center">
               <span
-                className="text-[14rem] font-extrabold font-mono leading-none"
+                className="text-[18rem] font-extrabold font-mono leading-none"
                 style={{
                   color: "#FF4444",
                   textShadow:
                     "0 0 40px rgba(255, 68, 68, 0.6), 5px 5px 15px rgba(0, 0, 0, 0.9)",
-                  fontFamily: "monospace",
+                  fontFamily: customization.font,
                 }}
               >
                 {nextPrayerInfo.adhanHours}:{nextPrayerInfo.adhanMins}
@@ -1317,9 +1315,9 @@ export function MasjidTemplate({
 
           {/* Next Iqamah */}
           <div
-            className="p-12 rounded-[4rem] backdrop-blur-lg text-center relative overflow-hidden"
+            className="p-8 rounded-[4rem] backdrop-blur-sm text-center relative overflow-hidden"
             style={{
-              backgroundColor: `${customization.colors.primary}50`,
+              backgroundColor: `${customization.colors.primary}40`,
               border: `3px solid ${customization.colors.accent}80`,
               boxShadow: `0 8px 32px ${customization.colors.primary}60, inset 0 0 40px ${customization.colors.accent}20`,
             }}
@@ -1338,12 +1336,11 @@ export function MasjidTemplate({
             </div>
             <div className="flex items-center justify-center">
               <span
-                className="text-[14rem] font-extrabold font-mono leading-none"
+                className="text-[18rem] font-extrabold font-mono leading-none"
                 style={{
                   color: "#FFFF00",
-                  textShadow:
-                    "0 0 40px rgba(255, 255, 0, 0.6), 5px 5px 15px rgba(0, 0, 0, 0.9)",
-                  fontFamily: "monospace",
+                  textShadow: "5px 5px 15px rgba(0, 0, 0, 0.9)",
+                  fontFamily: customization.font,
                 }}
               >
                 {nextPrayerInfo.iqamahHours}:{nextPrayerInfo.iqamahMins}
@@ -1353,14 +1350,7 @@ export function MasjidTemplate({
         </div>
 
         {/* Bottom Section - Masjid Name & Hijri Date */}
-        <div
-          className="p-8 rounded-3xl backdrop-blur-md text-center"
-          style={{
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            border: "2px solid rgba(0, 255, 0, 0.3)",
-            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.6)",
-          }}
-        >
+        <div className="p-8 mt-0 rounded-3xl backdrop-blur-md text-center">
           <p
             className="text-6xl font-bold tracking-wide"
             style={{
