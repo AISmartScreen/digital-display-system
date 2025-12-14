@@ -1183,12 +1183,12 @@ export function MasjidTemplate({
               boxShadow: `0 8px 32px ${customization.colors.primary}60, inset 0 0 40px ${customization.colors.accent}20`,
             }}
           >
-            <div className="flex items-center justify-between relative">
+            <div className="flex items-start relative">
               <div className="flex-1">
-                <div className="flex items-baseline leading-none">
+                <div className="flex items-start leading-none">
                   {/* Hours & Minutes */}
                   <span
-                    className="text-[24rem] px-4 font-extrabold font-mono tracking-wide"
+                    className="text-[22rem] px-4 font-extrabold font-mono tracking-wide"
                     style={{
                       color: "#00FF00",
                       textShadow:
@@ -1203,62 +1203,73 @@ export function MasjidTemplate({
                     })}
                   </span>
 
-                  {/* Seconds */}
-                  <span
-                    className="text-[7.2rem] px-6 font-extrabold font-mono tracking-tighter ml-2"
-                    style={{
-                      color: "#00FF00",
-                      textShadow:
-                        "0 0 30px rgba(0, 255, 0, 0.5), 4px 4px 12px rgba(0, 0, 0, 0.9)",
-                      fontFamily: customization.font,
-                    }}
+                  {/* Right side - Seconds, AM/PM, and Date stacked */}
+                  <div
+                    className="flex flex-col ml-0 px-6"
+                    style={{ height: "22rem" }}
                   >
-                    {String(currentTime.getSeconds()).padStart(2, "0")}
-                  </span>
+                    {/* Top Half - Date */}
+                    <div
+                      className="flex items-center"
+                      style={{ height: "90%" }}
+                    >
+                      <p
+                        className="text-[5rem] font-bold tracking-wide whitespace-nowrap"
+                        style={{
+                          color: "#FF4444",
+                          textShadow:
+                            "0 0 25px rgba(255, 68, 68, 0.6), 4px 4px 12px rgba(0, 0, 0, 0.9)",
+                          fontFamily: customization.font,
+                        }}
+                      >
+                        {currentTime.toLocaleDateString("en-US", {
+                          day: "numeric",
+                        })}
+                        {" - "}
+                        {currentTime.toLocaleDateString("en-US", {
+                          month: "long",
+                        })}
+                      </p>
+                    </div>
 
-                  {/* AM/PM */}
-                  <span
-                    className="text-[7.2rem] px-4 font-extrabold font-mono tracking-tighter ml-2"
-                    style={{
-                      color: "#00FF00",
-                      textShadow:
-                        "0 0 30px rgba(0, 255, 0, 0.5), 4px 4px 12px rgba(0, 0, 0, 0.9)",
-                      fontFamily: customization.font,
-                    }}
-                  >
-                    {currentTime
-                      .toLocaleTimeString("en-US", {
-                        hour12: true,
-                      })
-                      .slice(-2)}
-                  </span>
+                    {/* Bottom Half - Seconds and AM/PM */}
+                    <div
+                      className="flex items-center"
+                      style={{ height: "90%" }}
+                    >
+                      {/* Seconds */}
+                      <span
+                        className="text-[7rem] font-extrabold font-mono tracking-tighter"
+                        style={{
+                          color: "#00FF00",
+                          textShadow:
+                            "0 0 30px rgba(0, 255, 0, 0.5), 4px 4px 12px rgba(0, 0, 0, 0.9)",
+                          fontFamily: customization.font,
+                        }}
+                      >
+                        {String(currentTime.getSeconds()).padStart(2, "0")}
+                      </span>
+
+                      {/* AM/PM */}
+                      <span
+                        className="text-[7rem] font-extrabold font-mono tracking-tighter ml-2"
+                        style={{
+                          color: "#00FF00",
+                          textShadow:
+                            "0 0 30px rgba(0, 255, 0, 0.5), 4px 4px 12px rgba(0, 0, 0, 0.9)",
+                          fontFamily: customization.font,
+                        }}
+                      >
+                        &nbsp;
+                        {currentTime
+                          .toLocaleTimeString("en-US", {
+                            hour12: true,
+                          })
+                          .slice(-2)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-
-              {/* Date - positioned on the right with high z-index */}
-              <div
-                className="absolute right-8 top-1/4 transform -translate-y-1/2 z-50"
-                style={{
-                  maxWidth: "40%",
-                }}
-              >
-                <p
-                  className="text-7xl font-bold tracking-wide text-right whitespace-nowrap"
-                  style={{
-                    color: "#FF4444",
-                    textShadow:
-                      "0 0 25px rgba(255, 68, 68, 0.6), 4px 4px 12px rgba(0, 0, 0, 0.9)",
-                    fontFamily: customization.font,
-                  }}
-                >
-                  {currentTime.toLocaleDateString("en-US", {
-                    day: "numeric",
-                  })}
-                  {" - "}
-                  {currentTime.toLocaleDateString("en-US", {
-                    month: "long",
-                  })}
-                </p>
               </div>
             </div>
           </div>
