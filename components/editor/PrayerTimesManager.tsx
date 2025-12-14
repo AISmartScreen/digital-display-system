@@ -1028,7 +1028,7 @@ export default function PrayerTimesManager({
                               "Sunset Prayer",
                               "مغرب",
                               "Maghrib",
-                              "மக்ரிப்",
+                              "மஹ்ரிப்",
                             ].map((suggestion, index) => (
                               <button
                                 key={`${suggestion}-${index}`}

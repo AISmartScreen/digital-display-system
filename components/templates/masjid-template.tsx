@@ -73,7 +73,7 @@ const translations = {
     nextIqamah: "Iqamah",
     currentTime: "Current Time",
     islamicDate: "Islamic Date",
-    ishraqTime: "ISHRAQ TIME",
+    ishraqTime: "ISHRAQ PRAYER",
     ishraqSubtitle: "Voluntary Prayer Time After Sunrise",
     ishraqRemaining: "Time Remaining",
   },
@@ -86,7 +86,7 @@ const translations = {
     nextIqamah: "இகாமத்",
     currentTime: "தற்போதைய நேரம்",
     islamicDate: "இஸ்லாமிய தேதி",
-    ishraqTime: "இஷ்ராக் நேரம்",
+    ishraqTime: "இஷ்ராக் தொழுகை",
     ishraqSubtitle: "சூரிய உதயத்திற்குப் பிறகு தன்னார்வ தொழுகை நேரம்",
     ishraqRemaining: "மீதமுள்ள நேரம்",
   },
@@ -147,7 +147,7 @@ const PrayerInstructions = ({ imageUrl, accentColor, duration, onClose }) => {
   );
 };
 
-// Ishraq Countdown Component
+// Ishraq Countdown Component - Sleek Modern Design
 const IshraqCountdown = ({
   accentColor,
   secondaryColor,
@@ -156,84 +156,351 @@ const IshraqCountdown = ({
   showElapsed,
   onClose,
 }) => {
+  const [timeLeft, setTimeLeft] = useState(remainingSeconds);
   const t = translations[language] || translations.en;
-  const minutes = Math.floor(remainingSeconds / 60);
-  const seconds = remainingSeconds % 60;
 
-  // Calculate elapsed time
-  const totalIshraqSeconds = 20 * 60; // 20 minutes in seconds
-  const elapsedSeconds = totalIshraqSeconds - remainingSeconds;
-  const elapsedMinutes = Math.floor(elapsedSeconds / 60);
-  const elapsedSecondsRemaining = elapsedSeconds % 60;
+  useEffect(() => {
+    setTimeLeft(remainingSeconds);
+  }, [remainingSeconds]);
 
-  // Calculate progress percentage
-  const progress =
-    ((totalIshraqSeconds - remainingSeconds) / totalIshraqSeconds) * 100;
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return {
+      minutes: mins.toString().padStart(2, "0"),
+      seconds: secs.toString().padStart(2, "0"),
+    };
+  };
+
+  const { minutes, seconds } = formatTime(timeLeft);
+  const totalIshraqSeconds = 20 * 60;
+  const progressPercentage =
+    ((totalIshraqSeconds - timeLeft) / totalIshraqSeconds) * 100;
 
   return (
-    <div className="fixed inset-0 z-50 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
-      <div className="relative w-full h-full flex flex-col items-center justify-center">
-        <div className="text-center space-y-8">
-          <div className="text-8xl mb-4">🌅</div>
-          <h1
-            className="text-7xl font-bold tracking-wide"
-            style={{ color: accentColor }}
-          >
-            {t.ishraqTime}
-          </h1>
-          <p className="text-3xl text-white opacity-80">{t.ishraqSubtitle}</p>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-gray-900 via-black to-gray-900 p-4">
+      <style>
+        {`
+          @keyframes fadeInScale {
+            0% {
+              opacity: 0;
+              transform: scale(0.9);
+            }
+            100% {
+              opacity: 1;
+              transform: scale(1);
+            }
+          }
 
-          <div className="mt-12 flex flex-col items-center gap-8">
-            {/* Countdown Timer */}
-            <div className="bg-black/40 p-8 rounded-3xl backdrop-blur-sm">
-              <p className="text-4xl text-white mb-4">{t.ishraqRemaining}</p>
-              <div
-                className="text-[12rem] font-bold"
+          @keyframes glowPulse {
+            0%, 100% {
+              box-shadow: 
+                0 0 60px ${accentColor}60,
+                0 0 120px ${accentColor}40,
+                0 0 180px ${accentColor}20;
+            }
+            50% {
+              box-shadow: 
+                0 0 80px ${accentColor}80,
+                0 0 160px ${accentColor}60,
+                0 0 240px ${accentColor}40;
+            }
+          }
+
+          @keyframes shimmer {
+            0% {
+              background-position: -200% center;
+            }
+            100% {
+              background-position: 200% center;
+            }
+          }
+
+          @keyframes pulse {
+            0%, 100% {
+              opacity: 1;
+              transform: scale(1);
+            }
+            50% {
+              opacity: 0.8;
+              transform: scale(1.05);
+            }
+          }
+
+          @keyframes digitalGlow {
+            0%, 100% {
+              filter: brightness(1) drop-shadow(0 0 20px ${accentColor}60);
+            }
+            50% {
+              filter: brightness(1.2) drop-shadow(0 0 40px ${accentColor}80);
+            }
+          }
+        `}
+      </style>
+
+      {/* Animated background particles */}
+      <div className="absolute inset-0 overflow-hidden opacity-20">
+        <div
+          className="absolute w-96 h-96 rounded-full blur-3xl"
+          style={{
+            background: `radial-gradient(circle, ${accentColor}40 0%, transparent 70%)`,
+            top: "10%",
+            left: "10%",
+            animation: "pulse 4s ease-in-out infinite",
+          }}
+        />
+        <div
+          className="absolute w-96 h-96 rounded-full blur-3xl"
+          style={{
+            background: `radial-gradient(circle, ${secondaryColor}40 0%, transparent 70%)`,
+            bottom: "10%",
+            right: "10%",
+            animation: "pulse 4s ease-in-out infinite 2s",
+          }}
+        />
+      </div>
+
+      {/* Main content container */}
+      <div
+        className="relative flex flex-col justify-center h-[90vh] w-full max-w-7xl"
+        style={{
+          animation: "fadeInScale 0.8s ease-out",
+        }}
+      >
+        {/* Decorative top border */}
+        <div
+          className="absolute -top-12 left-1/2 transform -translate-x-1/2 w-96 h-1"
+          style={{
+            background: `linear-gradient(90deg, transparent 0%, ${accentColor} 50%, transparent 100%)`,
+            boxShadow: `0 0 30px ${accentColor}`,
+          }}
+        />
+
+        {/* Main card */}
+        <div
+          className="relative px-12 py-12 rounded-[2rem] flex flex-col justify-center"
+          style={{
+            background: "rgba(0, 0, 0, 0.85)",
+            border: `4px solid ${accentColor}`,
+            animation: "glowPulse 3s ease-in-out infinite",
+            backdropFilter: "blur(20px)",
+          }}
+        >
+          {/* Shimmer effect */}
+          <div
+            className="absolute inset-0 rounded-[2rem] pointer-events-none"
+            style={{
+              background: `linear-gradient(
+                90deg,
+                transparent 0%,
+                ${accentColor}15 50%,
+                transparent 100%
+              )`,
+              backgroundSize: "200% 100%",
+              animation: "shimmer 3s infinite",
+            }}
+          />
+
+          {/* Title */}
+          <div className="text-center mb-12">
+            <div className="flex items-center justify-center gap-6 mb-6">
+              <h1
+                className="text-8xl font-black tracking-wider"
                 style={{
-                  fontFamily: "monospace",
-                  color: secondaryColor,
+                  color: accentColor,
+                  textShadow: `0 0 30px ${accentColor}80, 0 0 60px ${accentColor}60, 6px 6px 12px rgba(0,0,0,0.8)`,
+                  fontFamily: "'Oxanium', sans-serif",
                 }}
               >
-                {minutes.toString().padStart(2, "0")}:
-                {seconds.toString().padStart(2, "0")}
+                {t.ishraqTime.toUpperCase()}
+              </h1>
+            </div>
+            <p
+              className="text-5xl font-semibold"
+              style={{
+                color: secondaryColor,
+                textShadow: `0 0 20px ${secondaryColor}60, 3px 3px 6px rgba(0,0,0,0.8)`,
+              }}
+            >
+              {t.ishraqRemaining}
+            </p>
+          </div>
+
+          {/* Countdown timer */}
+          <div className="flex items-center justify-center gap-16 mb-12">
+            {/* Minutes */}
+            <div className="text-center">
+              <div
+                className="relative inline-block"
+                style={{
+                  animation:
+                    timeLeft <= 60
+                      ? "pulse 1s ease-in-out infinite"
+                      : "digitalGlow 2s ease-in-out infinite",
+                }}
+              >
+                <div
+                  className="text-[20rem] font-black leading-none tracking-tight"
+                  style={{
+                    fontFamily: "'Orbitron', 'Oxanium', monospace",
+                    fontWeight: 900,
+                    color: timeLeft <= 60 ? "#EF4444" : accentColor,
+                    textShadow:
+                      timeLeft <= 60
+                        ? `0 0 40px #EF444480, 0 0 80px #EF444460, 0 0 120px #EF444440, 8px 8px 30px rgba(0,0,0,0.9)`
+                        : `0 0 40px ${accentColor}90, 0 0 80px ${accentColor}70, 0 0 120px ${accentColor}50, 8px 8px 30px rgba(0,0,0,0.9)`,
+                    letterSpacing: "0.05em",
+                    WebkitTextStroke: `2px ${
+                      timeLeft <= 60 ? "#EF4444" : accentColor
+                    }20`,
+                  }}
+                >
+                  {minutes}
+                </div>
+              </div>
+              <div
+                className="text-4xl font-bold mt-4 uppercase tracking-widest"
+                style={{
+                  color: secondaryColor,
+                  textShadow: `0 0 15px ${secondaryColor}60, 2px 2px 6px rgba(0,0,0,0.8)`,
+                }}
+              >
+                MINUTES
               </div>
             </div>
 
-            {/* Progress Bar */}
-            <div className="mt-8 w-96 mx-auto">
-              <div className="flex justify-between mb-2">
-                <span className="text-xl text-white opacity-80">
-                  {t.ishraqProgress}
-                </span>
-                <span className="text-xl text-white font-semibold">
-                  {Math.round(progress)}%
-                </span>
-              </div>
-              <div className="h-6 bg-gray-700 rounded-full overflow-hidden">
+            {/* Separator */}
+            <div
+              className="text-[12rem] font-black leading-none mb-16"
+              style={{
+                color: accentColor,
+                textShadow: `0 0 30px ${accentColor}80, 0 0 60px ${accentColor}60`,
+                animation: "digitalGlow 2s ease-in-out infinite",
+              }}
+            >
+              :
+            </div>
+
+            {/* Seconds */}
+            <div className="text-center">
+              <div
+                className="relative inline-block"
+                style={{
+                  animation:
+                    timeLeft <= 60
+                      ? "pulse 1s ease-in-out infinite"
+                      : "digitalGlow 2s ease-in-out infinite",
+                }}
+              >
                 <div
-                  className="h-full transition-all duration-1000"
+                  className="text-[20rem] font-black leading-none tracking-tight"
                   style={{
-                    width: `${progress}%`,
-                    backgroundColor: accentColor,
+                    fontFamily: "'Orbitron', 'Oxanium', monospace",
+                    fontWeight: 900,
+                    color: timeLeft <= 60 ? "#EF4444" : accentColor,
+                    textShadow:
+                      timeLeft <= 60
+                        ? `0 0 40px #EF444480, 0 0 80px #EF444460, 0 0 120px #EF444440, 8px 8px 30px rgba(0,0,0,0.9)`
+                        : `0 0 40px ${accentColor}90, 0 0 80px ${accentColor}70, 0 0 120px ${accentColor}50, 8px 8px 30px rgba(0,0,0,0.9)`,
+                    letterSpacing: "0.05em",
+                    WebkitTextStroke: `2px ${
+                      timeLeft <= 60 ? "#EF4444" : accentColor
+                    }20`,
+                  }}
+                >
+                  {seconds}
+                </div>
+              </div>
+              <div
+                className="text-4xl font-bold mt-4 uppercase tracking-widest"
+                style={{
+                  color: secondaryColor,
+                  textShadow: `0 0 15px ${secondaryColor}60, 2px 2px 6px rgba(0,0,0,0.8)`,
+                }}
+              >
+                SECONDS
+              </div>
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div className="w-full max-w-5xl mx-auto mb-8">
+            <div
+              className="h-5 rounded-full overflow-hidden relative"
+              style={{
+                background: "rgba(255, 255, 255, 0.05)",
+                border: `2px solid ${accentColor}30`,
+                boxShadow: `inset 0 2px 8px rgba(0,0,0,0.6)`,
+              }}
+            >
+              <div
+                className="h-full transition-all duration-1000 ease-linear rounded-full relative overflow-hidden"
+                style={{
+                  width: `${progressPercentage}%`,
+                  background: `linear-gradient(90deg, ${secondaryColor} 0%, ${accentColor} 100%)`,
+                  boxShadow: `0 0 30px ${accentColor}80, inset 0 1px 3px rgba(255,255,255,0.3)`,
+                }}
+              >
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background: `linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)`,
+                    backgroundSize: "200% 100%",
+                    animation: "shimmer 2s infinite",
                   }}
                 />
               </div>
-
-              {/* Elapsed Time (optional) */}
-              {showElapsed && (
-                <div className="mt-6">
-                  <p className="text-2xl text-white opacity-80 mb-2">
-                    {t.ishraqElapsed}
-                  </p>
-                  <div className="text-4xl font-bold text-white">
-                    {elapsedMinutes.toString().padStart(2, "0")}:
-                    {elapsedSecondsRemaining.toString().padStart(2, "0")}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
+
+          {/* Info text */}
+          <div className="text-center">
+            <p
+              className="text-4xl font-semibold mt-36"
+              style={{
+                color: "#94a3b8",
+                textShadow: `0 0 15px #94a3b860, 2px 2px 6px rgba(0,0,0,0.8)`,
+              }}
+            >
+              {t.ishraqSubtitle} ☀️
+            </p>
+          </div>
+
+          {/* Corner decorative elements */}
+          <div
+            className="absolute top-0 left-0 w-32 h-32 rounded-tl-[2rem]"
+            style={{
+              background: `linear-gradient(135deg, ${accentColor}25 0%, transparent 100%)`,
+            }}
+          />
+          <div
+            className="absolute top-0 right-0 w-32 h-32 rounded-tr-[2rem]"
+            style={{
+              background: `linear-gradient(225deg, ${accentColor}25 0%, transparent 100%)`,
+            }}
+          />
+          <div
+            className="absolute bottom-0 left-0 w-32 h-32 rounded-bl-[2rem]"
+            style={{
+              background: `linear-gradient(45deg, ${accentColor}25 0%, transparent 100%)`,
+            }}
+          />
+          <div
+            className="absolute bottom-0 right-0 w-32 h-32 rounded-br-[2rem]"
+            style={{
+              background: `linear-gradient(315deg, ${accentColor}25 0%, transparent 100%)`,
+            }}
+          />
         </div>
+
+        {/* Decorative bottom border */}
+        <div
+          className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 w-96 h-1"
+          style={{
+            background: `linear-gradient(90deg, transparent 0%, ${secondaryColor} 50%, transparent 100%)`,
+            boxShadow: `0 0 30px ${secondaryColor}`,
+          }}
+        />
       </div>
     </div>
   );
@@ -1210,7 +1477,7 @@ export function MasjidTemplate({
                   >
                     {/* Top Half - Date */}
                     <div
-                      className="flex items-center"
+                      className="flex items-center mt-10"
                       style={{ height: "90%" }}
                     >
                       <p
@@ -1234,7 +1501,7 @@ export function MasjidTemplate({
 
                     {/* Bottom Half - Seconds and AM/PM */}
                     <div
-                      className="flex items-center"
+                      className="flex items-center mb-4"
                       style={{ height: "90%" }}
                     >
                       {/* Seconds */}
@@ -1305,7 +1572,7 @@ export function MasjidTemplate({
                 <span
                   className="text-[20rem] font-extrabold font-mono leading-none"
                   style={{
-                    color: "#FFFF00",
+                    color: customization.colors.secondary,
                     textShadow:
                       "0 0 50px rgba(255, 255, 0, 0.8), 6px 6px 20px rgba(0, 0, 0, 0.9)",
                     fontFamily: customization.font,
@@ -1345,7 +1612,7 @@ export function MasjidTemplate({
                 <span
                   className="text-[18rem] font-extrabold font-mono leading-none"
                   style={{
-                    color: "#FF4444",
+                    color: customization.colors.secondary,
                     textShadow:
                       "0 0 40px rgba(255, 68, 68, 0.6), 5px 5px 15px rgba(0, 0, 0, 0.9)",
                     fontFamily: customization.font,
@@ -1381,7 +1648,7 @@ export function MasjidTemplate({
                 <span
                   className="text-[18rem] font-extrabold font-mono leading-none"
                   style={{
-                    color: "#FFFF00",
+                    color: customization.colors.accent,
                     textShadow: "5px 5px 15px rgba(0, 0, 0, 0.9)",
                     fontFamily: customization.font,
                   }}
