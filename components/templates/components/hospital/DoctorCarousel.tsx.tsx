@@ -99,6 +99,14 @@ export function DoctorCarousel({
     ...activeDoctors,
     ...activeDoctors,
     ...activeDoctors,
+    ...activeDoctors,
+    ...activeDoctors,
+    ...activeDoctors,
+    ...activeDoctors,
+    ...activeDoctors,
+    ...activeDoctors,
+    ...activeDoctors,
+    ...activeDoctors,
   ];
   const itemHeight = 260;
   const totalHeight = activeDoctors.length * itemHeight;
