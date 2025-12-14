@@ -428,11 +428,11 @@ function HospitalTemplateAuthentic({
                 <img
                   src={settings.hospitalLogo}
                   alt="Hospital Logo"
-                  className="w-16 h-16 object-contain"
+                  className="w-20 h-20 object-contain"
                 />
               ) : (
                 <div
-                  className="w-16 h-16 rounded-full flex items-center justify-center shadow-2xl"
+                  className="w-20 h-20 rounded-full flex items-center justify-center shadow-2xl"
                   style={{
                     background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
                   }}
@@ -441,11 +441,11 @@ function HospitalTemplateAuthentic({
                 </div>
               )}
               <div>
-                <h1 className="text-4xl font-bold text-white mb-1">
+                <h1 className="text-5xl font-bold text-white mb-1">
                   {settings.hospitalName}
                 </h1>
                 <p
-                  className="text-base"
+                  className="text-2xl font-semibold"
                   style={{ color: settings.accentColor }}
                 >
                   {settings.tagline}
@@ -571,10 +571,10 @@ function HospitalTemplateAuthentic({
 
         {/* Footer */}
         <div
-          className="bg-black/60 backdrop-blur-md border-t-2 px-8 py-3 relative z-30"
+          className="bg-black/60 backdrop-blur-md border-t-2 px-8 py-1 relative z-30"
           style={{ borderColor: settings.primaryColor }}
         >
-          <div className="flex items-center justify-between text-base">
+          <div className="flex items-center justify-between text-2xl">
             <div className="text-white font-semibold">
               {settings.tickerMessage}
             </div>

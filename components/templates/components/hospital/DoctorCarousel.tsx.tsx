@@ -356,7 +356,7 @@ function DoctorCard({
           </div>
 
           {/* Doctor Details - All text sizes kept as before */}
-          <div className="flex-1 space-y-4">
+          <div className="flex-1 space-y-2">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
                 <div
@@ -391,13 +391,13 @@ function DoctorCard({
                     <span className="text-white text-lg">🩺</span>
                   </div>
                   <p
-                    className="text-2xl font-bold italic"
+                    className="text-2xl font-bold italic whitespace-pre-line"
                     style={{
                       color: `${accentColor}EE`,
                       textShadow: "0 2px 8px rgba(0,0,0,0.5)",
                     }}
                   >
-                    {doctor.specialty}
+                    {doctor.specialty.replace("(", "\n(")}
                   </p>
                 </div>
               </div>
@@ -441,7 +441,7 @@ function DoctorCard({
                     <span className="text-white text-lg">📅</span>
                   </div>
                   <p
-                    className="text-xl font-medium"
+                    className="text-3xl font-medium"
                     style={{
                       color: `${secondaryColor}EE`,
                       textShadow: "0 1px 4px rgba(0,0,0,0.3)",
