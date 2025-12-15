@@ -120,46 +120,35 @@ const translations = {
   },
 };
 
-const PrayerInstructions = ({ imageUrl, accentColor, duration, onClose }) => {
-  const [remainingTime, setRemainingTime] = useState(duration);
-
-  useEffect(() => {
-    // Reset timer when duration changes
-    setRemainingTime(duration);
-
-    if (duration <= 0) {
-      onClose();
-      return;
-    }
-  }, [duration, onClose]);
-
-  useEffect(() => {
-    // Only start countdown if there's positive duration
-    if (duration <= 0) {
-      onClose();
-      return;
-    }
-
-    const interval = setInterval(() => {
-      setRemainingTime((prev) => {
-        if (prev <= 1000) {
-          onClose();
-          return 0;
-        }
-        return prev - 1000;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [duration, onClose]);
-
+// Prayer Instructions Component - Remove internal timer
+const PrayerInstructions = ({
+  totalDuration,
+  imageUrl,
+  accentColor,
+  duration,
+  onClose,
+}) => {
   // Format time for display
   const formatTime = (ms) => {
+    if (ms <= 0) return "0:00";
     const seconds = Math.ceil(ms / 1000);
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
+
+  // Calculate progress percentage
+  const progressPercentage = Math.max(
+    0,
+    Math.min(100, (duration / (totalDuration * 1000)) * 100)
+  );
+
+  // Auto-close when duration reaches 0
+  useEffect(() => {
+    if (duration <= 0) {
+      onClose();
+    }
+  }, [duration, onClose]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black">
@@ -178,7 +167,7 @@ const PrayerInstructions = ({ imageUrl, accentColor, duration, onClose }) => {
                 Prayer Instructions
               </div>
               <div className="text-white text-xl">
-                Closing in: {formatTime(remainingTime)}
+                Closing in: {formatTime(duration)}
               </div>
             </div>
 
@@ -186,7 +175,7 @@ const PrayerInstructions = ({ imageUrl, accentColor, duration, onClose }) => {
               <div
                 className="h-full transition-all duration-100 ease-linear"
                 style={{
-                  width: `${(remainingTime / duration) * 100}%`,
+                  width: `${progressPercentage}%`,
                   backgroundColor: accentColor,
                 }}
               />
@@ -1216,6 +1205,7 @@ export function MasjidTemplate({
   if (showInstructions && customization.prayerInstructionImage) {
     return (
       <PrayerInstructions
+        totalDuration={customization.prayerInstructionDuration * 60 * 1000}
         imageUrl={customization.prayerInstructionImage}
         accentColor={customization.colors.accent}
         duration={instructionsRemainingTime}
