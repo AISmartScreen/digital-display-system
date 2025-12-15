@@ -1975,7 +1975,7 @@ export function MasjidTemplate({
 
                   {/* Right side - Seconds, AM/PM, and Date stacked - Fixed position */}
                   <div
-                    className="flex flex-col pl-60 absolute"
+                    className="flex flex-col pl-56 absolute"
                     style={{ height: "22rem", left: "58rem" }}
                   >
                     {/* Top Half - Date */}
