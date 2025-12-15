@@ -163,7 +163,7 @@ const PrayerInstructions = ({
           <div className="absolute inset-0 bg-black/20"></div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 p-8">
+        {/* <div className="absolute bottom-0 left-0 right-0 p-8">
           <div className="max-w-2xl mx-auto">
             <div className="flex items-center justify-between mb-3">
               <div className="text-white text-2xl font-semibold">
@@ -184,7 +184,7 @@ const PrayerInstructions = ({
               />
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );
