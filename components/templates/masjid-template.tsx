@@ -266,21 +266,6 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
           style={{ backgroundColor: accentColor }}
         />
       </div>
-
-      {/* Optional: Seconds counter */}
-      <div className="flex items-center gap-2">
-        <div className="text-white/60 text-sm">Closing in</div>
-        <div
-          className="px-3 py-1.5 rounded-lg font-bold font-mono text-lg"
-          style={{
-            backgroundColor: accentColor,
-            color: "white",
-            boxShadow: `0 0 15px ${accentColor}80`,
-          }}
-        >
-          {countdownSeconds}s
-        </div>
-      </div>
     </div>
   );
 };
