@@ -120,11 +120,26 @@ const translations = {
   },
 };
 
-// Prayer Instructions Component
 const PrayerInstructions = ({ imageUrl, accentColor, duration, onClose }) => {
   const [remainingTime, setRemainingTime] = useState(duration);
 
   useEffect(() => {
+    // Reset timer when duration changes
+    setRemainingTime(duration);
+
+    if (duration <= 0) {
+      onClose();
+      return;
+    }
+  }, [duration, onClose]);
+
+  useEffect(() => {
+    // Only start countdown if there's positive duration
+    if (duration <= 0) {
+      onClose();
+      return;
+    }
+
     const interval = setInterval(() => {
       setRemainingTime((prev) => {
         if (prev <= 1000) {
@@ -137,6 +152,14 @@ const PrayerInstructions = ({ imageUrl, accentColor, duration, onClose }) => {
 
     return () => clearInterval(interval);
   }, [duration, onClose]);
+
+  // Format time for display
+  const formatTime = (ms) => {
+    const seconds = Math.ceil(ms / 1000);
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black">
@@ -155,7 +178,7 @@ const PrayerInstructions = ({ imageUrl, accentColor, duration, onClose }) => {
                 Prayer Instructions
               </div>
               <div className="text-white text-xl">
-                Closing in: {Math.ceil(remainingTime / 1000)}s
+                Closing in: {formatTime(remainingTime)}
               </div>
             </div>
 
@@ -665,6 +688,10 @@ export function MasjidTemplate({
         },
       ];
 
+      let shouldShowInstructions = false;
+      let prayerName = "";
+      let remainingMs = 0;
+
       for (const prayer of prayers) {
         const [hours, minutes] = prayer.time.split(":").map(Number);
         const adhanMinutes = hours * 60 + minutes;
@@ -673,27 +700,39 @@ export function MasjidTemplate({
         const timeSinceIqamah = currentMinutes - iqamahMinutes;
         const durationInMinutes = customization.prayerInstructionDuration / 60;
 
+        // Show instructions AFTER Iqamah (not Adhan)
         if (timeSinceIqamah >= 0 && timeSinceIqamah <= durationInMinutes) {
-          const remainingTimeInMs =
-            (durationInMinutes - timeSinceIqamah) * 60 * 1000;
-          setShowInstructions(true);
-          setInstructionsPrayer(
-            getPrayerDisplayName(prayer.name, customization.language)
+          shouldShowInstructions = true;
+          prayerName = getPrayerDisplayName(
+            prayer.name,
+            customization.language
           );
-          setInstructionsRemainingTime(Math.max(0, remainingTimeInMs));
-          return;
+
+          // Calculate remaining time in milliseconds
+          const remainingMinutes = durationInMinutes - timeSinceIqamah;
+          remainingMs = Math.max(0, remainingMinutes * 60 * 1000);
+          break;
         }
       }
 
-      setShowInstructions(false);
-      setInstructionsPrayer("");
-      setInstructionsRemainingTime(0);
+      // Only update state if there's a change
+      if (shouldShowInstructions) {
+        setShowInstructions(true);
+        setInstructionsPrayer(prayerName);
+        // This will trigger the component to update its internal timer
+        setInstructionsRemainingTime(remainingMs);
+      } else if (showInstructions) {
+        // Only hide if currently showing
+        setShowInstructions(false);
+        setInstructionsPrayer("");
+        setInstructionsRemainingTime(0);
+      }
     };
 
     checkInstructions();
     const interval = setInterval(checkInstructions, 1000);
     return () => clearInterval(interval);
-  }, [customization]);
+  }, [customization, showInstructions]);
 
   // Ishraq Countdown Check
   useEffect(() => {
