@@ -2527,7 +2527,9 @@ export function MasjidTemplate({
                       second: "2-digit",
                       hour12: true,
                     })
-                    .replace(" ", "") // Remove space entirely
+                    .replace(" ", "")
+                    .replace(/(AM|PM)/i, "")
+                  // Remove space entirely and AM PM
                 }
               </div>
             </div>
