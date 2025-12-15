@@ -122,10 +122,10 @@ const translations = {
 
 // Prayer Instructions Component - Remove internal timer
 const PrayerInstructions = ({
-  totalDuration,
+  totalDuration, // This should be the FULL duration in milliseconds
   imageUrl,
   accentColor,
-  duration,
+  duration, // This is the remaining time in milliseconds
   onClose,
 }) => {
   // Format time for display
@@ -137,11 +137,14 @@ const PrayerInstructions = ({
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // Calculate progress percentage
-  const progressPercentage = Math.max(
-    0,
-    Math.min(100, (duration / (totalDuration * 1000)) * 100)
-  );
+  // Calculate progress percentage - FIXED
+  const progressPercentage =
+    totalDuration > 0
+      ? Math.max(
+          0,
+          Math.min(100, ((totalDuration - duration) / totalDuration) * 100)
+        )
+      : 0;
 
   // Auto-close when duration reaches 0
   useEffect(() => {
@@ -1189,6 +1192,7 @@ export function MasjidTemplate({
   if (showIshraqCountdown) {
     return (
       <IshraqCountdown
+        showElapsed={true}
         accentColor={customization.colors.accent}
         secondaryColor={customization.colors.secondary}
         remainingSeconds={ishraqRemainingSeconds}
@@ -1203,9 +1207,11 @@ export function MasjidTemplate({
 
   // PRIORITY 2: Show Prayer Instructions
   if (showInstructions && customization.prayerInstructionImage) {
+    const totalDurationMs = customization.prayerInstructionDuration * 1000;
+
     return (
       <PrayerInstructions
-        totalDuration={customization.prayerInstructionDuration * 60 * 1000}
+        totalDuration={totalDurationMs}
         imageUrl={customization.prayerInstructionImage}
         accentColor={customization.colors.accent}
         duration={instructionsRemainingTime}
