@@ -1443,7 +1443,7 @@ export function MasjidTemplate({
                     >
                       {/* Prayer Name */}
                       <div
-                        className="relative overflow-hidden rounded-2xl flex items-center transition-all duration-500 group-hover:brightness-110"
+                        className="relative py-2 overflow-hidden rounded-2xl flex items-center transition-all duration-500 group-hover:brightness-110"
                         style={{
                           background: isCurrentPrayer
                             ? `linear-gradient(135deg, 
