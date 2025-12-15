@@ -120,16 +120,25 @@ const translations = {
   },
 };
 
-// Prayer Instructions Component - Remove internal timer
-const PrayerInstructions = ({
-  totalDuration, // This should be the FULL duration in milliseconds
+interface PrayerInstructionsProps {
+  totalDuration: number; // Full duration in milliseconds
+  imageUrl: string;
+  accentColor: string;
+  duration: number; // Remaining time in milliseconds
+  onClose: () => void;
+}
+
+export const PrayerInstructions: React.FC<PrayerInstructionsProps> = ({
+  totalDuration,
   imageUrl,
   accentColor,
-  duration, // This is the remaining time in milliseconds
+  duration,
   onClose,
 }) => {
+  const [remainingTime, setRemainingTime] = useState(duration);
+
   // Format time for display
-  const formatTime = (ms) => {
+  const formatTime = (ms: number) => {
     if (ms <= 0) return "0:00";
     const seconds = Math.ceil(ms / 1000);
     const mins = Math.floor(seconds / 60);
@@ -137,54 +146,140 @@ const PrayerInstructions = ({
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // Calculate progress percentage - FIXED
+  // Calculate progress percentage
   const progressPercentage =
     totalDuration > 0
       ? Math.max(
           0,
-          Math.min(100, ((totalDuration - duration) / totalDuration) * 100)
+          Math.min(100, ((totalDuration - remainingTime) / totalDuration) * 100)
         )
       : 0;
 
-  // Auto-close when duration reaches 0
+  // Update remaining time and handle auto-close
+  useEffect(() => {
+    setRemainingTime(duration);
+  }, [duration]);
+
   useEffect(() => {
     if (duration <= 0) {
       onClose();
     }
   }, [duration, onClose]);
 
+  // Countdown in seconds for the timer
+  const countdownSeconds = Math.ceil(remainingTime / 1000);
+
   return (
     <div className="fixed inset-0 z-50 bg-black">
+      {/* Fullscreen background image */}
       <div className="relative w-full h-full">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${imageUrl})` }}
         >
-          <div className="absolute inset-0 bg-black/20"></div>
+          <div className="absolute inset-0 bg-black/30"></div>
         </div>
 
-        {/* <div className="absolute bottom-0 left-0 right-0 p-8">
-          <div className="max-w-2xl mx-auto">
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-white text-2xl font-semibold">
-                Prayer Instructions
-              </div>
-              <div className="text-white text-xl">
-                Closing in: {formatTime(duration)}
-              </div>
-            </div>
+        {/* Top right corner countdown timer */}
+        <div className="absolute top-6 right-6 z-10">
+          <CountdownTimer
+            remainingTime={remainingTime}
+            countdownSeconds={countdownSeconds}
+            accentColor={accentColor}
+            progressPercentage={progressPercentage}
+            formatTime={formatTime}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
 
-            <div className="h-3 bg-gray-700 rounded-full overflow-hidden">
-              <div
-                className="h-full transition-all duration-100 ease-linear"
-                style={{
-                  width: `${progressPercentage}%`,
-                  backgroundColor: accentColor,
-                }}
-              />
+// Separate Countdown Timer Component
+interface CountdownTimerProps {
+  remainingTime: number;
+  countdownSeconds: number;
+  accentColor: string;
+  progressPercentage: number;
+  formatTime: (ms: number) => string;
+}
+
+const CountdownTimer: React.FC<CountdownTimerProps> = ({
+  remainingTime,
+  countdownSeconds,
+  accentColor,
+  progressPercentage,
+  formatTime,
+}) => {
+  return (
+    <div className="flex flex-col items-end">
+      {/* Timer container */}
+      <div
+        className="relative px-5 py-3 rounded-xl mb-3 backdrop-blur-md"
+        style={{
+          backgroundColor: "rgba(0, 0, 0, 0.7)",
+          border: `2px solid ${accentColor}`,
+          boxShadow: `0 0 20px ${accentColor}40`,
+        }}
+      >
+        <div className="flex flex-col items-center">
+          {/* Title */}
+          <div className="text-white/80 text-sm font-medium mb-1">
+            Prayer Instructions
+          </div>
+
+          {/* Time display */}
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 flex items-center justify-center">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <div
+              className="text-3xl font-bold font-mono tracking-tight"
+              style={{ color: accentColor }}
+            >
+              {formatTime(remainingTime)}
             </div>
           </div>
-        </div> */}
+
+          {/* Progress bar */}
+          <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden mt-2">
+            <div
+              className="h-full transition-all duration-300 ease-out rounded-full"
+              style={{
+                width: `${progressPercentage}%`,
+                backgroundColor: accentColor,
+                boxShadow: `0 0 8px ${accentColor}`,
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Corner accent */}
+        <div
+          className="absolute -top-1 -right-1 w-3 h-3 rounded-full"
+          style={{ backgroundColor: accentColor }}
+        />
+      </div>
+
+      {/* Optional: Seconds counter */}
+      <div className="flex items-center gap-2">
+        <div className="text-white/60 text-sm">Closing in</div>
+        <div
+          className="px-3 py-1.5 rounded-lg font-bold font-mono text-lg"
+          style={{
+            backgroundColor: accentColor,
+            color: "white",
+            boxShadow: `0 0 15px ${accentColor}80`,
+          }}
+        >
+          {countdownSeconds}s
+        </div>
       </div>
     </div>
   );
