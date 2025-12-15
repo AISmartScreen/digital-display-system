@@ -91,21 +91,21 @@ export function DisplayCard({
         <div className="flex gap-2">
           <button
             onClick={() => onPreview(id)}
-            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all"
+            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-blue-600/30 hover:bg-blue-700 text-white transition-all"
           >
             <Eye size={14} />
             <span className="hidden sm:inline">Live</span>
           </button>
           <button
             onClick={() => onEdit(id)}
-            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 transition-all"
+            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-orange-600/30 hover:bg-orange-700 text-white transition-all"
           >
             <Edit2 size={14} />
             <span className="hidden sm:inline">Edit</span>
           </button>
           <button
             onClick={() => onDelete(id)}
-            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-all"
+            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-red-600/30 hover:bg-red-700 text-white transition-all"
           >
             <Trash2 size={14} />
             <span className="hidden sm:inline">Delete</span>
