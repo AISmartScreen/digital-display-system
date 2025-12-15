@@ -1316,15 +1316,7 @@ export function MasjidTemplate({
 
         {/* Top: Masjid Header with config-based design */}
         <div className="mb-12 text-center relative z-10">
-          <div
-            className="inline-block px-12 py-4 mb-6 rounded-full"
-            style={{
-              background: `linear-gradient(135deg, ${customization.colors.primary}30 0%, ${customization.colors.primary}10 100%)`,
-              border: `2px solid ${customization.colors.primary}40`,
-              backdropFilter: "blur(10px)",
-              boxShadow: `0 10px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 ${customization.colors.primary}20`,
-            }}
-          >
+          <div className="inline-block px-12 py-4 mb-6 rounded-full">
             <h1
               className="text-6xl font-bold leading-none tracking-wider"
               style={{
@@ -1631,7 +1623,7 @@ export function MasjidTemplate({
           <div className="flex flex-col gap-6 h-full pr-8">
             {/* Current Time and Date Card */}
             <div
-              className="p-10 rounded-3xl relative backdrop-blur-sm"
+              className="px-10 pb-10 rounded-3xl relative backdrop-blur-sm"
               style={{
                 background: `linear-gradient(165deg, 
                 ${customization.colors.primary}20 0%,
@@ -1667,11 +1659,11 @@ export function MasjidTemplate({
                         hour: "2-digit",
                         minute: "2-digit",
                         second: "2-digit",
-                        hour12: false,
+                        hour12: true,
                       })
-                      .replace(/\s/g, "")}
+                      .replace(/\s?(AM|PM)/i, "")}
                   </p>
-                  <div className="flex justify-center items-center gap-4 mt-2">
+                  <div className="flex justify-center items-center gap-4 mt-0">
                     <div
                       className="h-0.5 flex-1"
                       style={{
@@ -1698,9 +1690,9 @@ export function MasjidTemplate({
                 </div>
 
                 {/* Date with enhanced styling */}
-                <div className="mt-8">
+                <div className="mt-2">
                   <div
-                    className="inline-block px-8 py-3 rounded-full mb-4"
+                    className="inline-block px-8 py-3 rounded-full mb-0"
                     style={{
                       background: `linear-gradient(135deg, ${customization.colors.primary}25 0%, transparent 100%)`,
                       border: `1px solid ${customization.colors.primary}40`,
