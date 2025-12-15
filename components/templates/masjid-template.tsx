@@ -2164,7 +2164,7 @@ export function MasjidTemplate({
                     >
                       {/* Seconds */}
                       <span
-                        className="text-[7rem] font-extrabold font-mono tracking-tighter"
+                        className="inline-block w-32 text-right text-[7rem] font-extrabold font-mono tracking-tighter"
                         style={{
                           color: customization.colors.text,
                           textShadow: `0 0 30px ${customization.colors.text}, 4px 4px 12px rgba(0, 0, 0, 0.9)`,
@@ -2173,17 +2173,15 @@ export function MasjidTemplate({
                       >
                         {String(currentTime.getSeconds()).padStart(2, "0")}
                       </span>
-
                       {/* AM/PM */}
                       <span
-                        className="text-[7rem] font-extrabold font-mono tracking-tighter ml-2"
+                        className="inline-block w-32 text-left text-[7rem] font-extrabold font-mono tracking-tighter ml-10"
                         style={{
                           color: customization.colors.text,
                           textShadow: `0 0 30px ${customization.colors.text}, 4px 4px 12px rgba(0, 0, 0, 0.9)`,
                           fontFamily: customization.font,
                         }}
                       >
-                        &nbsp;
                         {currentTime
                           .toLocaleTimeString("en-US", {
                             hour12: true,
