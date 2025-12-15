@@ -2185,7 +2185,7 @@ export function MasjidTemplate({
               }}
             >
               <div
-                className="text-8xl font-bold mb-4 px-12 py-2 rounded-full inline-block"
+                className="text-6xl font-bold mb-4 px-12 py-2 rounded-full inline-block"
                 style={{
                   backgroundColor: `${customization.colors.accent}DD`,
                   color: "#FFFFFF",
@@ -2204,7 +2204,7 @@ export function MasjidTemplate({
               </div>
               <div className="flex items-center justify-center mt-0">
                 <span
-                  className="text-[20rem] font-extrabold font-mono leading-none"
+                  className="text-[16rem] font-extrabold font-mono leading-none"
                   style={{
                     color: customization.colors.secondary,
                     textShadow:
@@ -2261,7 +2261,7 @@ export function MasjidTemplate({
 
             {/* Next Iqamah Time */}
             <div
-              className="p-8 rounded-[4rem] backdrop-blur-sm text-center relative overflow-hidden"
+              className="p-4 rounded-[4rem] backdrop-blur-sm text-center relative overflow-hidden"
               style={{
                 backgroundColor: `${customization.colors.primary}40`,
                 border: `3px solid ${customization.colors.accent}80`,
@@ -2269,7 +2269,7 @@ export function MasjidTemplate({
               }}
             >
               <div
-                className="text-7xl font-bold mb-4 px-10 py-0 rounded-full inline-block"
+                className="text-6xl font-bold mb-4 px-10 py-0 rounded-full inline-block"
                 style={{
                   backgroundColor: `${customization.colors.accent}CC`,
                   color: "#FFFFFF",
