@@ -2530,7 +2530,7 @@ export function MasjidTemplate({
                   {/* Prayer Name with Status Badge */}
                   <div className="relative">
                     <h3
-                      className={`text-4xl font-extrabold text-center mb-4 leading-tight ${
+                      className={`text-6xl font-extrabold text-center mb-4 leading-tight ${
                         isCurrentActive || isNextPrayer
                           ? "text-shadow-glow"
                           : ""
@@ -2580,7 +2580,7 @@ export function MasjidTemplate({
                         }`}
                         style={textStyle}
                       >
-                        {t.adhan}
+                        {/* {t.adhan} */}
                       </p>
                       <p
                         className="text-5xl font-bold font-mono"
