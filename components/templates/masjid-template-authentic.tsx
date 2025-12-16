@@ -215,12 +215,7 @@ export function MasjidTemplateAuthentic({
           time: customization.prayerTimes.fajr,
           offset: customization.iqamahOffsets.fajr,
         },
-        {
-          name: customization.prayerNames.sunrise || "sunrise",
-          key: "sunrise",
-          time: customization.prayerTimes.sunrise,
-          offset: customization.iqamahOffsets.sunrise,
-        },
+
         {
           name: getPrayerDisplayName(
             customization.prayerNames.dhuhr || "dhuhr",
@@ -675,11 +670,25 @@ export function MasjidTemplateAuthentic({
 
     const prayers = [
       {
-        name: customization.prayerNames.fajr || "Fajr",
+        name: getPrayerDisplayName(
+          customization.prayerNames.fajr || "Fajr",
+          language
+        ),
         key: "fajr",
         time: customization.prayerTimes.fajr,
         offset: customization.iqamahOffsets.fajr,
       },
+      // {
+      //   name: getPrayerDisplayName(
+      //     customization.prayerNames.sunrise || "Sunrise",
+      //     language
+      //   ),
+      //   nameAr: "الشروق",
+      //   // Use the configured sunrise time directly
+      //   adhan: to12Hour(customization.prayerTimes.sunrise), // Changed from calculateSunriseTime()
+      //   offset: 0,
+      //   icon: "🌅",
+      // },
       {
         name: getPrayerDisplayName(
           customization.prayerNames.dhuhr || "Dhuhr",
@@ -690,19 +699,28 @@ export function MasjidTemplateAuthentic({
         offset: customization.iqamahOffsets.dhuhr,
       },
       {
-        name: customization.prayerNames.asr || "Asr",
+        name: getPrayerDisplayName(
+          customization.prayerNames.asr || "Asr",
+          language
+        ),
         key: "asr",
         time: customization.prayerTimes.asr,
         offset: customization.iqamahOffsets.asr,
       },
       {
-        name: customization.prayerNames.maghrib || "Maghrib",
+        name: getPrayerDisplayName(
+          customization.prayerNames.maghrib || "Maghrib",
+          language
+        ),
         key: "maghrib",
         time: customization.prayerTimes.maghrib,
         offset: customization.iqamahOffsets.maghrib,
       },
       {
-        name: customization.prayerNames.isha || "Isha",
+        name: getPrayerDisplayName(
+          customization.prayerNames.isha || "Isha",
+          language
+        ),
         key: "isha",
         time: customization.prayerTimes.isha,
         offset: customization.iqamahOffsets.isha,
@@ -778,15 +796,8 @@ export function MasjidTemplateAuthentic({
   };
 
   const calculateSunriseTime = () => {
-    const [hours, minutes] = customization.prayerTimes.fajr
-      .split(":")
-      .map(Number);
-    const sunriseMinutes = hours * 60 + minutes + 90;
-    const sunriseHours = Math.floor(sunriseMinutes / 60) % 24;
-    const sunriseMins = sunriseMinutes % 60;
-    return `${sunriseHours.toString().padStart(2, "0")}:${sunriseMins
-      .toString()
-      .padStart(2, "0")}`;
+    // Use the configured sunrise time directly
+    return customization.prayerTimes.sunrise;
   };
 
   const nextPrayer = getNextPrayer();
