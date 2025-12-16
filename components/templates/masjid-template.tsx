@@ -1723,40 +1723,40 @@ export function MasjidTemplate({
                               )`
                             : isNextPrayer
                             ? `linear-gradient(135deg, 
-                ${
-                  isCritical
-                    ? "rgba(255, 0, 0, 0.3)"
-                    : isExtremelyClose
-                    ? "rgba(255, 100, 0, 0.25)"
-                    : isVeryClose
-                    ? "rgba(255, 200, 0, 0.2)"
-                    : isUpcomingSoon
-                    ? "rgba(255, 255, 0, 0.15)"
-                    : `${customization.colors.accent}45`
-                } 0%,
-                ${
-                  isCritical
-                    ? "rgba(255, 0, 0, 0.2)"
-                    : isExtremelyClose
-                    ? "rgba(255, 100, 0, 0.15)"
-                    : isVeryClose
-                    ? "rgba(255, 200, 0, 0.12)"
-                    : isUpcomingSoon
-                    ? "rgba(255, 255, 0, 0.1)"
-                    : `${customization.colors.accent}10`
-                } 50%,
-                ${
-                  isCritical
-                    ? "rgba(255, 0, 0, 0.1)"
-                    : isExtremelyClose
-                    ? "rgba(255, 100, 0, 0.08)"
-                    : isVeryClose
-                    ? "rgba(255, 200, 0, 0.06)"
-                    : isUpcomingSoon
-                    ? "rgba(255, 255, 0, 0.05)"
-                    : `${customization.colors.accent}05`
-                } 100%
-              )`
+                          ${
+                            isCritical
+                              ? "rgba(255, 0, 0, 0.3)"
+                              : isExtremelyClose
+                              ? "rgba(255, 100, 0, 0.25)"
+                              : isVeryClose
+                              ? "rgba(255, 200, 0, 0.2)"
+                              : isUpcomingSoon
+                              ? "rgba(255, 255, 0, 0.15)"
+                              : `${customization.colors.accent}45`
+                          } 0%,
+                          ${
+                            isCritical
+                              ? "rgba(255, 0, 0, 0.2)"
+                              : isExtremelyClose
+                              ? "rgba(255, 100, 0, 0.15)"
+                              : isVeryClose
+                              ? "rgba(255, 200, 0, 0.12)"
+                              : isUpcomingSoon
+                              ? "rgba(255, 255, 0, 0.1)"
+                              : `${customization.colors.accent}10`
+                          } 50%,
+                          ${
+                            isCritical
+                              ? "rgba(255, 0, 0, 0.1)"
+                              : isExtremelyClose
+                              ? "rgba(255, 100, 0, 0.08)"
+                              : isVeryClose
+                              ? "rgba(255, 200, 0, 0.06)"
+                              : isUpcomingSoon
+                              ? "rgba(255, 255, 0, 0.05)"
+                              : `${customization.colors.accent}05`
+                          } 100%
+                        )`
                             : `linear-gradient(135deg, 
                 ${customization.colors.primary}30 0%,
                 ${customization.colors.primary}15 50%,
