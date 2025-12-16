@@ -1417,6 +1417,7 @@ export function MasjidTemplate({
       const currentSeconds = now.getSeconds();
       const currentTotalMinutes = currentMinutes + currentSeconds / 60;
 
+      // Find the next prayer that hasn't started yet (Adhan hasn't occurred)
       for (const prayer of prayers) {
         const [hours, minutes] = prayer.time.split(":").map(Number);
         const adhanTime = hours * 60 + minutes;
@@ -1426,9 +1427,10 @@ export function MasjidTemplate({
           return {
             prayer,
             minutesUntil: diffInMinutes,
-            isWithin5Minutes: diffInMinutes <= 10,
-            isWithin2Minutes: diffInMinutes <= 4,
-            isWithin1Minute: diffInMinutes <= 2,
+            isWithin10Minutes: diffInMinutes <= 10,
+            isWithin5Minutes: diffInMinutes <= 5,
+            isWithin2Minutes: diffInMinutes <= 2,
+            isWithin1Minute: diffInMinutes <= 1,
           };
         }
       }
@@ -1437,6 +1439,7 @@ export function MasjidTemplate({
       return {
         prayer: prayers[0],
         minutesUntil: 999,
+        isWithin10Minutes: false,
         isWithin5Minutes: false,
         isWithin2Minutes: false,
         isWithin1Minute: false,
@@ -1483,6 +1486,57 @@ export function MasjidTemplate({
             @keyframes shimmer {
               0% { background-position: -200% center; }
               100% { background-position: 200% center; }
+            }
+
+            @keyframes urgentBlink {
+              0%, 100% { 
+                opacity: 1;
+                transform: scale(1);
+              }
+              50% { 
+                opacity: 0.4;
+                transform: scale(1.02);
+              }
+            }
+            
+            @keyframes moderateBlink {
+              0%, 100% { 
+                opacity: 1;
+                transform: scale(1);
+              }
+              50% { 
+                opacity: 0.6;
+                transform: scale(1.01);
+              }
+            }
+            
+            @keyframes gentleBlink {
+              0%, 100% { 
+                opacity: 1;
+                transform: scale(1);
+              }
+              50% { 
+                opacity: 0.8;
+                transform: scale(1.005);
+              }
+            }
+            
+            @keyframes pulse {
+              0%, 100% {
+                transform: scale(1);
+              }
+              50% {
+                transform: scale(1.1);
+              }
+            }
+            
+            @keyframes glowPulse {
+              0%, 100% {
+                filter: brightness(1);
+              }
+              50% {
+                filter: brightness(1.3);
+              }
             }
           `}
         </style>
@@ -1585,30 +1639,46 @@ export function MasjidTemplate({
 
             {/* Prayer Times Grid */}
             <div className="flex-1 flex flex-col justify-between gap-4">
+              // Update the prayer card rendering section:
               {prayers.map((prayer, index) => {
                 const isCurrentPrayer =
                   currentPrayerInfo.isActive &&
                   currentPrayerInfo.prayer?.name === prayer.name;
 
                 const isNextPrayer =
-                  !currentPrayerInfo.isActive &&
                   nextPrayerInfo.prayer?.name === prayer.name;
 
+                // New: Determine urgency levels
                 const isUpcomingSoon =
-                  isNextPrayer && nextPrayerInfo.isWithin5Minutes;
+                  isNextPrayer && nextPrayerInfo.isWithin10Minutes;
                 const isVeryClose =
+                  isNextPrayer && nextPrayerInfo.isWithin5Minutes;
+                const isExtremelyClose =
                   isNextPrayer && nextPrayerInfo.isWithin2Minutes;
-                const isAlmostTime =
+                const isCritical =
                   isNextPrayer && nextPrayerInfo.isWithin1Minute;
 
                 // Determine animation style based on urgency
                 let blinkAnimation = "";
-                if (isAlmostTime) {
+                let blinkSpeed = "";
+                let glowIntensity = "";
+
+                if (isCritical) {
+                  blinkAnimation = "urgentBlink 0.3s ease-in-out infinite";
+                  glowIntensity = "0 0 50px rgba(255, 0, 0, 0.8)";
+                } else if (isExtremelyClose) {
                   blinkAnimation = "urgentBlink 0.5s ease-in-out infinite";
+                  glowIntensity = "0 0 40px rgba(255, 100, 0, 0.8)";
                 } else if (isVeryClose) {
-                  blinkAnimation = "moderateBlink 1s ease-in-out infinite";
+                  blinkAnimation = "moderateBlink 0.8s ease-in-out infinite";
+                  glowIntensity = "0 0 35px rgba(255, 200, 0, 0.7)";
                 } else if (isUpcomingSoon) {
-                  blinkAnimation = "gentleBlink 2s ease-in-out infinite";
+                  blinkAnimation = "gentleBlink 1.2s ease-in-out infinite";
+                  glowIntensity = "0 0 30px rgba(255, 255, 0, 0.6)";
+                } else if (isNextPrayer) {
+                  // Always highlight next prayer, even if far away
+                  blinkAnimation = "";
+                  glowIntensity = "0 0 25px rgba(0, 255, 255, 0.4)";
                 }
 
                 return (
@@ -1620,129 +1690,211 @@ export function MasjidTemplate({
                     className={`relative group transition-all duration-500 ${
                       isCurrentPrayer
                         ? "scale-[1.02]"
-                        : isUpcomingSoon
+                        : isNextPrayer
                         ? "scale-[1.01]"
-                        : "hover:scale-[1.01]"
+                        : ""
                     }`}
                     style={{
                       animation: blinkAnimation,
                     }}
                   >
-                    {/* Decorative glow behind current prayer or upcoming prayer */}
-                    {(isCurrentPrayer || isUpcomingSoon) && (
+                    {/* Enhanced glow effect for next prayer */}
+                    {isNextPrayer && (
                       <div
-                        className="absolute inset-0 rounded-2xl blur-xl"
+                        className="absolute inset-0 rounded-2xl blur-xl -inset-2"
                         style={{
-                          background: isCurrentPrayer
-                            ? `${customization.colors.accent}40`
-                            : `${customization.colors.accent}${
-                                isAlmostTime ? "50" : isVeryClose ? "40" : "30"
-                              }`,
-                          animation: isUpcomingSoon
+                          background: isCritical
+                            ? `radial-gradient(ellipse at center, rgba(255, 0, 0, 0.4) 0%, transparent 70%)`
+                            : isExtremelyClose
+                            ? `radial-gradient(ellipse at center, rgba(255, 100, 0, 0.35) 0%, transparent 70%)`
+                            : isVeryClose
+                            ? `radial-gradient(ellipse at center, rgba(255, 200, 0, 0.3) 0%, transparent 70%)`
+                            : isUpcomingSoon
+                            ? `radial-gradient(ellipse at center, rgba(255, 255, 0, 0.25) 0%, transparent 70%)`
+                            : `radial-gradient(ellipse at center, rgba(0, 255, 255, 0.2) 0%, transparent 70%)`,
+                          animation: isNextPrayer
                             ? "glowPulse 2s ease-in-out infinite"
-                            : "pulse 3s ease-in-out infinite",
+                            : "",
                         }}
                       ></div>
                     )}
 
                     <div
-                      className={`grid grid-cols-[2fr_1fr_1fr] items-stretch gap-3 relative transition-all duration-300`}
+                      className={`grid grid-cols-[2fr_1fr_1fr] items-stretch gap-3 relative transition-all duration-300 ${
+                        isNextPrayer ? "z-10" : ""
+                      }`}
+                      style={{
+                        boxShadow: glowIntensity,
+                      }}
                     >
-                      {/* Prayer Name */}
+                      {/* Prayer Name - Enhanced for next prayer */}
                       <div
                         className="relative py-2 overflow-hidden rounded-2xl flex items-center transition-all duration-500 group-hover:brightness-110"
                         style={{
                           background: isCurrentPrayer
                             ? `linear-gradient(135deg, 
-                              ${customization.colors.accent}40 0%,
-                              ${customization.colors.accent}20 50%,
-                              ${customization.colors.accent}10 100%
-                            )`
-                            : isUpcomingSoon
+                ${customization.colors.accent}40 0%,
+                ${customization.colors.accent}20 50%,
+                ${customization.colors.accent}10 100%
+              )`
+                            : isNextPrayer
                             ? `linear-gradient(135deg, 
-                              ${customization.colors.accent}${
-                                isAlmostTime ? "35" : isVeryClose ? "28" : "22"
-                              } 0%,
-                              ${customization.colors.accent}${
-                                isAlmostTime ? "20" : isVeryClose ? "15" : "12"
-                              } 50%,
-                              ${customization.colors.accent}${
-                                isAlmostTime ? "12" : isVeryClose ? "08" : "05"
-                              } 100%
-                            )`
+                ${
+                  isCritical
+                    ? "rgba(255, 0, 0, 0.3)"
+                    : isExtremelyClose
+                    ? "rgba(255, 100, 0, 0.25)"
+                    : isVeryClose
+                    ? "rgba(255, 200, 0, 0.2)"
+                    : isUpcomingSoon
+                    ? "rgba(255, 255, 0, 0.15)"
+                    : `${customization.colors.accent}15`
+                } 0%,
+                ${
+                  isCritical
+                    ? "rgba(255, 0, 0, 0.2)"
+                    : isExtremelyClose
+                    ? "rgba(255, 100, 0, 0.15)"
+                    : isVeryClose
+                    ? "rgba(255, 200, 0, 0.12)"
+                    : isUpcomingSoon
+                    ? "rgba(255, 255, 0, 0.1)"
+                    : `${customization.colors.accent}10`
+                } 50%,
+                ${
+                  isCritical
+                    ? "rgba(255, 0, 0, 0.1)"
+                    : isExtremelyClose
+                    ? "rgba(255, 100, 0, 0.08)"
+                    : isVeryClose
+                    ? "rgba(255, 200, 0, 0.06)"
+                    : isUpcomingSoon
+                    ? "rgba(255, 255, 0, 0.05)"
+                    : `${customization.colors.accent}05`
+                } 100%
+              )`
                             : `linear-gradient(135deg, 
-                              ${customization.colors.primary}30 0%,
-                              ${customization.colors.primary}15 50%,
-                              ${customization.colors.primary}08 100%
-                            )`,
+                ${customization.colors.primary}30 0%,
+                ${customization.colors.primary}15 50%,
+                ${customization.colors.primary}08 100%
+              )`,
                           boxShadow: isCurrentPrayer
                             ? `
-                            0 20px 40px ${customization.colors.accent}30,
-                            inset 0 1px 0 rgba(255, 255, 255, 0.2),
-                            inset 0 -1px 0 rgba(0, 0, 0, 0.2)
-                          `
-                            : isUpcomingSoon
+                0 20px 40px ${customization.colors.accent}30,
+                inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.2)
+              `
+                            : isNextPrayer
                             ? `
-                            0 15px 35px ${customization.colors.accent}${
-                                isAlmostTime ? "40" : isVeryClose ? "30" : "20"
-                              },
-                            inset 0 1px 0 rgba(255, 255, 255, 0.15),
-                            inset 0 -1px 0 rgba(0, 0, 0, 0.2)
-                          `
+                0 15px 35px ${
+                  isCritical
+                    ? "rgba(255, 0, 0, 0.4)"
+                    : isExtremelyClose
+                    ? "rgba(255, 100, 0, 0.35)"
+                    : isVeryClose
+                    ? "rgba(255, 200, 0, 0.3)"
+                    : isUpcomingSoon
+                    ? "rgba(255, 255, 0, 0.25)"
+                    : `${customization.colors.accent}20`
+                },
+                inset 0 1px 0 rgba(255, 255, 255, 0.15),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.2)
+              `
                             : `
-                            0 10px 30px rgba(0, 0, 0, 0.4),
-                            inset 0 1px 0 rgba(255, 255, 255, 0.1),
-                            inset 0 -1px 0 rgba(0, 0, 0, 0.2)
-                          `,
+                0 10px 30px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.2)
+              `,
                           border: `1.5px solid ${
                             isCurrentPrayer
                               ? customization.colors.accent + "60"
-                              : isUpcomingSoon
-                              ? customization.colors.accent +
-                                (isAlmostTime
-                                  ? "50"
-                                  : isVeryClose
-                                  ? "40"
-                                  : "30")
+                              : isNextPrayer
+                              ? isCritical
+                                ? "rgba(255, 0, 0, 0.6)"
+                                : isExtremelyClose
+                                ? "rgba(255, 100, 0, 0.5)"
+                                : isVeryClose
+                                ? "rgba(255, 200, 0, 0.4)"
+                                : isUpcomingSoon
+                                ? "rgba(255, 255, 0, 0.3)"
+                                : customization.colors.accent + "30"
                               : customization.colors.primary + "40"
                           }`,
                         }}
                       >
-                        {/* Animated gradient overlay */}
-                        {(isCurrentPrayer || isUpcomingSoon) && (
+                        {/* Animated gradient overlay for next prayer */}
+                        {isNextPrayer && (
                           <div
-                            className="absolute inset-0 opacity-20"
+                            className="absolute inset-0 opacity-30"
                             style={{
                               background: `linear-gradient(90deg, 
-                              transparent 0%, 
-                              ${customization.colors.accent}30 50%, 
-                              transparent 100%
-                            )`,
-                              animation: "shimmer 3s ease-in-out infinite",
+                transparent 0%, 
+                ${
+                  isCritical
+                    ? "rgba(255, 0, 0, 0.4)"
+                    : isExtremelyClose
+                    ? "rgba(255, 100, 0, 0.3)"
+                    : isVeryClose
+                    ? "rgba(255, 200, 0, 0.2)"
+                    : isUpcomingSoon
+                    ? "rgba(255, 255, 0, 0.15)"
+                    : `${customization.colors.accent}20`
+                } 50%, 
+                transparent 100%
+              )`,
+                              animation: "shimmer 2s ease-in-out infinite",
                             }}
                           ></div>
                         )}
 
                         <div className="relative px-8 py-6 flex items-center w-full">
-                          {/* Decorative left accent */}
+                          {/* Decorative left accent - Color changes based on urgency */}
                           <div
                             className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-4/5 rounded-r-full"
                             style={{
                               background: `linear-gradient(180deg, 
-                              ${
-                                isCurrentPrayer || isUpcomingSoon
-                                  ? customization.colors.accent
-                                  : customization.colors.secondary
-                              } 0%,
-                              ${
-                                isCurrentPrayer || isUpcomingSoon
-                                  ? customization.colors.accent + "80"
-                                  : customization.colors.secondary + "80"
-                              } 100%
-                            )`,
+                ${
+                  isCurrentPrayer
+                    ? customization.colors.accent
+                    : isNextPrayer
+                    ? isCritical
+                      ? "rgb(255, 0, 0)"
+                      : isExtremelyClose
+                      ? "rgb(255, 100, 0)"
+                      : isVeryClose
+                      ? "rgb(255, 200, 0)"
+                      : isUpcomingSoon
+                      ? "rgb(255, 255, 0)"
+                      : customization.colors.accent
+                    : customization.colors.secondary
+                } 0%,
+                ${
+                  isCurrentPrayer
+                    ? customization.colors.accent + "80"
+                    : isNextPrayer
+                    ? isCritical
+                      ? "rgba(255, 0, 0, 0.8)"
+                      : isExtremelyClose
+                      ? "rgba(255, 100, 0, 0.8)"
+                      : isVeryClose
+                      ? "rgba(255, 200, 0, 0.8)"
+                      : isUpcomingSoon
+                      ? "rgba(255, 255, 0, 0.8)"
+                      : customization.colors.accent + "80"
+                    : customization.colors.secondary + "80"
+                } 100%
+              )`,
                               boxShadow:
-                                isCurrentPrayer || isUpcomingSoon
-                                  ? `0 0 30px ${customization.colors.accent}80`
+                                isCurrentPrayer || isNextPrayer
+                                  ? isCritical
+                                    ? "0 0 40px rgba(255, 0, 0, 0.8)"
+                                    : isExtremelyClose
+                                    ? "0 0 35px rgba(255, 100, 0, 0.8)"
+                                    : isVeryClose
+                                    ? "0 0 30px rgba(255, 200, 0, 0.8)"
+                                    : isUpcomingSoon
+                                    ? "0 0 25px rgba(255, 255, 0, 0.8)"
+                                    : `0 0 30px ${customization.colors.accent}80`
                                   : `0 0 15px ${customization.colors.secondary}40`,
                             }}
                           ></div>
@@ -1750,14 +1902,31 @@ export function MasjidTemplate({
                           <h3
                             className="text-6xl font-bold uppercase tracking-wider ml-4 relative"
                             style={{
-                              color: customization.colors.text,
-                              textShadow:
-                                isCurrentPrayer || isUpcomingSoon
-                                  ? `
-                                0 0 30px ${customization.colors.accent}60,
-                                2px 2px 12px rgba(0, 0, 0, 0.9)
-                              `
-                                  : "2px 2px 12px rgba(0, 0, 0, 0.9)",
+                              color:
+                                isCurrentPrayer || isNextPrayer
+                                  ? customization.colors.text
+                                  : customization.colors.text,
+                              textShadow: isCurrentPrayer
+                                ? `
+                    0 0 30px ${customization.colors.accent}60,
+                    2px 2px 12px rgba(0, 0, 0, 0.9)
+                  `
+                                : isNextPrayer
+                                ? `
+                    0 0 25px ${
+                      isCritical
+                        ? "rgba(255, 0, 0, 0.6)"
+                        : isExtremelyClose
+                        ? "rgba(255, 100, 0, 0.5)"
+                        : isVeryClose
+                        ? "rgba(255, 200, 0, 0.4)"
+                        : isUpcomingSoon
+                        ? "rgba(255, 255, 0, 0.3)"
+                        : customization.colors.accent + "60"
+                    },
+                    2px 2px 12px rgba(0, 0, 0, 0.9)
+                  `
+                                : "2px 2px 12px rgba(0, 0, 0, 0.9)",
                               fontFamily: customization.font,
                               letterSpacing: "0.05em",
                             }}
@@ -1768,23 +1937,36 @@ export function MasjidTemplate({
                             )}
                           </h3>
 
-                          {/* Show countdown badge for upcoming prayer */}
-                          {isUpcomingSoon && (
+                          {/* Show countdown badge for next prayer with urgency colors */}
+                          {isNextPrayer && (
                             <div
                               className="ml-auto mr-4 px-4 py-2 rounded-full text-2xl font-bold"
                               style={{
-                                background: `${customization.colors.accent}${
-                                  isAlmostTime
-                                    ? "90"
-                                    : isVeryClose
-                                    ? "80"
-                                    : "70"
-                                }`,
+                                background: isCritical
+                                  ? "rgba(255, 0, 0, 0.9)"
+                                  : isExtremelyClose
+                                  ? "rgba(255, 100, 0, 0.9)"
+                                  : isVeryClose
+                                  ? "rgba(255, 200, 0, 0.9)"
+                                  : isUpcomingSoon
+                                  ? "rgba(255, 255, 0, 0.9)"
+                                  : `${customization.colors.accent}70`,
                                 color: "#FFFFFF",
-                                boxShadow: `0 0 20px ${customization.colors.accent}60`,
+                                boxShadow: isCritical
+                                  ? "0 0 25px rgba(255, 0, 0, 0.6)"
+                                  : isExtremelyClose
+                                  ? "0 0 20px rgba(255, 100, 0, 0.6)"
+                                  : isVeryClose
+                                  ? "0 0 15px rgba(255, 200, 0, 0.6)"
+                                  : isUpcomingSoon
+                                  ? "0 0 10px rgba(255, 255, 0, 0.6)"
+                                  : `0 0 20px ${customization.colors.accent}60`,
+                                animation: isNextPrayerInfo.isWithin10Minutes
+                                  ? "pulse 1s ease-in-out infinite"
+                                  : "",
                               }}
                             >
-                              {Math.floor(nextPrayerInfo.minutesUntil)}m
+                              {Math.ceil(nextPrayerInfo.minutesUntil)}m
                             </div>
                           )}
                         </div>
