@@ -1717,9 +1717,9 @@ export function MasjidTemplate({
                         style={{
                           background: isCurrentPrayer
                             ? `linear-gradient(135deg, 
-                                ${customization.colors.accent}60 0%,
-                                ${customization.colors.accent}40 50%,
-                                ${customization.colors.accent}25 100%
+                                ${customization.colors.accent}80 0%,
+                                ${customization.colors.accent}60 50%,
+                                ${customization.colors.accent}40 100%
                               )`
                             : isNextPrayer
                             ? `linear-gradient(135deg, 
