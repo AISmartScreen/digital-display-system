@@ -2505,7 +2505,7 @@ export function MasjidTemplate({
               }}
             >
               <div
-                className="text-6xl font-bold mb-4 px-10 py-0 rounded-full inline-block"
+                className="text-7xl font-bold mb-4 px-10 py-0 rounded-full inline-block"
                 style={{
                   backgroundColor: `${customization.colors.accent}CC`,
                   color: "#FFFFFF",
