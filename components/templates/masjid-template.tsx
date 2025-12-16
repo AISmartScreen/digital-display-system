@@ -1453,20 +1453,7 @@ export function MasjidTemplate({
       <div className="w-full h-full flex flex-col p-8 relative overflow-hidden">
         <style>
           {`
-            @keyframes urgentBlink {
-              0%, 100% { opacity: 1; }
-              50% { opacity: 0.3; }
-            }
-            
-            @keyframes moderateBlink {
-              0%, 100% { opacity: 1; }
-              50% { opacity: 0.5; }
-            }
-            
-            @keyframes gentleBlink {
-              0%, 100% { opacity: 1; }
-              50% { opacity: 0.7; }
-            }
+           
             
             @keyframes glowPulse {
               0%, 100% {
@@ -1961,7 +1948,7 @@ export function MasjidTemplate({
                                   : isUpcomingSoon
                                   ? "0 0 10px rgba(255, 255, 0, 0.6)"
                                   : `0 0 20px ${customization.colors.accent}60`,
-                                animation: isNextPrayerInfo.isWithin10Minutes
+                                animation: nextPrayerInfo.isWithin10Minutes
                                   ? "pulse 1s ease-in-out infinite"
                                   : "",
                               }}
