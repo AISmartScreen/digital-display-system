@@ -313,7 +313,27 @@ export default function PrayerTimesManager({
     fetchUserData();
   }, []);
 
-  // Load reference times when label changes
+  // Add this at the top of the component
+  const [currentDate, setCurrentDate] = useState(() => {
+    const today = new Date();
+    return `${today.getMonth() + 1}-${today.getDate()}`;
+  });
+
+  // Check for date changes
+  useEffect(() => {
+    const checkDateChange = setInterval(() => {
+      const now = new Date();
+      const newDate = `${now.getMonth() + 1}-${now.getDate()}`;
+
+      if (newDate !== currentDate) {
+        setCurrentDate(newDate);
+      }
+    }, 60000); // Check every minute
+
+    return () => clearInterval(checkDateChange);
+  }, [currentDate]);
+
+  // Update the existing useEffect to also depend on currentDate
   useEffect(() => {
     const loadScheduleIfNeeded = async () => {
       if (!label) return;
@@ -322,7 +342,6 @@ export default function PrayerTimesManager({
       try {
         const times = await fetchPrayerTimesForToday(label);
         if (times) {
-          // ALWAYS update reference when label changes
           setOriginalScheduleTimes(times);
           setReferenceScheduleLabel(label);
         }
@@ -337,7 +356,7 @@ export default function PrayerTimesManager({
     };
 
     loadScheduleIfNeeded();
-  }, [label]);
+  }, [label, currentDate]); // ✅ Now also depends on currentDate
 
   // Fetch available prayer schedules
   useEffect(() => {
