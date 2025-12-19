@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Plus, Trash2, Clock, X } from "lucide-react";
+import Image from "next/image";
 
 // Types
 export interface AnnouncementImage {
@@ -214,7 +215,7 @@ export default function AnnouncementsManager({
           <div className="flex gap-3 p-4">
             {/* Image Preview */}
             <div className="flex-shrink-0">
-              <img
+              <Image
                 src={advertisement.url}
                 alt="Advertisement"
                 className="w-20 h-20 object-cover rounded border border-gray-700"

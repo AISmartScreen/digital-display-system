@@ -5,6 +5,7 @@ import { Heart } from "lucide-react";
 import { GalleryCarousel } from "./components/hospital/GalleryCarousel";
 import FullScreenAd from "./components/hospital/FullScreenAd";
 import { DoctorCarousel } from "./components/hospital/DoctorCarousel.tsx";
+import Image from "next/image";
 
 interface Doctor {
   id?: string;
@@ -425,7 +426,7 @@ function HospitalTemplateAuthentic({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {settings.hospitalLogo ? (
-                <img
+                <Image
                   src={settings.hospitalLogo}
                   alt="Hospital Logo"
                   className="w-20 h-20 object-contain"

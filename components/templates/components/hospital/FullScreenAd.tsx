@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { X, Play, Loader2 } from "lucide-react";
+import Image from "next/image";
+
 
 interface FullScreenAdProps {
   title?: string;
@@ -635,7 +637,7 @@ export default function FullScreenAd({
             </>
           ) : (
             imageUrl && (
-              <img
+              <Image
                 src={imageUrl}
                 alt={title || "Advertisement"}
                 className="w-full h-full object-cover"

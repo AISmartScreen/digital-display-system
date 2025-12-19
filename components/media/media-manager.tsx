@@ -17,6 +17,7 @@ import {
   X,
   Filter,
 } from "lucide-react";
+import Image from "next/image";
 
 interface MediaItem {
   id: string;
@@ -506,7 +507,7 @@ function MediaGallery({
 
               <div className="bg-slate-900 aspect-video flex items-center justify-center overflow-hidden">
                 {item.fileType === "image" ? (
-                  <img
+                  <Image
                     src={item.fileUrl}
                     alt={item.fileName}
                     className="w-full h-full object-cover"

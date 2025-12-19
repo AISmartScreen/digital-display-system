@@ -1,5 +1,5 @@
 "use client";
-
+import Image from "next/image";
 import React, { useEffect, useRef, useState } from "react";
 
 interface Doctor {
@@ -41,7 +41,7 @@ export function DoctorCarousel({
   const doctorRotationRef = useRef<NodeJS.Timeout | null>(null);
 
   const defaultDoctorImage =
-    "https://cdn.vectorstock.com/i/500p/23/94/female-and-male-doctor-silhouettes-vector-10842394.jpg";
+    "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=400&fit=crop";
 
   // Filter only enabled doctors (config should already have only enabled doctors)
   // But we add this as a safety measure in case enabled field exists
@@ -236,7 +236,7 @@ export function DoctorCarousel({
               {/* Doctor Image */}
               <div className="relative">
                 <div className="relative w-80 h-80 rounded-3xl overflow-hidden shadow-2xl">
-                  <img
+                  <Image
                     src={doctor.image || defaultDoctorImage}
                     alt={doctor.name}
                     className="w-full h-full object-cover"
@@ -367,7 +367,7 @@ function DoctorCard({
                 }}
               />
 
-              <img
+              <Image
                 src={doctor.image || defaultDoctorImage}
                 alt={doctor.name}
                 className="relative w-full h-full object-cover rounded-2xl border-4 border-white/40 group-hover:border-white/60 transition-all duration-500 group-hover:scale-105"

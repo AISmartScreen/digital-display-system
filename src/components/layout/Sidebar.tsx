@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 const BaseURL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
@@ -116,7 +117,7 @@ export function Sidebar() {
         className="mb-8 flex-shrink-0 hover:opacity-80 transition-opacity"
       >
         <div className="border-pink-300 rounded-lg">
-          <img
+          <Image
             src="/logo.png"
             alt="ScreenSync Logo"
             className="w-12 h-12 object-contain"
@@ -189,7 +190,7 @@ export function Sidebar() {
             {getInitials(userData.business_name)}
           </div>
         ) : (
-          <img
+          <Image
             src="https://hebbkx1sfanhila5yf.public.blob.vercel-storage.com/photo-1494790108377-be9c29b29330-0ITDG9UYNBJygMOGBGIv4aR4Qj9VKY.jpeg"
             alt="User Profile"
             className="w-full h-full object-cover rounded-full"

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 
 interface GalleryCarouselProps {
   images: string[];
@@ -85,7 +86,7 @@ export function GalleryCarousel({
               zIndex: idx === currentIndex ? 10 : 0,
             }}
           >
-            <img
+            <Image
               src={img}
               alt={`Gallery ${idx + 1}`}
               className="w-full h-full object-cover"

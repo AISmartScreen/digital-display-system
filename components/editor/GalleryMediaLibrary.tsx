@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import Image from "next/image";
 
 interface GalleryMediaLibraryProps {
   selectedItems: any[];
@@ -357,7 +358,7 @@ export function GalleryMediaLibrary({
                     className="relative group cursor-pointer"
                     onClick={() => handleImageClick(imgUrl)}
                   >
-                    <img
+                    <Image
                       src={imgUrl}
                       alt={`Media ${idx + 1}`}
                       className={`w-full h-20 object-cover rounded border-2 transition-colors ${
@@ -407,7 +408,7 @@ export function GalleryMediaLibrary({
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <img
+                        <Image
                           src={item.image}
                           alt={item.caption}
                           className="w-10 h-10 object-cover rounded"

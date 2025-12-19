@@ -10,6 +10,7 @@ import {
   GraduationCap,
   Users,
 } from "lucide-react";
+import Image from "next/image";
 
 // ============================================================================
 // QUICK NAVIGATION COMPONENT
@@ -310,7 +311,7 @@ export default function DoctorSlideshow() {
             <div className="relative z-10 text-center">
               <div className="w-72 h-72 rounded-full flex items-center justify-center mb-6 mx-auto backdrop-blur-sm border-8 border-white/40 shadow-2xl overflow-hidden bg-gradient-to-br from-white/20 to-white/10 p-2">
                 <div className="w-full h-full rounded-full overflow-hidden">
-                  <img
+                  <Image
                     src={currentDoctor.image}
                     alt={currentDoctor.name}
                     className="w-full h-full object-cover transform hover:scale-110 transition-transform duration-500"

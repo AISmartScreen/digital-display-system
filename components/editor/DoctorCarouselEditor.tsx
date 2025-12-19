@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Trash2, Plus, Upload, Calendar, Clock } from "lucide-react";
 import { ImageUploader } from "./ImageUploader";
 import CollapsibleSection from "./CollapsibleSection";
+import Image from "next/image";
 
 interface DoctorCarouselEditorProps {
   config: any;
@@ -339,7 +340,7 @@ export function DoctorCarouselEditor({
                     }
                   >
                     {doctor.image ? (
-                      <img
+                      <Image
                         src={doctor.image}
                         alt={doctor.name || `Doctor ${idx + 1}`}
                         className="w-full h-full object-cover rounded-full"

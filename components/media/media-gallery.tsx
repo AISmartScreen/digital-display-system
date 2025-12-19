@@ -1,48 +1,53 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Trash2, Copy, Download, ImageIcon, Video } from "lucide-react"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Trash2, Copy, Download, ImageIcon, Video } from "lucide-react";
+import Image from "next/image";
 
 interface MediaItem {
-  id: string
-  fileName: string
-  fileType: "image" | "video"
-  fileUrl: string
-  fileSize: number
-  uploadedAt: string
+  id: string;
+  fileName: string;
+  fileType: "image" | "video";
+  fileUrl: string;
+  fileSize: number;
+  uploadedAt: string;
 }
 
 interface MediaGalleryProps {
-  items: MediaItem[]
-  onDelete: (id: string) => void
-  isDeleting?: string | null
+  items: MediaItem[];
+  onDelete: (id: string) => void;
+  isDeleting?: string | null;
 }
 
-export function MediaGallery({ items, onDelete, isDeleting = null }: MediaGalleryProps) {
-  const [copiedId, setCopiedId] = useState<string | null>(null)
+export function MediaGallery({
+  items,
+  onDelete,
+  isDeleting = null,
+}: MediaGalleryProps) {
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const handleCopyUrl = (url: string, id: string) => {
-    navigator.clipboard.writeText(url)
-    setCopiedId(id)
-    setTimeout(() => setCopiedId(null), 2000)
-  }
+    navigator.clipboard.writeText(url);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes"
-    const k = 1024
-    const sizes = ["Bytes", "KB", "MB", "GB"]
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i]
-  }
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
+  };
 
   if (items.length === 0) {
     return (
       <Card className="bg-slate-800 border-slate-700 p-8 text-center">
         <p className="text-slate-400">No media files uploaded yet</p>
       </Card>
-    )
+    );
   }
 
   return (
@@ -55,7 +60,7 @@ export function MediaGallery({ items, onDelete, isDeleting = null }: MediaGaller
           {/* Preview */}
           <div className="bg-slate-900 aspect-video flex items-center justify-center overflow-hidden">
             {item.fileType === "image" ? (
-              <img
+              <Image
                 src={item.fileUrl || "/placeholder.svg"}
                 alt={item.fileName}
                 className="w-full h-full object-cover"
@@ -77,15 +82,20 @@ export function MediaGallery({ items, onDelete, isDeleting = null }: MediaGaller
                 ) : (
                   <Video className="w-4 h-4 text-slate-500" />
                 )}
-                <p className="text-sm font-semibold text-slate-50 truncate">{item.fileName}</p>
+                <p className="text-sm font-semibold text-slate-50 truncate">
+                  {item.fileName}
+                </p>
               </div>
               <p className="text-xs text-slate-400">
-                {formatFileSize(item.fileSize)} · {new Date(item.uploadedAt).toLocaleDateString()}
+                {formatFileSize(item.fileSize)} ·{" "}
+                {new Date(item.uploadedAt).toLocaleDateString()}
               </p>
             </div>
 
             {/* URL */}
-            <div className="bg-slate-700/50 rounded p-2 font-mono text-xs text-slate-300 truncate">{item.fileUrl}</div>
+            <div className="bg-slate-700/50 rounded p-2 font-mono text-xs text-slate-300 truncate">
+              {item.fileUrl}
+            </div>
 
             {/* Actions */}
             <div className="flex gap-2">
@@ -122,5 +132,5 @@ export function MediaGallery({ items, onDelete, isDeleting = null }: MediaGaller
         </Card>
       ))}
     </div>
-  )
+  );
 }
