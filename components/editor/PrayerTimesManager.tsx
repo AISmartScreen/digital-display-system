@@ -344,9 +344,6 @@ export default function PrayerTimesManager({
         if (times) {
           setOriginalScheduleTimes(times);
           setReferenceScheduleLabel(label);
-
-          // ✅ Also update the current prayer times to today's times
-          onPrayerTimesChange(times);
         }
       } catch (error) {
         console.error("Error loading schedule:", error);
@@ -359,7 +356,7 @@ export default function PrayerTimesManager({
     };
 
     loadScheduleIfNeeded();
-  }, [label, currentDate]); // ✅ Depends on currentDate
+  }, [label, currentDate]); // ✅ Now also depends on currentDate
 
   // Fetch available prayer schedules
   useEffect(() => {
