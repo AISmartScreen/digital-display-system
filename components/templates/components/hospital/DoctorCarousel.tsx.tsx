@@ -41,7 +41,7 @@ export function DoctorCarousel({
   const doctorRotationRef = useRef<NodeJS.Timeout | null>(null);
 
   const defaultDoctorImage =
-    "https://img.freepik.com/premium-photo/doctor-digital-avatar-generative-ai_934475-9227.jpg";
+    "https://cdn.vectorstock.com/i/500p/23/94/female-and-male-doctor-silhouettes-vector-10842394.jpg";
 
   // Filter only enabled doctors (config should already have only enabled doctors)
   // But we add this as a safety measure in case enabled field exists
