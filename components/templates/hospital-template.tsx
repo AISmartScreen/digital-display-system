@@ -232,7 +232,7 @@ function HospitalTemplateAdvanced({
                   background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
                 }}
               >
-                <Image
+                <img
                   src={doctors[currentDoctor].image}
                   alt={doctors[currentDoctor].name}
                   className="w-full h-full rounded-full object-cover border-4 border-black/20"
@@ -359,7 +359,7 @@ function HospitalTemplateAdvanced({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {settings.hospitalLogo ? (
-                <Image
+                <img
                   src={settings.hospitalLogo}
                   alt="Hospital Logo"
                   className="w-16 h-16 object-contain"

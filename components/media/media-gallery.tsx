@@ -60,7 +60,7 @@ export function MediaGallery({
           {/* Preview */}
           <div className="bg-slate-900 aspect-video flex items-center justify-center overflow-hidden">
             {item.fileType === "image" ? (
-              <Image
+              <img
                 src={item.fileUrl || "/placeholder.svg"}
                 alt={item.fileName}
                 className="w-full h-full object-cover"

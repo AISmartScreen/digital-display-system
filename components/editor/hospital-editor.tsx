@@ -865,7 +865,7 @@ export function HospitalEditor({
               <div className="grid grid-cols-4 gap-2">
                 {galleryImages.map((img: string, idx: number) => (
                   <div key={idx} className="relative group">
-                    <Image
+                    <img
                       src={img}
                       alt={`Gallery ${idx + 1}`}
                       className="w-full aspect-square object-cover rounded border-2 border-slate-600"

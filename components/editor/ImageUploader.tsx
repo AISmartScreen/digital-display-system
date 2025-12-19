@@ -336,7 +336,7 @@ export function ImageUploader({
           <div className="grid grid-cols-2 gap-2">
             {images.map((img, idx) => (
               <div key={idx} className="relative group">
-                <Image
+                <img
                   src={img}
                   alt={`Selected ${idx + 1}`}
                   className="w-full h-24 object-cover rounded border border-slate-600"
@@ -380,7 +380,7 @@ export function ImageUploader({
                   className="relative group cursor-pointer"
                   onClick={() => handleImageClick(img)}
                 >
-                  <Image
+                  <img
                     src={img}
                     alt={`Media ${idx + 1}`}
                     className={`w-full h-20 object-cover rounded border-2 transition-colors ${

@@ -340,7 +340,7 @@ export function DoctorCarouselEditor({
                     }
                   >
                     {doctor.image ? (
-                      <Image
+                      <img
                         src={doctor.image}
                         alt={doctor.name || `Doctor ${idx + 1}`}
                         className="w-full h-full object-cover rounded-full"

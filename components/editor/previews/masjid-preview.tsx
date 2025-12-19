@@ -589,7 +589,7 @@ export function MasjidPreview({ config }: { config: any }) {
         <div className="absolute top-0 left-0 right-0 p-6 text-center z-10">
           <div className="flex items-center justify-center gap-3">
             {config.logo && (
-              <Image
+              <img
                 src={config.logo}
                 alt="Logo"
                 className="object-contain"

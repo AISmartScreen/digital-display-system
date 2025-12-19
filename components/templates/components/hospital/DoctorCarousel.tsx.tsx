@@ -236,7 +236,7 @@ export function DoctorCarousel({
               {/* Doctor Image */}
               <div className="relative">
                 <div className="relative w-80 h-80 rounded-3xl overflow-hidden shadow-2xl">
-                  <Image
+                  <img
                     src={doctor.image || defaultDoctorImage}
                     alt={doctor.name}
                     className="w-full h-full object-cover"
@@ -367,7 +367,7 @@ function DoctorCard({
                 }}
               />
 
-              <Image
+              <img
                 src={doctor.image || defaultDoctorImage}
                 alt={doctor.name}
                 className="relative w-full h-full object-cover rounded-2xl border-4 border-white/40 group-hover:border-white/60 transition-all duration-500 group-hover:scale-105"

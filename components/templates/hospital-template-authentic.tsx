@@ -426,7 +426,7 @@ function HospitalTemplateAuthentic({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {settings.hospitalLogo ? (
-                <Image
+                <img
                   src={settings.hospitalLogo}
                   alt="Hospital Logo"
                   className="w-20 h-20 object-contain"
