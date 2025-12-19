@@ -79,7 +79,7 @@ const getPrayerDisplayName = (prayerName: string, language: string) => {
 
   if (isFriday && isDhuhr) {
     if (language === "ta") {
-      return "ஜும்மா";
+      return "ஜும்ஆ";
     }
     return "Jummah";
   }
