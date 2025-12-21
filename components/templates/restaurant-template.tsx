@@ -128,10 +128,12 @@ export function RestaurantTemplate({
     settings.slideshowSpeed,
   ]);
 
-  // Advertisement scheduling logic with frequency-based intervals
+  // Advertisement scheduling logic with queue for consecutive ads
   useEffect(() => {
     const adTimers = new Map<string, NodeJS.Timeout>();
     const adLastShown = new Map<string, number>();
+    let adQueue: any[] = [];
+    let isProcessingQueue = false;
 
     const isAdActive = (ad: any) => {
       if (!ad.enabled) return false;
@@ -158,30 +160,94 @@ export function RestaurantTemplate({
       return true;
     };
 
-    const showAd = (ad: any) => {
-      // Don't show if another ad is currently showing
+    const processNextAd = () => {
+      if (isProcessingQueue || adQueue.length === 0) {
+        isProcessingQueue = false;
+        return;
+      }
+
+      // Check if an ad is currently showing
       if (isShowingAdRef.current) {
         return;
       }
 
+      // Get next ad from queue
+      const nextAd = adQueue.shift();
+      if (!nextAd) {
+        isProcessingQueue = false;
+        return;
+      }
+
+      // Check if this ad is still active
+      if (!isAdActive(nextAd)) {
+        // Skip this ad and try the next one
+        processNextAd();
+        return;
+      }
+
+      const now = Date.now();
+      const lastShown = adLastShown.get(nextAd.id) || 0;
+      const timeSinceLastShown = now - lastShown;
+
+      // Check if enough time has passed based on frequency
+      if (timeSinceLastShown < nextAd.frequency * 1000) {
+        // Not ready yet, try next ad
+        processNextAd();
+        return;
+      }
+
+      // Show this ad
+      isProcessingQueue = true;
+      isShowingAdRef.current = true;
+      setCurrentAd(nextAd);
+      setShowAdvertisement(true);
+      adLastShown.set(nextAd.id, now);
+
+      console.log(
+        `📺 Showing ad: ${nextAd.title || nextAd.id} (${
+          adQueue.length
+        } remaining in queue)`
+      );
+    };
+
+    const queueAd = (ad: any) => {
       const now = Date.now();
       const lastShown = adLastShown.get(ad.id) || 0;
       const timeSinceLastShown = now - lastShown;
 
       // Check if enough time has passed based on frequency
-      if (timeSinceLastShown < ad.frequency * 1000) {
-        return;
+      if (timeSinceLastShown >= ad.frequency * 1000) {
+        // Don't add duplicate ads to queue
+        const alreadyQueued = adQueue.some((queuedAd) => queuedAd.id === ad.id);
+        if (!alreadyQueued) {
+          adQueue.push(ad);
+          console.log(
+            `➕ Queued ad: ${ad.title || ad.id} (Queue size: ${adQueue.length})`
+          );
+
+          // Try to process immediately if nothing is showing
+          if (!isShowingAdRef.current && !isProcessingQueue) {
+            processNextAd();
+          }
+        }
       }
-
-      // Show the advertisement
-      isShowingAdRef.current = true;
-      setCurrentAd(ad);
-      setShowAdvertisement(true);
-      adLastShown.set(ad.id, now);
-
-      // Note: Duration is now handled by the FullScreenAd component
-      // via the onDurationEnd callback
     };
+
+    const handleAdComplete = () => {
+      console.log(`✅ Ad completed`);
+      isProcessingQueue = false;
+      isShowingAdRef.current = false;
+      setShowAdvertisement(false);
+      setCurrentAd(null);
+
+      // After a brief pause, process next ad in queue
+      setTimeout(() => {
+        processNextAd();
+      }, 1000); // 1 second gap between ads
+    };
+
+    // Store handler globally so onDurationEnd callback can access it
+    (window as any).__handleAdComplete = handleAdComplete;
 
     const scheduleAds = () => {
       // Clear existing timers
@@ -191,23 +257,23 @@ export function RestaurantTemplate({
       // Schedule each active advertisement based on its frequency
       advertisements.forEach((ad) => {
         if (isAdActive(ad)) {
-          // Show immediately if it's the first time
+          // Try to queue immediately if it's ready
           const lastShown = adLastShown.get(ad.id) || 0;
           const now = Date.now();
 
           if (now - lastShown >= ad.frequency * 1000) {
-            // Show after a short delay to avoid all ads showing at once
+            // Add a small random delay to avoid all ads queuing at once
             setTimeout(() => {
               if (isAdActive(ad)) {
-                showAd(ad);
+                queueAd(ad);
               }
-            }, Math.random() * 5000); // Random delay 0-5 seconds
+            }, Math.random() * 3000); // 0-3 seconds
           }
 
           // Set up recurring schedule based on frequency
           const timer = setInterval(() => {
             if (isAdActive(ad)) {
-              showAd(ad);
+              queueAd(ad);
             }
           }, ad.frequency * 1000);
 
@@ -227,6 +293,8 @@ export function RestaurantTemplate({
     return () => {
       adTimers.forEach((timer) => clearInterval(timer));
       clearInterval(recheckInterval);
+      delete (window as any).__handleAdComplete;
+      adQueue = [];
     };
   }, [advertisements]);
 
@@ -234,6 +302,7 @@ export function RestaurantTemplate({
     return date.toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
+      second: "2-digit",
       hour12: true,
     });
   };
@@ -284,9 +353,11 @@ export function RestaurantTemplate({
           daysOfWeek: currentAd.daysOfWeek,
         }}
         onDurationEnd={() => {
-          isShowingAdRef.current = false;
-          setShowAdvertisement(false);
-          setCurrentAd(null);
+          // Call the global handler to process next ad in queue
+          const handler = (window as any).__handleAdComplete;
+          if (handler) {
+            handler();
+          }
         }}
       />
     );
