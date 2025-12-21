@@ -8,6 +8,7 @@ import { useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { MasjidTemplate } from "@/components/templates/masjid-template";
 import { HospitalTemplate } from "@/components/templates/hospital-template";
+import { RestaurantTemplate } from "@/components/templates/restaurant-template";
 import { CorporateTemplate } from "@/components/templates/corporate-template";
 
 export default function PreviewPage() {
@@ -115,6 +116,16 @@ export default function PreviewPage() {
       case "hospital-modern":
         return (
           <HospitalTemplate
+            displayId={customization.displayId}
+            displayName={customization.displayName}
+            templateType={customization.templateType}
+            customization={customization}
+            backgroundStyle={getBackgroundStyle()}
+          />
+        );
+      case "restaurant-modern":
+        return (
+          <RestaurantTemplate
             displayId={customization.displayId}
             displayName={customization.displayName}
             templateType={customization.templateType}

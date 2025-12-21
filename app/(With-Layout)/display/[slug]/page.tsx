@@ -1,11 +1,12 @@
-import { MasjidDisplay } from "@/components/displays/public/masjid-display"
-import { HospitalDisplay } from "@/components/displays/public/hospital-display"
-import { CorporateDisplay } from "@/components/displays/public/corporate-display"
+import { MasjidDisplay } from "@/components/displays/public/masjid-display";
+import { HospitalDisplay } from "@/components/displays/public/hospital-display";
+import { CorporateDisplay } from "@/components/displays/public/corporate-display";
+import { RestaurantDisplay } from "@/components/displays/public/restaurant-display";
 
 interface DisplayPageProps {
   params: {
-    slug: string
-  }
+    slug: string;
+  };
 }
 
 // Mock function to fetch display config
@@ -47,39 +48,52 @@ async function getDisplayConfig(slug: string) {
     "lobby-789": {
       templateType: "corporate",
       meetingRooms: [
-        { room: "Conference A", schedule: "09:00 - 10:00", status: "Available" },
+        {
+          room: "Conference A",
+          schedule: "09:00 - 10:00",
+          status: "Available",
+        },
         { room: "Conference B", schedule: "10:00 - 11:30", status: "Booked" },
         { room: "Board Room", schedule: "14:00 - 15:00", status: "Available" },
       ],
       kpiMetrics: { revenue: "$1.2M", growth: "+15%" },
     },
-  }
+  };
 
-  return mockConfigs[slug] || null
+  return mockConfigs[slug] || null;
 }
 
 export default async function DisplayPage({ params }: DisplayPageProps) {
-  const config = await getDisplayConfig(params.slug)
+  const config = await getDisplayConfig(params.slug);
 
   if (!config) {
     return (
       <div className="w-full h-screen flex items-center justify-center bg-slate-950 text-white">
         <div className="text-center">
           <h1 className="text-4xl font-bold mb-4">Display Not Found</h1>
-          <p className="text-slate-400">The display you're looking for doesn't exist.</p>
+          <p className="text-slate-400">
+            The display you're looking for doesn't exist.
+          </p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="w-full h-screen overflow-hidden">
       {config.templateType === "masjid" && <MasjidDisplay config={config} />}
-      {config.templateType === "hospital" && <HospitalDisplay config={config} />}
-      {config.templateType === "corporate" && <CorporateDisplay config={config} />}
+      {config.templateType === "hospital" && (
+        <HospitalDisplay config={config} />
+      )}
+      {config.templateType === "restaurant" && (
+        <RestaurantDisplay config={config} />
+      )}
+      {config.templateType === "corporate" && (
+        <CorporateDisplay config={config} />
+      )}
 
       {/* Meta refresh for auto-update every 24 hours */}
       <meta httpEquiv="refresh" content="86400" />
     </div>
-  )
+  );
 }

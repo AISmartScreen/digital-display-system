@@ -22,14 +22,14 @@ export const metadata: Metadata = {
     template: "%s | ScreenSync",
   },
   description:
-    "Create and manage digital display screens for masjids, hospitals, restaurants, and corporate businesses. Easy-to-use digital signage platform.",
+    "Create and manage digital display screens for masjids, hospitals, and restaurant businesses. Easy-to-use digital signage platform.",
   keywords: [
     "digital signage",
     "display screens",
     "masjid prayer times",
     "hospital waiting screens",
     "restaurant menu boards",
-    "corporate displays",
+    "Restaurant displays",
     "digital display manager",
     "signage software",
     "screen management",

@@ -399,16 +399,11 @@ export default function DisplaysPage() {
             const templateType = getTemplateType(display.template_type);
 
             const thumbnails: Record<string, string> = {
-              masjid:
-                "https://images.unsplash.com/photo-1591154669695-5f2a8d20c089?w=400",
-              hospital:
-                "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=400",
-              restaurant:
-                "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400",
-              retail:
-                "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400",
-              corporate:
-                "https://images.unsplash.com/photo-1497366216548-37526070297c?w=400",
+              masjid: "mosque-background.jpg",
+              hospital: "hospital-background.jpg",
+              restaurant: "restaurant-background.jpg",
+              retail: "retail-background.jpg",
+              corporate: "corporate-background.jpg",
             };
 
             return (

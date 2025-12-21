@@ -44,10 +44,10 @@ export function CreateDisplayDialog({
       icon: "🏥",
     },
     {
-      id: "corporate",
-      name: "Corporate",
-      description: "Meeting rooms, announcements, KPIs",
-      icon: "🏢",
+      id: "restaurant",
+      name: "Restaurant",
+      description: "Menu boards, daily specials, promotions",
+      icon: "🍽️",
     },
   ];
 

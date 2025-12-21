@@ -14,6 +14,7 @@ import {
 import MasjidEditorPanel from "./masjid-editor";
 import { HospitalEditor } from "./hospital-editor";
 import { CorporateEditor } from "./corporate-editor";
+import { RestaurantEditor } from "./restaurant-editor";
 import { LivePreview } from "@/components/editor/live-review";
 
 interface TemplateEditorProps {
@@ -137,6 +138,16 @@ export function TemplateEditor({
       case "hospital":
         return (
           <HospitalEditor
+            displayId={displayId}
+            displayName={displayName}
+            templateType={templateType}
+            config={config}
+            onConfigChange={handleConfigChange}
+          />
+        );
+      case "restaurant":
+        return (
+          <RestaurantEditor
             displayId={displayId}
             displayName={displayName}
             templateType={templateType}

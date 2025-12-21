@@ -636,7 +636,7 @@ export default function FullScreenAd({
             </>
           ) : (
             imageUrl && (
-              <Image
+              <img
                 src={imageUrl}
                 alt={title || "Advertisement"}
                 className="w-full h-full object-cover"

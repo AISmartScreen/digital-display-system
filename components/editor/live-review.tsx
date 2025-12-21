@@ -47,6 +47,8 @@ export function LivePreview({
         ? "hospital-modern"
         : displayData.templateType === "corporate"
         ? "corporate-dashboard"
+        : displayData.templateType === "restaurant"
+        ? "restaurant-modern"
         : displayData.config.template || "masjid-classic";
 
     // Prepare the config with template name
@@ -80,6 +82,8 @@ export function LivePreview({
           ? "masjid-classic"
           : displayData.templateType === "hospital"
           ? "hospital-modern"
+          : displayData.templateType === "restaurant"
+          ? "restaurant-modern"
           : displayData.templateType === "corporate"
           ? "corporate-dashboard"
           : displayData.config.template || "masjid-classic";

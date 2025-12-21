@@ -2847,7 +2847,7 @@ export function MasjidTemplate({
                       </h3>
 
                       {/* Status Indicator */}
-                      <div className="absolute -top-2 right-0 flex gap-2">
+                      <div className="absolute -top-4 -left-4 flex gap-2">
                         {isNextPrayer && !isActive && (
                           <span className="px-0 py-0 text-sm font-bold rounded-full bg-gradient-to-r from-blue-400 to-purple-600 text-white">
                             {t.next}

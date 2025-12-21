@@ -35,20 +35,20 @@ export function DisplayCard({
 
   const getPreviewImage = (type: string) => {
     const previewImages: Record<string, string> = {
-      masjid: "/mosque-interior-prayer.jpg",
-      hospital: "/hospital-reception.png",
-      corporate: "/modern-office-meeting-room.png",
+      masjid: "/mosque-background.jpg",
+      hospital: "/hospital-background.jpg",
+      restaurant: "/restaurant-background.jpg",
     };
-    return previewImages[type] || previewImages.corporate;
+    return previewImages[type] || previewImages.restaurant;
   };
 
   const getBackgroundGradient = (type: string) => {
     const gradients: Record<string, string> = {
       masjid: "from-amber-900/40 via-orange-900/30 to-transparent",
       hospital: "from-red-900/40 via-pink-900/30 to-transparent",
-      corporate: "from-blue-900/40 via-cyan-900/30 to-transparent",
+      restaurant: "from-blue-900/40 via-cyan-900/30 to-transparent",
     };
-    return gradients[type] || gradients.corporate;
+    return gradients[type] || gradients.restaurant;
   };
 
   const getStatusColor = (st: string) => {
