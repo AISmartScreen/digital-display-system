@@ -1,8 +1,11 @@
+// Enhanced Persistent File Server with Cross-Route Support
+
 export class PersistentFileServer {
   static STORAGE_KEY = "persistent-folder-handles";
   static CHANNEL_NAME = "folder-manager-channel";
   static channel = null;
   static listeners = new Map();
+  static fileCache = new Map(); // In-memory cache for quick access
 
   // Initialize the file server
   static async initialize() {
@@ -17,6 +20,54 @@ export class PersistentFileServer {
 
     // Request persistent storage
     await this.requestStoragePersistence();
+
+    // Setup message handler for file requests from other routes
+    this.setupFileRequestHandler();
+  }
+
+  // Setup handler for file requests from other routes/windows
+  static setupFileRequestHandler() {
+    window.addEventListener("message", async (event) => {
+      if (event.data.type === "REQUEST_FILE") {
+        try {
+          const fileName = event.data.fileName;
+          console.log("Received file request for:", fileName);
+
+          // Get the file
+          const fileData = await this.getFileUrl(fileName);
+
+          // Send back via port (if available) or postMessage
+          if (event.ports && event.ports[0]) {
+            event.ports[0].postMessage({
+              url: fileData.url,
+              type: fileData.type,
+              size: fileData.size,
+              name: fileData.name,
+              lastModified: fileData.lastModified,
+            });
+          } else {
+            event.source.postMessage(
+              {
+                type: "SEND_FILE",
+                fileName: fileName,
+                url: fileData.url,
+                fileType: fileData.type,
+                size: fileData.size,
+                lastModified: fileData.lastModified,
+              },
+              "*"
+            );
+          }
+        } catch (error) {
+          console.error("Failed to handle file request:", error);
+          if (event.ports && event.ports[0]) {
+            event.ports[0].postMessage({
+              error: error.message,
+            });
+          }
+        }
+      }
+    });
   }
 
   // Request persistent storage
@@ -97,8 +148,17 @@ export class PersistentFileServer {
   }
 
   // Get file as blob URL for sharing across routes
-  static async getFileUrl(fileName) {
-    const handle = await this.restoreFolderHandle();
+  static async getFileUrl(fileName, handleOverride = null) {
+    // Check in-memory cache first
+    if (this.fileCache.has(fileName)) {
+      const cached = this.fileCache.get(fileName);
+      if (Date.now() - cached.timestamp < 300000) {
+        // 5 minutes cache
+        return cached.data;
+      }
+    }
+
+    const handle = handleOverride || (await this.restoreFolderHandle());
     if (!handle) {
       throw new Error("No folder access available");
     }
@@ -108,16 +168,24 @@ export class PersistentFileServer {
       const file = await fileHandle.getFile();
       const blobUrl = URL.createObjectURL(file);
 
-      // Store reference for cleanup
-      await this.trackBlobUrl(fileName, blobUrl);
-
-      return {
+      const fileData = {
         url: blobUrl,
         name: fileName,
         type: file.type,
         size: file.size,
         lastModified: file.lastModified,
       };
+
+      // Store in memory cache
+      this.fileCache.set(fileName, {
+        data: fileData,
+        timestamp: Date.now(),
+      });
+
+      // Store reference for cleanup
+      await this.trackBlobUrl(fileName, blobUrl);
+
+      return fileData;
     } catch (error) {
       console.error(`Failed to get file "${fileName}":`, error);
       throw error;
@@ -125,8 +193,8 @@ export class PersistentFileServer {
   }
 
   // Get file list from folder
-  static async getFileList() {
-    const handle = await this.restoreFolderHandle();
+  static async getFileList(handleOverride = null) {
+    const handle = handleOverride || (await this.restoreFolderHandle());
     if (!handle) return [];
 
     const files = [];
@@ -160,14 +228,17 @@ export class PersistentFileServer {
   }
 
   // Delete file from folder
-  static async deleteFile(fileName) {
-    const handle = await this.restoreFolderHandle();
+  static async deleteFile(fileName, handleOverride = null) {
+    const handle = handleOverride || (await this.restoreFolderHandle());
     if (!handle) {
       throw new Error("No folder access available");
     }
 
     try {
       await handle.removeEntry(fileName);
+
+      // Clear from cache
+      this.fileCache.delete(fileName);
 
       // Broadcast deletion
       this.broadcast({
@@ -184,8 +255,8 @@ export class PersistentFileServer {
   }
 
   // Upload files to folder
-  static async uploadFiles(files) {
-    const handle = await this.restoreFolderHandle();
+  static async uploadFiles(files, handleOverride = null) {
+    const handle = handleOverride || (await this.restoreFolderHandle());
     if (!handle) {
       throw new Error("No folder access available");
     }
@@ -239,6 +310,7 @@ export class PersistentFileServer {
 
       case "FILE_DELETED":
         console.log(`File "${message.fileName}" deleted in another tab`);
+        this.fileCache.delete(message.fileName);
         this.notifyListeners("fileDeleted", message);
         break;
 
@@ -325,6 +397,7 @@ export class PersistentFileServer {
       const db = await this.openDB();
       const tx = db.transaction("handles", "readwrite");
       await tx.objectStore("handles").delete("primary");
+      this.fileCache.clear();
     } catch (error) {
       console.error("Failed to clear stored handle:", error);
     }
@@ -337,21 +410,23 @@ export class PersistentFileServer {
       const tx = db.transaction("blobUrls", "readwrite");
       const store = tx.objectStore("blobUrls");
 
-      const cursor = await store.openCursor();
-      while (cursor) {
-        const { blobUrl } = cursor.value;
-        URL.revokeObjectURL(blobUrl);
-        cursor.continue();
+      const allKeys = await store.getAllKeys();
+      for (const key of allKeys) {
+        const item = await store.get(key);
+        if (item && item.blobUrl) {
+          URL.revokeObjectURL(item.blobUrl);
+        }
       }
 
       await store.clear();
+      this.fileCache.clear();
     } catch (error) {
       console.error("Failed to cleanup blob URLs:", error);
     }
   }
 }
 
-// Shared File Server Utility
+// Shared File Server Utility for Share Links
 class SharedFileServer {
   static DB_NAME = "SharedFileServerDB";
   static DB_VERSION = 3;
@@ -486,16 +561,31 @@ class SharedFileServer {
   static async cleanupExpired() {
     try {
       const db = await this.initDB();
-      const tx = db.transaction("shareLinks", "readwrite");
-      const store = tx.objectStore("shareLinks");
-      const cursor = await store.openCursor();
 
-      while (cursor) {
-        if (Date.now() > cursor.value.expiresAt) {
-          await cursor.delete();
-          localStorage.removeItem(`share_${cursor.key}`);
+      // Clean up share links
+      const shareTx = db.transaction("shareLinks", "readwrite");
+      const shareStore = shareTx.objectStore("shareLinks");
+      const shareKeys = await shareStore.getAllKeys();
+
+      for (const key of shareKeys) {
+        const item = await shareStore.get(key);
+        if (item && Date.now() > item.expiresAt) {
+          await shareStore.delete(key);
+          localStorage.removeItem(`share_${key}`);
         }
-        cursor.continue();
+      }
+
+      // Clean up old file cache
+      const cacheTx = db.transaction("fileCache", "readwrite");
+      const cacheStore = cacheTx.objectStore("fileCache");
+      const cacheKeys = await cacheStore.getAllKeys();
+
+      for (const key of cacheKeys) {
+        const item = await cacheStore.get(key);
+        if (item && Date.now() - item.cachedAt > 3600000) {
+          // 1 hour
+          await cacheStore.delete(key);
+        }
       }
     } catch (error) {
       console.error("Failed to cleanup expired data:", error);
