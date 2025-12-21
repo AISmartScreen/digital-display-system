@@ -57,6 +57,50 @@ interface RestaurantTemplateProps {
   backgroundStyle: React.CSSProperties;
 }
 
+// Helper function to generate schedule based on frequency (in minutes)
+const generateScheduleFromFrequency = (frequency: number): string[] => {
+  const schedule: string[] = [];
+
+  if (frequency === 1) {
+    // Every 1 minute: 00, 01, 02, ..., 59
+    for (let i = 0; i < 60; i++) {
+      schedule.push(i.toString().padStart(2, "0"));
+    }
+  } else if (frequency === 5) {
+    // Every 5 minutes: 00, 05, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55
+    for (let i = 0; i < 60; i += 5) {
+      schedule.push(i.toString().padStart(2, "0"));
+    }
+  } else if (frequency === 10) {
+    // Every 10 minutes: 00, 10, 20, 30, 40, 50
+    for (let i = 0; i < 60; i += 10) {
+      schedule.push(i.toString().padStart(2, "0"));
+    }
+  } else if (frequency === 15) {
+    // Every 15 minutes: 00, 15, 30, 45
+    for (let i = 0; i < 60; i += 15) {
+      schedule.push(i.toString().padStart(2, "0"));
+    }
+  } else if (frequency === 20) {
+    // Every 20 minutes: 00, 20, 40
+    for (let i = 0; i < 60; i += 20) {
+      schedule.push(i.toString().padStart(2, "0"));
+    }
+  } else if (frequency === 30) {
+    // Every 30 minutes: 00, 30
+    for (let i = 0; i < 60; i += 30) {
+      schedule.push(i.toString().padStart(2, "0"));
+    }
+  } else {
+    // Default: use frequency as interval
+    for (let i = 0; i < 60; i += frequency) {
+      schedule.push(i.toString().padStart(2, "0"));
+    }
+  }
+
+  return schedule;
+};
+
 export function RestaurantTemplate({
   customization,
   backgroundStyle,
@@ -68,6 +112,7 @@ export function RestaurantTemplate({
   const [showAdvertisement, setShowAdvertisement] = useState(false);
   const [currentAd, setCurrentAd] = useState<any>(null);
   const isShowingAdRef = useRef(false);
+  const lastShownMinuteRef = useRef<string>("");
 
   const settings = {
     restaurantName: customization.restaurantName || "Gourmet Delight",
@@ -102,7 +147,7 @@ export function RestaurantTemplate({
     if (galleryImages.length <= 1) return;
     const interval = setInterval(() => {
       setCurrentGalleryIndex((prev) => (prev + 1) % galleryImages.length);
-    }, 5000); // 5 seconds per gallery image
+    }, 5000);
     return () => clearInterval(interval);
   }, [galleryImages.length]);
 
@@ -111,7 +156,7 @@ export function RestaurantTemplate({
     if (menuItems.length <= 1) return;
     const interval = setInterval(() => {
       setCurrentMenuIndex((prev) => (prev + 1) % menuItems.length);
-    }, 8000); // 8 seconds per menu item
+    }, 8000);
     return () => clearInterval(interval);
   }, [menuItems.length]);
 
@@ -128,10 +173,8 @@ export function RestaurantTemplate({
     settings.slideshowSpeed,
   ]);
 
-  // Advertisement scheduling logic with queue for consecutive ads
+  // Advertisement scheduling logic - triggers at :00 seconds
   useEffect(() => {
-    const adTimers = new Map<string, NodeJS.Timeout>();
-    const adLastShown = new Map<string, number>();
     let adQueue: any[] = [];
     let isProcessingQueue = false;
 
@@ -161,138 +204,134 @@ export function RestaurantTemplate({
     };
 
     const processNextAd = () => {
-      if (isProcessingQueue || adQueue.length === 0) {
+      console.log(
+        `🔄 processNextAd called. Queue length: ${adQueue.length}, isProcessingQueue: ${isProcessingQueue}, isShowingAd: ${isShowingAdRef.current}`
+      );
+
+      if (isShowingAdRef.current) {
+        console.log("⏸️ Ad currently showing, waiting");
+        return;
+      }
+
+      if (adQueue.length === 0) {
+        console.log("📭 Queue is empty");
         isProcessingQueue = false;
         return;
       }
 
-      // Check if an ad is currently showing
-      if (isShowingAdRef.current) {
+      if (isProcessingQueue) {
+        console.log("⏸️ Already processing queue, skipping");
         return;
       }
+      isProcessingQueue = true;
 
-      // Get next ad from queue
       const nextAd = adQueue.shift();
       if (!nextAd) {
+        console.log("❌ No ad found in queue");
         isProcessingQueue = false;
         return;
       }
 
-      // Check if this ad is still active
+      console.log(`🎬 Processing ad: ${nextAd.title || nextAd.id}`);
+
       if (!isAdActive(nextAd)) {
-        // Skip this ad and try the next one
-        processNextAd();
+        console.log(
+          `⏭️ Ad ${nextAd.title || nextAd.id} no longer active, skipping`
+        );
+        isProcessingQueue = false;
+        setTimeout(processNextAd, 100);
         return;
       }
-
-      const now = Date.now();
-      const lastShown = adLastShown.get(nextAd.id) || 0;
-      const timeSinceLastShown = now - lastShown;
-
-      // Check if enough time has passed based on frequency
-      if (timeSinceLastShown < nextAd.frequency * 1000) {
-        // Not ready yet, try next ad
-        processNextAd();
-        return;
-      }
-
-      // Show this ad
-      isProcessingQueue = true;
-      isShowingAdRef.current = true;
-      setCurrentAd(nextAd);
-      setShowAdvertisement(true);
-      adLastShown.set(nextAd.id, now);
 
       console.log(
         `📺 Showing ad: ${nextAd.title || nextAd.id} (${
           adQueue.length
         } remaining in queue)`
       );
-    };
-
-    const queueAd = (ad: any) => {
-      const now = Date.now();
-      const lastShown = adLastShown.get(ad.id) || 0;
-      const timeSinceLastShown = now - lastShown;
-
-      // Check if enough time has passed based on frequency
-      if (timeSinceLastShown >= ad.frequency * 1000) {
-        // Don't add duplicate ads to queue
-        const alreadyQueued = adQueue.some((queuedAd) => queuedAd.id === ad.id);
-        if (!alreadyQueued) {
-          adQueue.push(ad);
-          console.log(
-            `➕ Queued ad: ${ad.title || ad.id} (Queue size: ${adQueue.length})`
-          );
-
-          // Try to process immediately if nothing is showing
-          if (!isShowingAdRef.current && !isProcessingQueue) {
-            processNextAd();
-          }
-        }
-      }
+      isShowingAdRef.current = true;
+      setCurrentAd(nextAd);
+      setShowAdvertisement(true);
     };
 
     const handleAdComplete = () => {
-      console.log(`✅ Ad completed`);
+      console.log(`✅ Ad completed. Queue has ${adQueue.length} ads waiting`);
       isProcessingQueue = false;
       isShowingAdRef.current = false;
       setShowAdvertisement(false);
       setCurrentAd(null);
 
-      // After a brief pause, process next ad in queue
       setTimeout(() => {
+        console.log("🔄 Attempting to process next ad after completion");
         processNextAd();
-      }, 1000); // 1 second gap between ads
+      }, 1000);
     };
 
-    // Store handler globally so onDurationEnd callback can access it
     (window as any).__handleAdComplete = handleAdComplete;
 
-    const scheduleAds = () => {
-      // Clear existing timers
-      adTimers.forEach((timer) => clearInterval(timer));
-      adTimers.clear();
+    const checkAdvertisements = () => {
+      const now = new Date();
+      const currentMinute = now.getMinutes().toString().padStart(2, "0");
+      const currentSecond = now.getSeconds();
 
-      // Schedule each active advertisement based on its frequency
-      advertisements.forEach((ad) => {
-        if (isAdActive(ad)) {
-          // Try to queue immediately if it's ready
-          const lastShown = adLastShown.get(ad.id) || 0;
-          const now = Date.now();
+      // ONLY trigger at exactly :00 seconds (with 2 second tolerance)
+      if (currentSecond > 2) {
+        return;
+      }
 
-          if (now - lastShown >= ad.frequency * 1000) {
-            // Add a small random delay to avoid all ads queuing at once
-            setTimeout(() => {
-              if (isAdActive(ad)) {
-                queueAd(ad);
-              }
-            }, Math.random() * 3000); // 0-3 seconds
-          }
+      // Prevent triggering multiple times in the same minute
+      if (lastShownMinuteRef.current === currentMinute) {
+        return;
+      }
 
-          // Set up recurring schedule based on frequency
-          const timer = setInterval(() => {
-            if (isAdActive(ad)) {
-              queueAd(ad);
-            }
-          }, ad.frequency * 1000);
+      console.log(
+        `🕐 Checking ads at ${now.getHours()}:${currentMinute}:${currentSecond
+          .toString()
+          .padStart(2, "0")}`
+      );
 
-          adTimers.set(ad.id, timer);
+      // Find all ads scheduled for this minute
+      const scheduledAds = advertisements.filter((ad) => {
+        if (!isAdActive(ad)) return false;
+
+        // Convert frequency (in seconds) to minutes for schedule generation
+        const frequencyInMinutes = Math.floor(ad.frequency / 60);
+        const schedule = generateScheduleFromFrequency(frequencyInMinutes);
+
+        const isScheduled = schedule.includes(currentMinute);
+        if (isScheduled) {
+          console.log(
+            `✓ Ad "${ad.title}" is scheduled for minute ${currentMinute}`
+          );
         }
+        return isScheduled;
       });
+
+      if (scheduledAds.length === 0) {
+        console.log(`✗ No ads scheduled for minute ${currentMinute}`);
+        return;
+      }
+
+      console.log(
+        `📋 Found ${scheduledAds.length} ads scheduled for minute ${currentMinute}`
+      );
+
+      // Mark this minute as processed
+      lastShownMinuteRef.current = currentMinute;
+
+      // Queue all scheduled ads
+      adQueue = [...scheduledAds];
+
+      // Start processing if not already showing an ad
+      if (!isShowingAdRef.current && !isProcessingQueue) {
+        console.log("🚀 Starting ad queue processing");
+        setTimeout(processNextAd, 100);
+      }
     };
 
-    // Initial schedule
-    scheduleAds();
-
-    // Re-check active ads every minute to account for time range changes
-    const recheckInterval = setInterval(() => {
-      scheduleAds();
-    }, 60000);
+    const adCheckInterval = setInterval(checkAdvertisements, 1000);
 
     return () => {
-      adTimers.forEach((timer) => clearInterval(timer));
-      clearInterval(recheckInterval);
+      clearInterval(adCheckInterval);
       delete (window as any).__handleAdComplete;
       adQueue = [];
     };
@@ -344,7 +383,7 @@ export function RestaurantTemplate({
         accentColor={settings.accentColor}
         primaryColor={settings.primaryColor}
         secondaryColor={settings.secondaryColor}
-        duration={currentAd.duration * 1000} // Convert seconds to milliseconds
+        duration={currentAd.duration * 1000}
         showTimer={currentAd.mediaType === "image"}
         showScheduleInfo={false}
         scheduleInfo={{
@@ -353,7 +392,6 @@ export function RestaurantTemplate({
           daysOfWeek: currentAd.daysOfWeek,
         }}
         onDurationEnd={() => {
-          // Call the global handler to process next ad in queue
           const handler = (window as any).__handleAdComplete;
           if (handler) {
             handler();
@@ -368,7 +406,6 @@ export function RestaurantTemplate({
       className="w-full h-full relative overflow-hidden"
       style={dynamicBackgroundStyle}
     >
-      {/* Background overlay */}
       {(settings.backgroundImage ||
         (settings.enableSlideshow && backgroundImages.length > 0)) && (
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 via-slate-800/70 to-slate-900/80"></div>
@@ -379,7 +416,6 @@ export function RestaurantTemplate({
         )}
 
       <div className="relative z-10 h-full flex flex-col">
-        {/* Header */}
         <header
           className="bg-black/60 backdrop-blur-md border-b-2 px-8 py-5"
           style={{ borderColor: settings.primaryColor }}
@@ -429,9 +465,7 @@ export function RestaurantTemplate({
           </div>
         </header>
 
-        {/* Main Content - Menu on Left, Gallery on Right */}
         <div className="flex-1 grid grid-cols-2 gap-6 p-6 overflow-hidden min-h-0">
-          {/* Left Side - Menu Items */}
           <div className="flex flex-col justify-center">
             <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-3xl overflow-hidden border border-white/20 shadow-2xl h-full flex flex-col">
               <div className="bg-black/30 backdrop-blur-sm px-6 py-4 border-b border-white/10">
@@ -522,7 +556,6 @@ export function RestaurantTemplate({
             </div>
           </div>
 
-          {/* Right Side - Gallery */}
           <div className="flex flex-col justify-center">
             <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-3xl overflow-hidden border border-white/20 shadow-2xl h-full flex flex-col">
               {galleryImages.length > 0 ? (
@@ -570,7 +603,6 @@ export function RestaurantTemplate({
           </div>
         </div>
 
-        {/* Footer Ticker */}
         <div
           className="bg-black/60 backdrop-blur-md border-t-2 px-8 py-3"
           style={{ borderColor: settings.primaryColor }}
