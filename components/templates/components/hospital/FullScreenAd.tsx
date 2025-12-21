@@ -282,11 +282,13 @@ export default function FullScreenAd({
         const isCached = await videoCacheManager.isCached(videoId);
 
         if (isCached) {
-          console.log("✓ Video found in cache");
+          console.log("✓ Video found in cache - loading instantly");
           const blobUrl = await videoCacheManager.getBlobUrl(videoId);
           if (isMounted && blobUrl) {
             setCachedVideoUrl(blobUrl);
             setIsCaching(false);
+            // Mark as ready faster since it's from cache
+            setIsVideoReady(true);
           }
         } else {
           console.log("📥 Downloading video to cache...");
@@ -403,6 +405,16 @@ export default function FullScreenAd({
       setIsVideoReady(true);
       setIsVideoLoading(false);
       clearTimeout(loadingTimeout);
+
+      // For cached videos, try to play immediately
+      if (cachedVideoUrl.startsWith("blob:")) {
+        console.log("🚀 Cached video ready - attempting immediate play");
+        setTimeout(() => {
+          if (isMounted && video.paused) {
+            attemptPlay();
+          }
+        }, 100);
+      }
     };
 
     const handleLoadedData = () => {
@@ -656,7 +668,7 @@ export default function FullScreenAd({
 
     setIsVideoReady(false);
     setIsPlaying(false);
-    setIsVideoLoading(true);
+    setIsVideoLoading(false); // Don't show loading for cached videos
     setHasVideoError(false);
     setShowPlayButton(false);
     setCurrentPlayCount(0);
@@ -1054,14 +1066,17 @@ export default function FullScreenAd({
                       <Play className="w-12 h-12 text-white ml-2" />
                     </div>
                     <span className="text-white text-xl font-semibold">
-                      Click to Play Video
+                      Tap to Play Video
                     </span>
                     <span className="text-white/70 text-sm">
                       {playCount > 1
                         ? `Will play ${playCount} time${
                             playCount > 1 ? "s" : ""
                           }`
-                        : "Autoplay was blocked by your browser"}
+                        : "Interaction needed to start playback"}
+                    </span>
+                    <span className="text-white/50 text-xs mt-2">
+                      Or use remote control to interact
                     </span>
                   </button>
                 </div>
