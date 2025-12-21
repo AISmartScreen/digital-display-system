@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import { X, Play, Loader2, Download } from "lucide-react";
+import { X, Play, Loader2 } from "lucide-react";
 
 interface FullScreenAdProps {
   title?: string;
@@ -40,93 +40,6 @@ const getAnimationClass = (animation: string) => {
   return animations[animation] || "animate-fadeIn";
 };
 
-// Video cache manager using IndexedDB
-class VideoCache {
-  private dbName = "video-cache-db";
-  private storeName = "videos";
-  private db: IDBDatabase | null = null;
-
-  async init(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open(this.dbName, 1);
-
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => {
-        this.db = request.result;
-        resolve();
-      };
-
-      request.onupgradeneeded = (event) => {
-        const db = (event.target as IDBOpenDBRequest).result;
-        if (!db.objectStoreNames.contains(this.storeName)) {
-          db.createObjectStore(this.storeName, { keyPath: "url" });
-        }
-      };
-    });
-  }
-
-  async getVideo(url: string): Promise<Blob | null> {
-    if (!this.db) await this.init();
-
-    return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([this.storeName], "readonly");
-      const store = transaction.objectStore(this.storeName);
-      const request = store.get(url);
-
-      request.onsuccess = () => {
-        const result = request.result;
-        resolve(result ? result.blob : null);
-      };
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  async saveVideo(url: string, blob: Blob): Promise<void> {
-    if (!this.db) await this.init();
-
-    return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([this.storeName], "readwrite");
-      const store = transaction.objectStore(this.storeName);
-      const request = store.put({
-        url,
-        blob,
-        timestamp: Date.now(),
-      });
-
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  async hasVideo(url: string): Promise<boolean> {
-    if (!this.db) await this.init();
-
-    return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([this.storeName], "readonly");
-      const store = transaction.objectStore(this.storeName);
-      const request = store.get(url);
-
-      request.onsuccess = () => resolve(!!request.result);
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  async clearCache(): Promise<void> {
-    if (!this.db) await this.init();
-
-    return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([this.storeName], "readwrite");
-      const store = transaction.objectStore(this.storeName);
-      const request = store.clear();
-
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
-  }
-}
-
-const videoCache = new VideoCache();
-
 export default function FullScreenAd({
   title,
   caption,
@@ -152,9 +65,6 @@ export default function FullScreenAd({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isVideoLoading, setIsVideoLoading] = useState(false);
   const [hasVideoError, setHasVideoError] = useState(false);
-  const [downloadProgress, setDownloadProgress] = useState(0);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [localVideoUrl, setLocalVideoUrl] = useState<string>("");
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const animationClass = getAnimationClass(animation);
@@ -173,6 +83,7 @@ export default function FullScreenAd({
     if (!hasCalledEndRef.current && onDurationEndRef.current) {
       hasCalledEndRef.current = true;
       console.log("📢 Scheduling onDurationEnd callback");
+      // Defer to next tick to avoid calling during render
       setTimeout(() => {
         console.log("✓ Executing onDurationEnd");
         onDurationEndRef.current?.();
@@ -180,106 +91,17 @@ export default function FullScreenAd({
     }
   }, []);
 
-  // Load video from cache or download it
-  useEffect(() => {
-    if (mediaType !== "video" || !videoUrl) return;
-
-    let isMounted = true;
-    let objectUrl = "";
-
-    const loadVideo = async () => {
-      try {
-        console.log("🔍 Checking cache for video:", videoUrl);
-
-        // Check if video exists in cache
-        const cached = await videoCache.getVideo(videoUrl);
-
-        if (cached) {
-          console.log("✅ Video found in cache, loading from local storage");
-          objectUrl = URL.createObjectURL(cached);
-          if (isMounted) {
-            setLocalVideoUrl(objectUrl);
-            setIsDownloading(false);
-          }
-        } else {
-          console.log("📥 Video not cached, downloading...");
-          if (isMounted) {
-            setIsDownloading(true);
-            setDownloadProgress(0);
-          }
-
-          // Download video with progress tracking
-          const response = await fetch(videoUrl);
-          const contentLength = response.headers.get("content-length");
-          const total = contentLength ? parseInt(contentLength, 10) : 0;
-
-          const reader = response.body?.getReader();
-          const chunks: Uint8Array[] = [];
-          let receivedLength = 0;
-
-          if (reader) {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-
-              chunks.push(value);
-              receivedLength += value.length;
-
-              if (total > 0 && isMounted) {
-                const progress = (receivedLength / total) * 100;
-                setDownloadProgress(Math.round(progress));
-                console.log(`📊 Download progress: ${Math.round(progress)}%`);
-              }
-            }
-          }
-
-          // Combine chunks into blob
-          const blob = new Blob(chunks, { type: "video/mp4" });
-
-          // Save to cache
-          console.log("💾 Saving video to cache");
-          await videoCache.saveVideo(videoUrl, blob);
-
-          // Create object URL
-          objectUrl = URL.createObjectURL(blob);
-
-          if (isMounted) {
-            setLocalVideoUrl(objectUrl);
-            setIsDownloading(false);
-            setDownloadProgress(100);
-            console.log("✅ Video downloaded and cached successfully");
-          }
-        }
-      } catch (error) {
-        console.error("❌ Error loading video:", error);
-        if (isMounted) {
-          setIsDownloading(false);
-          // Fallback to direct URL
-          setLocalVideoUrl(videoUrl);
-        }
-      }
-    };
-
-    loadVideo();
-
-    return () => {
-      isMounted = false;
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
-    };
-  }, [mediaType, videoUrl]);
-
   // Image timer functionality
   useEffect(() => {
     if (mediaType === "image" && showTimer && duration > 0) {
       hasCalledEndRef.current = false;
       setTimeRemaining(duration);
 
+      // Safety timeout - if timer doesn't complete naturally, force skip
       const safetyTimeout = setTimeout(() => {
         console.warn("⏱️ Image timer safety timeout triggered");
         callOnDurationEnd();
-      }, duration + 5000);
+      }, duration + 5000); // Duration + 5 second buffer
 
       const interval = setInterval(() => {
         setTimeRemaining((prev) => {
@@ -302,7 +124,7 @@ export default function FullScreenAd({
 
   // Video initialization with robust error handling
   useEffect(() => {
-    if (mediaType !== "video" || !localVideoUrl || !videoRef.current) {
+    if (mediaType !== "video" || !videoUrl || !videoRef.current) {
       return;
     }
 
@@ -314,50 +136,26 @@ export default function FullScreenAd({
     let playAttemptTimeout: NodeJS.Timeout;
     let progressCheckInterval: NodeJS.Timeout;
     let retryPlayTimeout: NodeJS.Timeout;
-    let visibilityCheckInterval: NodeJS.Timeout;
     let lastProgressTime = 0;
     let playAttempts = 0;
     const MAX_PLAY_ATTEMPTS = 5;
 
-    console.log("🎥 Setting up video player with local URL");
+    console.log(
+      `🎥 Setting up video: ${videoUrl.substring(
+        videoUrl.lastIndexOf("/") + 1
+      )} (playCount: ${playCount})`
+    );
 
+    // Reset hasCalledEndRef when new video starts
     hasCalledEndRef.current = false;
 
-    // Handle page visibility changes to keep video playing
-    const handleVisibilityChange = () => {
-      if (document.hidden && video && !video.paused && !video.ended) {
-        console.log("📱 Tab hidden but keeping video playing");
-        video
-          .play()
-          .catch((err) => console.log("Background play attempt:", err));
-      } else if (!document.hidden && video && video.paused && !video.ended) {
-        console.log("📱 Tab visible, resuming video if paused");
-        video.play().catch((err) => console.log("Resume play attempt:", err));
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    // Periodically check and force play if video got paused unexpectedly
-    visibilityCheckInterval = setInterval(() => {
-      if (
-        isMounted &&
-        video &&
-        video.paused &&
-        !video.ended &&
-        isPlaying &&
-        !showPlayButton
-      ) {
-        console.log("🔄 Video unexpectedly paused, forcing resume");
-        video.play().catch((err) => console.log("Force resume failed:", err));
-      }
-    }, 2000);
-
+    // Set a timeout for initial video loading (20 seconds)
     loadingTimeout = setTimeout(() => {
       if (isMounted && !isVideoReady && !hasVideoError) {
-        console.error("⏱️ Video loading timeout");
+        console.error("⏱️ Video loading timeout - taking too long to load");
         setHasVideoError(true);
         setIsVideoLoading(false);
+        // Auto-skip after showing error for 2 seconds
         setTimeout(() => {
           if (isMounted) {
             console.log("⏭️ Auto-skipping failed video");
@@ -365,11 +163,11 @@ export default function FullScreenAd({
           }
         }, 2000);
       }
-    }, 20000);
+    }, 20000); // 20 second timeout
 
     const handleCanPlay = () => {
       if (!isMounted) return;
-      console.log("✓ Video ready to play");
+      console.log("✓ Video ready to play (canplay event)");
       setIsVideoReady(true);
       setIsVideoLoading(false);
       clearTimeout(loadingTimeout);
@@ -377,7 +175,7 @@ export default function FullScreenAd({
 
     const handleLoadedData = () => {
       if (!isMounted) return;
-      console.log("✓ Video data loaded");
+      console.log("✓ Video data loaded (loadeddata event)");
       setIsVideoReady(true);
       setIsVideoLoading(false);
       clearTimeout(loadingTimeout);
@@ -393,6 +191,7 @@ export default function FullScreenAd({
       clearTimeout(stallTimeout);
       clearTimeout(retryPlayTimeout);
 
+      // Start progress monitoring to detect stalls
       lastProgressTime = video.currentTime;
       progressCheckInterval = setInterval(() => {
         if (!isMounted || !video) return;
@@ -401,7 +200,8 @@ export default function FullScreenAd({
         const hasProgressed = currentProgress > lastProgressTime;
 
         if (!hasProgressed && !video.paused && !video.ended) {
-          console.warn("⚠️ Video appears stalled");
+          console.warn("⚠️ Video appears stalled (no progress detected)");
+          // Video claims to be playing but isn't progressing - try to recover
           if (video.buffered.length > 0) {
             const bufferedEnd = video.buffered.end(video.buffered.length - 1);
             if (currentProgress < bufferedEnd - 0.5) {
@@ -414,8 +214,9 @@ export default function FullScreenAd({
         }
 
         lastProgressTime = currentProgress;
-      }, 3000);
+      }, 3000); // Check every 3 seconds
 
+      // Set a maximum duration timeout (10 minutes)
       const maxDuration = 600000;
       stallTimeout = setTimeout(() => {
         if (isMounted && !video.ended) {
@@ -436,9 +237,11 @@ export default function FullScreenAd({
       console.log("⏳ Video buffering");
       setIsVideoLoading(true);
 
+      // If buffering takes too long, show error
       const bufferTimeout = setTimeout(() => {
         if (isMounted && isVideoLoading) {
           console.error("⏱️ Video buffering timeout");
+          // Try to skip ahead slightly
           if (video && video.buffered.length > 0) {
             const bufferedEnd = video.buffered.end(video.buffered.length - 1);
             if (video.currentTime < bufferedEnd - 1) {
@@ -462,8 +265,9 @@ export default function FullScreenAd({
             }
           }, 2000);
         }
-      }, 15000);
+      }, 15000); // 15 second buffer timeout
 
+      // Clear this timeout when video resumes
       const handleResumed = () => {
         clearTimeout(bufferTimeout);
         setIsVideoLoading(false);
@@ -484,11 +288,14 @@ export default function FullScreenAd({
         console.log(`✓ Completed play ${newCount} of ${playCount}`);
 
         if (newCount >= playCount) {
-          console.log(`✅ All ${playCount} plays completed`);
+          console.log(
+            `✅ All ${playCount} plays completed - calling onDurationEnd`
+          );
           setIsPlaying(false);
           callOnDurationEnd();
         } else {
           console.log(`🔄 Replaying video (${newCount + 1}/${playCount})`);
+          // Restart video for next play
           if (video) {
             video.currentTime = 0;
             setTimeout(() => {
@@ -514,6 +321,7 @@ export default function FullScreenAd({
       clearTimeout(stallTimeout);
       clearInterval(progressCheckInterval);
 
+      // Auto-skip after showing error for 2 seconds
       setTimeout(() => {
         if (isMounted) {
           console.log("⏭️ Auto-skipping failed video");
@@ -527,6 +335,7 @@ export default function FullScreenAd({
       console.warn("⚠️ Video stalled event");
       setIsVideoLoading(true);
 
+      // Try to recover from stall
       setTimeout(() => {
         if (isMounted && video && video.readyState < 3) {
           console.log("🔄 Attempting to recover from stall");
@@ -538,6 +347,11 @@ export default function FullScreenAd({
           }, 1000);
         }
       }, 3000);
+    };
+
+    const handleSuspend = () => {
+      if (!isMounted) return;
+      console.log("⏸️ Video suspended");
     };
 
     const attemptPlay = async () => {
@@ -560,7 +374,7 @@ export default function FullScreenAd({
         setIsPlaying(true);
         setShowPlayButton(false);
         setIsVideoLoading(false);
-        playAttempts = 0;
+        playAttempts = 0; // Reset on success
       } catch (error: any) {
         console.log(`⚠️ Play attempt ${playAttempts} failed:`, error.message);
 
@@ -568,8 +382,9 @@ export default function FullScreenAd({
           console.log("🔒 Autoplay blocked by browser");
           setShowPlayButton(true);
           setIsVideoLoading(false);
-          playAttempts = 0;
+          playAttempts = 0; // Reset, user needs to interact
         } else if (playAttempts < MAX_PLAY_ATTEMPTS) {
+          // Retry with exponential backoff
           const delay = Math.min(1000 * Math.pow(2, playAttempts - 1), 5000);
           console.log(`🔄 Retrying in ${delay}ms...`);
           retryPlayTimeout = setTimeout(() => {
@@ -594,20 +409,14 @@ export default function FullScreenAd({
     setCurrentPlayCount(0);
     playAttempts = 0;
 
-    // Setup video element
-    video.src = localVideoUrl;
+    // Setup video element with better compatibility
+    video.src = videoUrl;
     video.preload = "auto";
     video.muted = true;
     video.playsInline = true;
     video.crossOrigin = "anonymous";
     video.loop = false;
-    video.autoplay = false;
-
-    // Prevent browser from pausing video when tab is hidden
-    Object.defineProperty(video, "hidden", {
-      get: () => false,
-      configurable: true,
-    });
+    video.autoplay = false; // Let's control play manually
 
     // Add event listeners
     video.addEventListener("canplay", handleCanPlay);
@@ -617,20 +426,24 @@ export default function FullScreenAd({
     video.addEventListener("ended", handleEnded);
     video.addEventListener("error", handleError);
     video.addEventListener("stalled", handleStalled);
+    video.addEventListener("suspend", handleSuspend);
 
-    // Start loading
+    // Start loading the video
     video.load();
 
+    // Try to play after video has loaded some data
     cleanupTimeout = setTimeout(() => {
       if (isMounted && video.readyState >= 2) {
         attemptPlay();
       } else if (isMounted) {
+        // Wait a bit more for readyState to increase
         const waitTimeout = setTimeout(() => {
           if (isMounted) {
             attemptPlay();
           }
         }, 2000);
 
+        // Cleanup this timeout too
         const originalCleanup = cleanupTimeout;
         cleanupTimeout = (() => {
           clearTimeout(originalCleanup);
@@ -639,19 +452,18 @@ export default function FullScreenAd({
       }
     }, 1000);
 
-    // Cleanup
+    // Cleanup function
     return () => {
       console.log("🧹 Cleaning up video player");
       isMounted = false;
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
       clearTimeout(cleanupTimeout);
       clearTimeout(loadingTimeout);
       clearTimeout(stallTimeout);
       clearTimeout(playAttemptTimeout);
       clearTimeout(retryPlayTimeout);
       clearInterval(progressCheckInterval);
-      clearInterval(visibilityCheckInterval);
 
+      // Remove event listeners
       video.removeEventListener("canplay", handleCanPlay);
       video.removeEventListener("loadeddata", handleLoadedData);
       video.removeEventListener("playing", handlePlaying);
@@ -659,21 +471,16 @@ export default function FullScreenAd({
       video.removeEventListener("ended", handleEnded);
       video.removeEventListener("error", handleError);
       video.removeEventListener("stalled", handleStalled);
+      video.removeEventListener("suspend", handleSuspend);
 
+      // Clean up video element
       if (video) {
         video.pause();
         video.src = "";
         video.load();
       }
     };
-  }, [
-    mediaType,
-    localVideoUrl,
-    playCount,
-    callOnDurationEnd,
-    isPlaying,
-    showPlayButton,
-  ]);
+  }, [mediaType, videoUrl, playCount, callOnDurationEnd]);
 
   // Manual play handler
   const handleManualPlay = useCallback(async () => {
@@ -874,7 +681,7 @@ export default function FullScreenAd({
         )}
 
         {/* Skip button for video */}
-        {mediaType === "video" && onDurationEnd && !isDownloading && (
+        {mediaType === "video" && onDurationEnd && (
           <button
             onClick={handleSkipVideo}
             className="absolute top-6 left-6 z-50 px-4 py-2 rounded-full bg-black/50 hover:bg-black/70 backdrop-blur-sm flex items-center justify-center transition-all text-white text-sm font-medium"
@@ -887,44 +694,10 @@ export default function FullScreenAd({
         <div className="absolute inset-0 flex items-center justify-center">
           {mediaType === "video" && videoUrl ? (
             <>
-              {/* Download progress overlay */}
-              {isDownloading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-50">
-                  <div className="flex flex-col items-center gap-6 max-w-md w-full px-8">
-                    <Download
-                      className="w-16 h-16 text-white animate-bounce"
-                      style={{ color: accentColor }}
-                    />
-                    <div className="w-full">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-white text-lg font-semibold">
-                          Downloading video...
-                        </span>
-                        <span className="text-white text-lg font-bold">
-                          {downloadProgress}%
-                        </span>
-                      </div>
-                      <div className="w-full h-3 bg-white/20 rounded-full overflow-hidden">
-                        <div
-                          className="h-full transition-all duration-300 ease-out rounded-full"
-                          style={{
-                            width: `${downloadProgress}%`,
-                            background: `linear-gradient(90deg, ${primaryColor}, ${accentColor})`,
-                          }}
-                        />
-                      </div>
-                      <p className="text-white/70 text-sm mt-3 text-center">
-                        Video will be cached for faster playback next time
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               <video
                 ref={videoRef}
                 className={`w-full h-full object-cover ${
-                  isVideoLoading || isDownloading ? "opacity-50" : "opacity-100"
+                  isVideoLoading ? "opacity-50" : "opacity-100"
                 } transition-opacity duration-300`}
                 muted
                 playsInline
@@ -932,9 +705,7 @@ export default function FullScreenAd({
                 crossOrigin="anonymous"
                 aria-label={title ? `Video ad: ${title}` : "Video ad"}
               >
-                {localVideoUrl && (
-                  <source src={localVideoUrl} type="video/mp4" />
-                )}
+                <source src={videoUrl} type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
 
