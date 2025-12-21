@@ -303,7 +303,7 @@ function HospitalTemplateAuthentic({
           isTransitioning: false,
         };
       });
-    }, 2000);
+    }, 10000);
   }, []);
 
   // Check schedule periodically
