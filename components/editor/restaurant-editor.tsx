@@ -863,4 +863,4 @@ export function RestaurantEditor({
       </CollapsibleSection>
     </div>
   );
-}"
+}
