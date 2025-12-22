@@ -86,6 +86,7 @@ export function RestaurantEditor({
   const advertisements = config.advertisements || [];
   const enableSlideshow = config.enableSlideshow || false;
   const slideshowSpeed = config.slideshowSpeed || 10000;
+  const slideSpeed = config.slideSpeed || 8000;
   const menuRotationSpeed = config.menuRotationSpeed || 8000;
   const customCategories = config.customCategories || [];
 
@@ -326,52 +327,6 @@ export function RestaurantEditor({
         </div>
       </CollapsibleSection>
 
-      {/* Menu Display Settings */}
-      <CollapsibleSection title="⚙️ Menu Display Settings">
-        <div className="space-y-3">
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">
-              Menu Rotation Speed (seconds)
-            </label>
-            <Input
-              type="range"
-              min="3"
-              max="20"
-              step="1"
-              value={menuRotationSpeed / 1000}
-              onChange={(e) =>
-                handleFieldChange(
-                  "menuRotationSpeed",
-                  parseInt(e.target.value) * 1000
-                )
-              }
-              className="w-full"
-            />
-            <div className="flex justify-between text-xs text-slate-400 mt-1">
-              <span>3s</span>
-              <span className="text-amber-400 font-medium">
-                {menuRotationSpeed / 1000}s
-              </span>
-              <span>20s</span>
-            </div>
-            <p className="text-xs text-slate-500 mt-1">
-              How long each menu item displays before rotating to the next
-            </p>
-          </div>
-
-          <div className="p-2 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-            <p className="text-xs text-blue-400">
-              Menu items will rotate every {menuRotationSpeed / 1000} seconds
-              {menuItems.length > 0 &&
-                ` | Full cycle: ${(
-                  (menuItems.length * menuRotationSpeed) /
-                  1000
-                ).toFixed(0)}s`}
-            </p>
-          </div>
-        </div>
-      </CollapsibleSection>
-
       {/* Background Images */}
       <CollapsibleSection title="🏞️ Background Images">
         <div className="space-y-3">
@@ -567,6 +522,49 @@ export function RestaurantEditor({
               placeholder="Taste the Difference"
               className="bg-slate-700 border-slate-600 text-slate-50"
             />
+          </div>
+        </div>
+      </CollapsibleSection>
+
+      {/* Menu Display Settings */}
+      <CollapsibleSection title="⚙️ Menu Display Settings">
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">
+              slide Speed
+            </label>
+            <Input
+              type="range"
+              min="3"
+              max="20"
+              step="1"
+              value={slideSpeed / 1000}
+              onChange={(e) =>
+                handleFieldChange("slideSpeed", parseInt(e.target.value) * 1000)
+              }
+              className="w-full"
+            />
+            <div className="flex justify-between text-xs text-slate-400 mt-1">
+              <span>3s</span>
+              <span className="text-amber-400 font-medium">
+                {menuRotationSpeed / 1000}s
+              </span>
+              <span>20s</span>
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              How long each menu item displays before rotating to the next
+            </p>
+          </div>
+
+          <div className="p-2 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+            <p className="text-xs text-blue-400">
+              Menu items will rotate every {menuRotationSpeed / 1000} seconds
+              {menuItems.length > 0 &&
+                ` | Full cycle: ${(
+                  (menuItems.length * menuRotationSpeed) /
+                  1000
+                ).toFixed(0)}s`}
+            </p>
           </div>
         </div>
       </CollapsibleSection>
