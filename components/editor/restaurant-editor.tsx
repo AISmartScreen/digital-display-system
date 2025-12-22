@@ -41,6 +41,7 @@ export function RestaurantEditor({
   const [currentUserId, setCurrentUserId] = useState<string | undefined>(
     userId
   );
+  const [newCategory, setNewCategory] = useState("");
 
   // Fetch user ID if not provided
   useEffect(() => {
@@ -85,10 +86,42 @@ export function RestaurantEditor({
   const advertisements = config.advertisements || [];
   const enableSlideshow = config.enableSlideshow || false;
   const slideshowSpeed = config.slideshowSpeed || 10000;
+  const menuRotationSpeed = config.menuRotationSpeed || 8000;
+  const customCategories = config.customCategories || [];
 
   // Handle basic field updates
   const handleFieldChange = (field: string, value: any) => {
     onConfigChange({ ...config, [field]: value });
+  };
+
+  // ==============================
+  // CATEGORY MANAGEMENT
+  // ==============================
+  const defaultCategories = [
+    "Appetizers",
+    "Soups & Salads",
+    "Main Course",
+    "Pasta & Noodles",
+    "Seafood",
+    "Vegetarian",
+    "Desserts",
+    "Beverages",
+    "Specials",
+  ];
+
+  const menuCategories = [...defaultCategories, ...customCategories];
+
+  const handleAddCategory = () => {
+    if (newCategory.trim() && !menuCategories.includes(newCategory.trim())) {
+      const updated = [...customCategories, newCategory.trim()];
+      handleFieldChange("customCategories", updated);
+      setNewCategory("");
+    }
+  };
+
+  const handleRemoveCategory = (category: string) => {
+    const updated = customCategories.filter((cat: string) => cat !== category);
+    handleFieldChange("customCategories", updated);
   };
 
   // ==============================
@@ -144,18 +177,6 @@ export function RestaurantEditor({
       onConfigChange({ ...config, menuItems: updated });
     }
   };
-
-  const menuCategories = [
-    "Appetizers",
-    "Soups & Salads",
-    "Main Course",
-    "Pasta & Noodles",
-    "Seafood",
-    "Vegetarian",
-    "Desserts",
-    "Beverages",
-    "Specials",
-  ];
 
   return (
     <div className="space-y-8">
@@ -300,6 +321,52 @@ export function RestaurantEditor({
             <p className="text-xs text-slate-500">
               Primary: Main background | Secondary: Menu highlights | Accent:
               Special items
+            </p>
+          </div>
+        </div>
+      </CollapsibleSection>
+
+      {/* Menu Display Settings */}
+      <CollapsibleSection title="⚙️ Menu Display Settings">
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">
+              Menu Rotation Speed (seconds)
+            </label>
+            <Input
+              type="range"
+              min="3"
+              max="20"
+              step="1"
+              value={menuRotationSpeed / 1000}
+              onChange={(e) =>
+                handleFieldChange(
+                  "menuRotationSpeed",
+                  parseInt(e.target.value) * 1000
+                )
+              }
+              className="w-full"
+            />
+            <div className="flex justify-between text-xs text-slate-400 mt-1">
+              <span>3s</span>
+              <span className="text-amber-400 font-medium">
+                {menuRotationSpeed / 1000}s
+              </span>
+              <span>20s</span>
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              How long each menu item displays before rotating to the next
+            </p>
+          </div>
+
+          <div className="p-2 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+            <p className="text-xs text-blue-400">
+              Menu items will rotate every {menuRotationSpeed / 1000} seconds
+              {menuItems.length > 0 &&
+                ` | Full cycle: ${(
+                  (menuItems.length * menuRotationSpeed) /
+                  1000
+                ).toFixed(0)}s`}
             </p>
           </div>
         </div>
@@ -501,6 +568,95 @@ export function RestaurantEditor({
               className="bg-slate-700 border-slate-600 text-slate-50"
             />
           </div>
+        </div>
+      </CollapsibleSection>
+
+      {/* Menu Categories Section */}
+      <CollapsibleSection title="📂 Menu Categories">
+        <div className="space-y-3">
+          <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+            <p className="text-sm text-blue-400">
+              <strong>Custom Categories:</strong> Add your own categories in
+              addition to the default ones. Custom categories will appear in the
+              category dropdown when creating menu items.
+            </p>
+          </div>
+
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">
+              Default Categories (9)
+            </label>
+            <div className="flex flex-wrap gap-2 p-3 bg-slate-700/30 rounded-lg">
+              {defaultCategories.map((cat) => (
+                <span
+                  key={cat}
+                  className="px-2 py-1 bg-slate-600 text-slate-300 text-xs rounded"
+                >
+                  {cat}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">
+              Add Custom Category
+            </label>
+            <div className="flex gap-2">
+              <Input
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    handleAddCategory();
+                  }
+                }}
+                placeholder="e.g., Chef's Specials, Lunch Menu"
+                className="bg-slate-700 border-slate-600 text-slate-50"
+              />
+              <Button
+                size="sm"
+                onClick={handleAddCategory}
+                className="bg-amber-500 hover:bg-amber-600 text-white"
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+
+          {customCategories.length > 0 && (
+            <div>
+              <label className="text-xs text-slate-400 mb-2 block">
+                Custom Categories ({customCategories.length})
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {customCategories.map((cat: string) => (
+                  <div
+                    key={cat}
+                    className="flex items-center gap-1 px-2 py-1 bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs rounded"
+                  >
+                    <span>{cat}</span>
+                    <button
+                      onClick={() => handleRemoveCategory(cat)}
+                      className="ml-1 hover:text-red-400"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {customCategories.length > 0 && (
+            <div className="p-2 bg-green-500/10 border border-green-500/30 rounded-lg">
+              <p className="text-xs text-green-400">
+                Total categories available: {menuCategories.length} (
+                {defaultCategories.length} default + {customCategories.length}{" "}
+                custom)
+              </p>
+            </div>
+          )}
         </div>
       </CollapsibleSection>
 
@@ -707,4 +863,4 @@ export function RestaurantEditor({
       </CollapsibleSection>
     </div>
   );
-}
+}"
