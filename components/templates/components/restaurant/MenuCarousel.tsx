@@ -257,9 +257,9 @@ function MenuItemCard({
             {/* Top Content Row */}
             <div className="flex items-stretch flex-1 gap-4">
               {/* Menu Item Details - Center */}
-              <div className="flex-1 flex flex-col justify-center space-y-1.5 min-w-0">
+              <div className="flex-1 flex flex-col justify-center space-y-1.5 min-w-0 overflow-hidden">
                 {/* Name */}
-                <div className="flex items-center gap-4 -mt-2">
+                <div className="flex items-center gap-4 -mt-2 min-w-0 overflow-hidden">
                   <div
                     className="w-1.5 h-8 rounded-full flex-shrink-0"
                     style={{
@@ -268,10 +268,19 @@ function MenuItemCard({
                     }}
                   />
                   <h3
-                    className="text-4xl font-black tracking-tight leading-tight flex-1 truncate"
+                    className="font-black tracking-tight leading-tight flex-1 min-w-0"
                     style={{
                       color: "white",
                       textShadow: `0 2px 15px ${accentColor}80`,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      fontSize:
+                        item.name.length > 30
+                          ? "1.5rem"
+                          : item.name.length > 20
+                          ? "2rem"
+                          : "2.25rem",
                     }}
                   >
                     {item.name}
