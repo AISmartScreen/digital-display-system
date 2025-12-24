@@ -608,9 +608,9 @@ function HospitalTemplateAuthentic({
 
           {/* Transition Indicator */}
           {adQueueState.isTransitioning && (
-            <div className="absolute inset-0 flex items-center justify-center z-40 bg-black/50">
+            <div className="absolute inset-0 flex items-center justify-center z-40 bg-transparent">
               <div className="text-white text-xl font-medium">
-                Loading next content...
+                {/* Loading next content... */}
               </div>
             </div>
           )}

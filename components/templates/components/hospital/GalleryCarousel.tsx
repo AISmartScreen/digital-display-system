@@ -107,7 +107,7 @@ export function GalleryCarousel({
       </div>
 
       {/* Navigation Arrows */}
-      {images.length > 1 && (
+      {/* {images.length > 1 && (
         <>
           <button
             onClick={goToPrevious}
@@ -149,7 +149,7 @@ export function GalleryCarousel({
             </svg>
           </button>
         </>
-      )}
+      )} */}
 
       {/* Progress Bar */}
       {images.length > 1 && (
