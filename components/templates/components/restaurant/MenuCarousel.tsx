@@ -123,7 +123,7 @@ export function MenuCarousel({
         />
 
         {/* Header */}
-        <div className="absolute top-0 left-0 right-0 bg-black/30 backdrop-blur-sm px-6 py-4 border-b border-white/10 z-30">
+        <div className="absolute top-0 left-0 right-0 bg-black/30 -blur-sm px-6 py-4 border-b border-white/10 z-30">
           <h2
             className="text-7xl font-bold text-center"
             style={{ color: primaryColor }}
@@ -277,10 +277,10 @@ function MenuItemCard({
                       whiteSpace: "nowrap",
                       fontSize:
                         item.name.length > 30
-                          ? "1.5rem"
+                          ? "1.8rem"
                           : item.name.length > 20
-                          ? "2rem"
-                          : "2.25rem",
+                          ? "2.2rem"
+                          : "2.5rem",
                     }}
                   >
                     {item.name}
