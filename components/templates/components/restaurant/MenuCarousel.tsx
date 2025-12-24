@@ -123,7 +123,7 @@ export function MenuCarousel({
         />
 
         {/* Header */}
-        <div className="absolute top-0 left-0 right-0 bg-black/30 -blur-sm px-6 py-4 border-b border-white/10 z-30">
+        <div className="absolute top-0 left-0 right-0 bg-black/95 -blur-sm px-6 py-4 border-b border-white/60 z-30">
           <h2
             className="text-7xl font-bold text-center"
             style={{ color: primaryColor }}
@@ -326,31 +326,23 @@ function MenuItemCard({
               </div>
 
               {/* Price Box - Right */}
-              <div className="flex flex-col items-end justify-center w-[140px] flex-shrink-0">
+              <div className="flex flex-col items-end justify-center flex-shrink-0">
                 <div
-                  className="px-4 py-3 rounded-2xl shadow-lg text-right w-full"
+                  className="px-4 py-3 rounded-2xl shadow-lg text-right w-fit"
                   style={{
                     background: `linear-gradient(135deg, ${primaryColor}30, ${secondaryColor}30)`,
                     border: `2px solid ${primaryColor}80`,
                   }}
                 >
                   <div
-                    className="text-xs font-bold mb-1"
-                    style={{ color: `${primaryColor}DD` }}
-                  >
-                    PRICE
-                  </div>
-                  <div
-                    className="text-lg font-black leading-tight space-y-0.5"
+                    className="text-2xl font-black leading-tight space-y-0.5 whitespace-nowrap"
                     style={{
                       color: primaryColor,
                       textShadow: `0 2px 12px ${primaryColor}80`,
                     }}
                   >
                     {item.price.split(/[,&]/).map((priceItem, idx) => (
-                      <div key={idx} className="whitespace-nowrap">
-                        {priceItem.trim()}
-                      </div>
+                      <div key={idx}>{priceItem.trim()}</div>
                     ))}
                   </div>
                 </div>
