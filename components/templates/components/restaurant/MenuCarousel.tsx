@@ -125,7 +125,7 @@ export function MenuCarousel({
         {/* Header */}
         <div className="absolute top-0 left-0 right-0 bg-black/30 backdrop-blur-sm px-6 py-4 border-b border-white/10 z-30">
           <h2
-            className="text-5xl font-bold text-center"
+            className="text-7xl font-bold text-center"
             style={{ color: primaryColor }}
           >
             Today's Menu
