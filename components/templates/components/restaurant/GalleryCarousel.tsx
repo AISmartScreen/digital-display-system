@@ -107,7 +107,7 @@ export default function GalleryCarousel({
           </div>
         </div>
 
-        {images.length > 1 && (
+        {/* {images.length > 1 && (
           <>
             <button
               onClick={goToPrevious}
@@ -149,7 +149,7 @@ export default function GalleryCarousel({
               </svg>
             </button>
           </>
-        )}
+        )} */}
 
         {images.length > 1 && (
           <div className="absolute bottom-0 left-0 right-0 p-6 z-20">
