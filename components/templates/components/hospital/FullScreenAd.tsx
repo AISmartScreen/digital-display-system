@@ -24,6 +24,7 @@ interface DownloadProgress {
 
 class VideoCacheManager {
   private db: IDBDatabase | null = null;
+  private cleanupPromise: Promise<void> | null = null;
 
   async initDB(): Promise<IDBDatabase> {
     if (this.db) return this.db;
@@ -35,6 +36,11 @@ class VideoCacheManager {
       request.onsuccess = () => {
         this.db = request.result;
         resolve(request.result);
+
+        // Clean up expired caches on DB init (only once)
+        if (!this.cleanupPromise) {
+          this.cleanupPromise = this.cleanupExpiredCaches();
+        }
       };
 
       request.onupgradeneeded = (event) => {
@@ -42,9 +48,63 @@ class VideoCacheManager {
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           const store = db.createObjectStore(STORE_NAME, { keyPath: "id" });
           store.createIndex("cachedAt", "cachedAt", { unique: false });
+          store.createIndex("expiresAt", "expiresAt", { unique: false });
         }
       };
     });
+  }
+
+  async cleanupExpiredCaches(): Promise<void> {
+    try {
+      const db = await this.initDB();
+      const now = Date.now();
+
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction([STORE_NAME], "readwrite");
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.openCursor();
+
+        let deletedCount = 0;
+        let totalSize = 0;
+
+        request.onsuccess = (event) => {
+          const cursor = (event.target as IDBRequest).result;
+          if (cursor) {
+            const video = cursor.value as CachedVideo;
+            if (video.expiresAt < now) {
+              totalSize += video.size;
+              cursor.delete();
+              deletedCount++;
+              const expiredDate = new Date(video.expiresAt);
+              console.log(
+                `🗑️ Cleaned up expired cache: ${
+                  video.id
+                } (expired ${expiredDate.toLocaleString()})`
+              );
+            }
+            cursor.continue();
+          } else {
+            // Done iterating
+            if (deletedCount > 0) {
+              console.log(
+                `✓ Cleanup complete: Removed ${deletedCount} expired cache(s), freed ${(
+                  totalSize /
+                  1024 /
+                  1024
+                ).toFixed(2)} MB`
+              );
+            } else {
+              console.log(`✓ No expired caches found`);
+            }
+            resolve();
+          }
+        };
+
+        request.onerror = () => reject(request.error);
+      });
+    } catch (error) {
+      console.error("❌ Error during cache cleanup:", error);
+    }
   }
 
   async downloadVideo(
@@ -124,7 +184,41 @@ class VideoCacheManager {
     });
   }
 
-  async getVideo(id: string): Promise<CachedVideo | null> {
+  async refreshCacheTTL(id: string): Promise<void> {
+    const db = await this.initDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([STORE_NAME], "readwrite");
+      const store = transaction.objectStore(STORE_NAME);
+      const getRequest = store.get(id);
+
+      getRequest.onsuccess = () => {
+        const video = getRequest.result as CachedVideo | undefined;
+        if (video) {
+          const now = Date.now();
+          video.cachedAt = now;
+          video.expiresAt = now + CACHE_TTL;
+
+          const putRequest = store.put(video);
+          putRequest.onsuccess = () => {
+            const newExpiryDate = new Date(video.expiresAt);
+            console.log(`🔄 Refreshed cache TTL for: ${id}`);
+            console.log(`⏰ New expiry: ${newExpiryDate.toLocaleString()}`);
+            resolve();
+          };
+          putRequest.onerror = () => reject(putRequest.error);
+        } else {
+          resolve();
+        }
+      };
+      getRequest.onerror = () => reject(getRequest.error);
+    });
+  }
+
+  async getVideo(
+    id: string,
+    refreshIfExpired: boolean = false
+  ): Promise<CachedVideo | null> {
     const db = await this.initDB();
 
     return new Promise((resolve, reject) => {
@@ -132,21 +226,92 @@ class VideoCacheManager {
       const store = transaction.objectStore(STORE_NAME);
       const request = store.get(id);
 
-      request.onsuccess = () => {
+      request.onsuccess = async () => {
         const result = request.result as CachedVideo | undefined;
-        resolve(result || null);
+
+        if (result) {
+          const now = Date.now();
+          const cachedDate = new Date(result.cachedAt);
+          const expiresDate = new Date(result.expiresAt);
+
+          console.log(`📊 Cache check for: ${id}`);
+          console.log(
+            `   Cached at: ${cachedDate.toLocaleString()} (${result.cachedAt})`
+          );
+          console.log(
+            `   Expires at: ${expiresDate.toLocaleString()} (${
+              result.expiresAt
+            })`
+          );
+          console.log(
+            `   Current time: ${new Date(now).toLocaleString()} (${now})`
+          );
+
+          if (result.expiresAt < now) {
+            console.log(`⏰ Cache EXPIRED for: ${id}`);
+
+            if (refreshIfExpired) {
+              // Refresh the TTL and use the existing cache
+              console.log(`🔄 Refreshing expired cache TTL for: ${id}`);
+              await this.refreshCacheTTL(id);
+
+              // Return the video with refreshed TTL
+              result.cachedAt = now;
+              result.expiresAt = now + CACHE_TTL;
+
+              const newExpiresInHours = Math.round(CACHE_TTL / 1000 / 60 / 60);
+              console.log(
+                `✓ Cache TTL refreshed for: ${id} (valid for ${newExpiresInHours}h)`
+              );
+              resolve(result);
+            } else {
+              // Delete expired cache
+              await this.deleteVideo(id);
+              resolve(null);
+            }
+          } else {
+            const expiresInMs = result.expiresAt - now;
+            const expiresInMin = Math.round(expiresInMs / 1000 / 60);
+            const expiresInHours = Math.round(expiresInMs / 1000 / 60 / 60);
+            console.log(
+              `✓ Cache VALID for: ${id} (expires in ${expiresInHours}h ${
+                expiresInMin % 60
+              }m)`
+            );
+            resolve(result);
+          }
+        } else {
+          console.log(`❌ Cache not found for: ${id}`);
+          resolve(null);
+        }
+      };
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async deleteVideo(id: string): Promise<void> {
+    const db = await this.initDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([STORE_NAME], "readwrite");
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.delete(id);
+
+      request.onsuccess = () => {
+        console.log(`🗑️ Deleted cache: ${id}`);
+        resolve();
       };
       request.onerror = () => reject(request.error);
     });
   }
 
   async isCached(id: string): Promise<boolean> {
-    const video = await this.getVideo(id);
+    const video = await this.getVideo(id, true); // Refresh if expired
     return video !== null;
   }
 
   async getBlobUrl(id: string): Promise<string | null> {
-    const video = await this.getVideo(id);
+    const video = await this.getVideo(id, true); // Refresh if expired
     if (!video) return null;
 
     return URL.createObjectURL(video.blob);
@@ -157,7 +322,7 @@ class VideoCacheManager {
     id: string,
     onProgress?: (progress: DownloadProgress) => void
   ): Promise<string> {
-    const cached = await this.getVideo(id);
+    const cached = await this.getVideo(id, true); // Refresh if expired
     if (cached) {
       console.log(`✓ Video already cached: ${id}`);
       return URL.createObjectURL(cached.blob);
