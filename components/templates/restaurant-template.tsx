@@ -491,7 +491,7 @@ export default function RestaurantTemplate({
                   {settings.restaurantName}
                 </h1>
                 <p
-                  className="text-base"
+                  className="text-xl font-bold"
                   style={{ color: settings.accentColor }}
                 >
                   {settings.tagline}

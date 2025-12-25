@@ -85,7 +85,7 @@ export function MenuCarousel({
     ...activeMenuItems,
   ];
 
-  const itemHeight = 160;
+  const itemHeight = 220;
   const totalHeight = activeMenuItems.length * itemHeight;
 
   // Render vertical scrolling marquee
@@ -218,7 +218,7 @@ function MenuItemCard({
           {/* Menu Item Image */}
           {item.image && (
             <div className="relative flex-shrink-0 self-center">
-              <div className="relative w-36 h-36 rounded-2xl overflow-hidden shadow-2xl group-hover:shadow-3xl transition-all duration-500">
+              <div className="relative w-44 h-44 rounded-2xl overflow-hidden shadow-2xl group-hover:shadow-3xl transition-all duration-500">
                 <div
                   className="absolute inset-0 opacity-60 blur-sm"
                   style={{
@@ -290,7 +290,7 @@ function MenuItemCard({
                 {/* Description */}
                 {item.description && (
                   <p
-                    className="text-sm font-medium line-clamp-2 leading-snug pl-4 py-2"
+                    className="text-xl font-medium line-clamp-2 leading-snug pl-4 py-4"
                     style={{
                       color: `${secondaryColor}EE`,
                       textShadow: "0 1px 3px rgba(0,0,0,0.3)",
@@ -312,9 +312,9 @@ function MenuItemCard({
                       <span className="text-white text-sm">🍽️</span>
                     </div>
                     <span
-                      className="px-3 py-1 rounded-full text-xs font-bold shadow-lg"
+                      className="px-3 py-1 rounded-full text-xl font-bold shadow-lg"
                       style={{
-                        backgroundColor: `${accentColor}40`,
+                        backgroundColor: `${accentColor}10`,
                         color: accentColor,
                         border: `2px solid ${accentColor}80`,
                       }}
@@ -328,9 +328,9 @@ function MenuItemCard({
               {/* Price Box - Right */}
               <div className="flex flex-col items-end justify-center flex-shrink-0">
                 <div
-                  className="px-4 py-3 rounded-2xl shadow-lg text-right w-fit"
+                  className="px-4 py-8 rounded-2xl shadow-lg text-right w-fit"
                   style={{
-                    background: `linear-gradient(135deg, ${primaryColor}30, ${secondaryColor}30)`,
+                    background: `linear-gradient(135deg, ${primaryColor}10, ${secondaryColor}10)`,
                     border: `2px solid ${primaryColor}80`,
                   }}
                 >

@@ -2030,7 +2030,7 @@ export function MasjidTemplate({
                 {/* Time with enhanced typography */}
                 <div className="mb-6 mt-4">
                   <p
-                    className="text-[11rem] font-black leading-none tracking-tighter font-mono"
+                    className="text-[14rem] font-black leading-none tracking-tighter font-mono"
                     style={{
                       color: customization.colors.text,
                       textShadow: `
@@ -2204,23 +2204,6 @@ export function MasjidTemplate({
                       {currentPrayerInfo.countdownSecs}
                     </p>
                   </div>
-
-                  {/* Progress bar */}
-                  <div className="mt-8 w-3/4 mx-auto">
-                    <div className="h-2 rounded-full bg-white/20 overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-1000 ease-out"
-                        style={{
-                          width: "100%",
-                          background: `linear-gradient(90deg, 
-                          ${customization.colors.accent}80 0%,
-                          ${customization.colors.accent} 50%,
-                          ${customization.colors.accent}80 100%
-                        )`,
-                        }}
-                      ></div>
-                    </div>
-                  </div>
                 </div>
               </div>
             ) : (
@@ -2316,7 +2299,7 @@ export function MasjidTemplate({
           <div
             className="px-12 py-2 rounded-[4rem] backdrop-blur-sm relative overflow-hidden"
             style={{
-              backgroundColor: `${customization.colors.primary}40`,
+              backgroundColor: `${customization.colors.primary}10`,
               border: `3px solid ${customization.colors.accent}80`,
               boxShadow: `0 8px 32px ${customization.colors.primary}60, inset 0 0 40px ${customization.colors.accent}20`,
             }}
@@ -2459,7 +2442,7 @@ export function MasjidTemplate({
             <div
               className="p-8 rounded-[4rem] backdrop-blur-sm text-center relative overflow-hidden"
               style={{
-                backgroundColor: `${customization.colors.primary}40`,
+                backgroundColor: `${customization.colors.primary}20`,
                 border: `3px solid ${customization.colors.accent}80`,
                 boxShadow: `0 8px 32px ${customization.colors.primary}60, inset 0 0 40px ${customization.colors.accent}20`,
               }}
@@ -2499,7 +2482,7 @@ export function MasjidTemplate({
             <div
               className="p-4 rounded-[4rem] backdrop-blur-sm text-center relative overflow-hidden"
               style={{
-                backgroundColor: `${customization.colors.primary}40`,
+                backgroundColor: `${customization.colors.primary}20`,
                 border: `3px solid ${customization.colors.accent}80`,
                 boxShadow: `0 8px 32px ${customization.colors.primary}60, inset 0 0 40px ${customization.colors.accent}20`,
               }}
@@ -2634,7 +2617,7 @@ export function MasjidTemplate({
           <div
             className="flex flex-col items-center justify-center p-8 rounded-3xl backdrop-blur-sm transition-all text-center"
             style={{
-              backgroundColor: `${customization.colors.primary}30`,
+              backgroundColor: `${customization.colors.primary}10`,
               border: `4px solid ${customization.colors.accent}`,
               boxShadow: `0 10px 30px rgba(0, 0, 0, 0.4)`,
             }}
