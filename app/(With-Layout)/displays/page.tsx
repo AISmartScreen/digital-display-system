@@ -421,7 +421,7 @@ export default function DisplaysPage() {
                 } Template`}
                 resolution="1920x1080"
                 lastActive="Just now"
-                thumbnail={thumbnails[templateType] || thumbnails.masjid}
+                thumbnail={thumbnails[templateType] || thumbnails.retail}
                 onEdit={handleEdit}
                 onDelete={openDeleteDialog}
                 onPreview={handlePreview}

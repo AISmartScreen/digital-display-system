@@ -123,6 +123,16 @@ export default function PreviewPage() {
             backgroundStyle={getBackgroundStyle()}
           />
         );
+      case "retail-modern":
+        return (
+          <RetailTemplate
+            displayId={customization.displayId}
+            displayName={customization.displayName}
+            templateType={customization.templateType}
+            customization={customization}
+            backgroundStyle={getBackgroundStyle()}
+          />
+        );
       default:
         return (
           <div className="text-white text-2xl">

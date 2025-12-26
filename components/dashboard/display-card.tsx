@@ -38,6 +38,7 @@ export function DisplayCard({
       masjid: "/mosque-background.jpg",
       hospital: "/hospital-background.jpg",
       restaurant: "/restaurant-background.jpg",
+      retail: "/retail-background.jpg",
     };
     return previewImages[type] || previewImages.restaurant;
   };

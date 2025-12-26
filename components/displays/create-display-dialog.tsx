@@ -49,6 +49,12 @@ export function CreateDisplayDialog({
       description: "Menu boards, daily specials, promotions",
       icon: "🍽️",
     },
+    {
+      id: "retail",
+      name: "Retail",
+      description: "Product displays, promotions, sales info",
+      icon: "🏬",
+    },
   ];
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {

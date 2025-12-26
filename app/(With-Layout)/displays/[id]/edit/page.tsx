@@ -85,7 +85,7 @@ export default function EditDisplayPage() {
           id: data.id,
           name: data.name,
           template_type: data.template_type,
-          templateType: templateTypeMap[data.template_type] || "masjid",
+          templateType: templateTypeMap[data.template_type] || "retail",
           status: data.status === "active" ? "active" : "disabled",
           displayUrl: `${window.location.origin}/displays/${data.id}/live`,
           config: data.config || {},

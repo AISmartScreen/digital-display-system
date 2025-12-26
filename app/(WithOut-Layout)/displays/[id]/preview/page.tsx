@@ -10,6 +10,7 @@ import { MasjidTemplate } from "@/components/templates/masjid-template";
 import { HospitalTemplate } from "@/components/templates/hospital-template";
 import RestaurantTemplate from "@/components/templates/restaurant-template";
 import { CorporateTemplate } from "@/components/templates/corporate-template";
+import RetailTemplate from "@/components/templates/retail-template";
 
 export default function PreviewPage() {
   const searchParams = useSearchParams();
@@ -126,6 +127,16 @@ export default function PreviewPage() {
       case "restaurant-modern":
         return (
           <RestaurantTemplate
+            displayId={customization.displayId}
+            displayName={customization.displayName}
+            templateType={customization.templateType}
+            customization={customization}
+            backgroundStyle={getBackgroundStyle()}
+          />
+        );
+      case "retail-modern":
+        return (
+          <RetailTemplate
             displayId={customization.displayId}
             displayName={customization.displayName}
             templateType={customization.templateType}

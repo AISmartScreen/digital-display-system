@@ -49,6 +49,8 @@ export function LivePreview({
         ? "corporate-dashboard"
         : displayData.templateType === "restaurant"
         ? "restaurant-modern"
+        : displayData.templateType === "retail"
+        ? "retail-modern"
         : displayData.config.template || "masjid-classic";
 
     // Prepare the config with template name
@@ -84,6 +86,8 @@ export function LivePreview({
           ? "hospital-modern"
           : displayData.templateType === "restaurant"
           ? "restaurant-modern"
+          : displayData.templateType === "retail"
+          ? "retail-modern"
           : displayData.templateType === "corporate"
           ? "corporate-dashboard"
           : displayData.config.template || "masjid-classic";
@@ -93,16 +97,31 @@ export function LivePreview({
         template: fullTemplateName,
       };
 
+      // Get the appropriate name based on template type
+      const getDisplayName = () => {
+        switch (displayData.templateType) {
+          case "masjid":
+            return displayData.config.masjidName;
+          case "hospital":
+            return displayData.config.hospitalName;
+          case "restaurant":
+            return displayData.config.restaurantName;
+          case "retail":
+            return displayData.config.shopName;
+          case "corporate":
+            return displayData.config.companyName;
+          default:
+            return displayData.name || displayData.displayName;
+        }
+      };
+
       const response = await fetch(`/api/displays/${displayData.id}/config`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name:
-            displayData.config.masjidName ||
-            displayData.name ||
-            displayData.displayName,
+          name: getDisplayName() || displayData.name || displayData.displayName,
           config: configToSave,
           templateType: displayData.templateType,
         }),
