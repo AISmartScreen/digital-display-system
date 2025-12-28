@@ -296,13 +296,13 @@ export default function DisplaysPage() {
           >
             <RefreshCw className="w-4 h-4" />
           </Button>
-          <Button
+          {/* <Button
             onClick={() => setIsDialogOpen(true)}
             className="bg-pink-300 text-gray-900 hover:bg-pink-400 w-full sm:w-auto"
           >
             <Plus size={18} className="mr-2" />
             Add New Display
-          </Button>
+          </Button> */}
         </div>
       </div>
 
