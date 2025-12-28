@@ -22,6 +22,7 @@ export function DisplayList() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
 
   const loadDisplays = async () => {
@@ -51,6 +52,7 @@ export function DisplayList() {
         if (response.ok) {
           const data = await response.json();
           setUserId(data.user.id);
+          setIsAdmin(data.user.role === "admin"); // Check if user is admin
         } else {
           console.error("Failed to fetch user");
           router.push("/login");
@@ -185,12 +187,13 @@ export function DisplayList() {
         </div>
       )}
 
-      {/* Pass userId to CreateDisplayDialog */}
+      {/* Pass userId and isAdmin to CreateDisplayDialog */}
       <CreateDisplayDialog
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
         onSuccess={handleAddDisplay}
-        userId={userId} // ADD THIS PROP
+        userId={userId}
+        isAdmin={isAdmin}
       />
     </div>
   );
