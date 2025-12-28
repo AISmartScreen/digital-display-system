@@ -124,8 +124,36 @@ function getDefaultConfig(templateType: string): DisplayConfig {
   return defaults[template] || defaults['masjid-classic'];
 }
 
+// Helper function to check if user is admin
+async function checkIsAdmin(userId: string): Promise<boolean> {
+  const supabase = await createClient(supabaseUrl, supabaseAnonKey)
+  
+  const { data, error } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', userId)
+    .single()
+
+  if (error || !data) {
+    console.error('Error checking user role:', error)
+    return false
+  }
+
+  return data.role === 'admin'
+}
+
 export async function createDisplay(data: DisplayData, userId: string) {
   const supabase = await createClient(supabaseUrl, supabaseAnonKey)
+  
+  // CHECK IF USER IS ADMIN
+  const isAdmin = await checkIsAdmin(userId)
+  
+  if (!isAdmin) {
+    return { 
+      error: 'Only administrators can create new displays. Please contact your administrator.', 
+      data: null 
+    }
+  }
   
   const displayId = crypto.randomUUID()
 
@@ -146,7 +174,7 @@ export async function createDisplay(data: DisplayData, userId: string) {
       name: data.name,
       template_type: data.template_type,
       config: config,
-      user_id: userId, // ADD THIS LINE
+      user_id: userId,
     })
     .select()
     .single()
@@ -183,8 +211,17 @@ export async function getDisplays(userId?: string) {
   return { data, error: null }
 }
 
-export async function deleteDisplay(id: string) {
+export async function deleteDisplay(id: string, userId: string) {
   const supabase = await createClient(supabaseUrl, supabaseAnonKey)
+  
+  // CHECK IF USER IS ADMIN
+  const isAdmin = await checkIsAdmin(userId)
+  
+  if (!isAdmin) {
+    return { 
+      error: 'Only administrators can delete displays. Please contact your administrator.' 
+    }
+  }
   
   const { error } = await supabase
     .from('displays')
@@ -217,8 +254,17 @@ export async function getDisplayById(id: string) {
   return { data, error: null }
 }
 
-export async function updateDisplay(id: string, data: Partial<DisplayData>) {
+export async function updateDisplay(id: string, data: Partial<DisplayData>, userId: string) {
   const supabase = await createClient(supabaseUrl, supabaseAnonKey)
+  
+  // CHECK IF USER IS ADMIN
+  const isAdmin = await checkIsAdmin(userId)
+  
+  if (!isAdmin) {
+    return { 
+      error: 'Only administrators can update displays. Please contact your administrator.' 
+    }
+  }
   
   const updateData: any = {}
   
