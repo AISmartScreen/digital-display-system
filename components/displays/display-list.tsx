@@ -135,14 +135,16 @@ export function DisplayList() {
           >
             <RefreshCw className="w-4 h-4" />
           </Button>
-          <Button
-            onClick={() => setIsDialogOpen(true)}
-            className="bg-orange-500 hover:bg-orange-600 text-white rounded-lg px-4 py-2 sm:px-6 sm:py-3 flex items-center gap-2 transition-colors"
-          >
-            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="hidden sm:inline">Create Display</span>
-            <span className="sm:hidden">Add</span>
-          </Button>
+          {isAdmin && (
+            <Button
+              onClick={() => setIsDialogOpen(true)}
+              className="bg-orange-500 hover:bg-orange-600 text-white rounded-lg px-4 py-2 sm:px-6 sm:py-3 flex items-center gap-2 transition-colors"
+            >
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">Create Display</span>
+              <span className="sm:hidden">Add</span>
+            </Button>
+          )}
         </div>
       </div>
 
