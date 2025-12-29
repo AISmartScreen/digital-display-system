@@ -105,6 +105,9 @@ export function DisplayList() {
     router.push(`/displays/${id}/live`);
   };
 
+  // Check if user can create more displays
+  const canCreateDisplay = isAdmin || displays.length === 0;
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -123,6 +126,11 @@ export function DisplayList() {
           <h2 className="text-xl sm:text-2xl font-bold text-white">Displays</h2>
           <p className="text-gray-400 text-sm mt-1">
             Create and manage your display screens
+            {!isAdmin && displays.length > 0 && (
+              <span className="block text-xs text-gray-500 mt-1">
+                (Client accounts are limited to 1 display)
+              </span>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -135,7 +143,7 @@ export function DisplayList() {
           >
             <RefreshCw className="w-4 h-4" />
           </Button>
-          {isAdmin && (
+          {canCreateDisplay && (
             <Button
               onClick={() => setIsDialogOpen(true)}
               className="bg-orange-500 hover:bg-orange-600 text-white rounded-lg px-4 py-2 sm:px-6 sm:py-3 flex items-center gap-2 transition-colors"
@@ -161,13 +169,15 @@ export function DisplayList() {
           <p className="text-gray-500 text-sm mb-6">
             Create your first display to get started
           </p>
-          <Button
-            onClick={() => setIsDialogOpen(true)}
-            className="bg-orange-500 hover:bg-orange-600 text-white rounded-lg px-4 py-2"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Create Display
-          </Button>
+          {canCreateDisplay && (
+            <Button
+              onClick={() => setIsDialogOpen(true)}
+              className="bg-orange-500 hover:bg-orange-600 text-white rounded-lg px-4 py-2"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create Display
+            </Button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
