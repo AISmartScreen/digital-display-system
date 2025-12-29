@@ -6,23 +6,21 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { AlertCircle, X, Lock } from "lucide-react";
+import { AlertCircle, X } from "lucide-react";
 import { createDisplay } from "@/app/actions/displays";
 
 interface CreateDisplayDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (display: any) => void;
-  userId: string | null;
-  isAdmin: boolean; // ADD THIS
+  userId: string | null; // ADD THIS
 }
 
 export function CreateDisplayDialog({
   isOpen,
   onClose,
   onSuccess,
-  userId,
-  isAdmin, // ADD THIS
+  userId, // ADD THIS
 }: CreateDisplayDialogProps) {
   const [step, setStep] = useState<"details" | "template">("details");
   const [formData, setFormData] = useState({
@@ -68,14 +66,9 @@ export function CreateDisplayDialog({
   };
 
   const handleCreate = async () => {
+    // ADD THIS CHECK
     if (!userId) {
       setError("User not authenticated. Please log in again.");
-      return;
-    }
-
-    // ADD ADMIN CHECK
-    if (!isAdmin) {
-      setError("Only administrators can create new displays.");
       return;
     }
 
@@ -89,7 +82,7 @@ export function CreateDisplayDialog({
           name: formData.displayName,
           template_type: formData.templateType,
         },
-        userId
+        userId // ADD THIS
       );
 
       if (createError) {
@@ -111,49 +104,6 @@ export function CreateDisplayDialog({
   };
 
   if (!isOpen) return null;
-
-  // Show admin-only message for non-admin users
-  if (!isAdmin) {
-    return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-        <Card className="w-full max-w-md bg-slate-900 border-slate-800">
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-slate-50">
-                Create New Display
-              </h2>
-              <button
-                onClick={onClose}
-                className="text-slate-400 hover:text-slate-50"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="text-center py-8">
-              <div className="w-16 h-16 bg-orange-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Lock className="w-8 h-8 text-orange-500" />
-              </div>
-              <h3 className="text-lg font-semibold text-slate-50 mb-2">
-                Admin Access Required
-              </h3>
-              <p className="text-slate-400 text-sm mb-6">
-                Only administrators have permission to create new displays.
-                Please contact your administrator if you need a new display
-                created.
-              </p>
-              <Button
-                onClick={onClose}
-                className="bg-orange-500 hover:bg-orange-600 text-white"
-              >
-                Close
-              </Button>
-            </div>
-          </div>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
