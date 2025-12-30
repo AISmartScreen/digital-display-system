@@ -2038,7 +2038,7 @@ export function MasjidTemplate({
                       0 4px 30px rgba(0, 0, 0, 0.8),
                       0 8px 40px rgba(0, 0, 0, 0.6)
                     `,
-                      fontFamily: "'Orbitron', 'Rajdhani', monospace",
+                      fontFamily: customization.font,
                     }}
                   >
                     {currentTime
