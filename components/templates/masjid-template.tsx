@@ -2031,14 +2031,15 @@ export function MasjidTemplate({
                 {/* Time with enhanced typography */}
                 <div className="mb-6 mt-4">
                   <p
-                    className={`text-[${customization.fontSize}rem] font-black leading-[0.9] tracking-wide tabular-nums`}
+                    className="font-black leading-[0.9] tracking-wide tabular-nums"
                     style={{
+                      fontSize: `${customization.fontSize}rem`,
                       color: customization.colors.text,
                       textShadow: `
-                      0 2px 20px ${customization.colors.primary}30,
-                      0 4px 30px rgba(0, 0, 0, 0.8),
-                      0 8px 40px rgba(0, 0, 0, 0.6)
-                    `,
+      0 2px 20px ${customization.colors.primary}30,
+      0 4px 30px rgba(0, 0, 0, 0.8),
+      0 8px 40px rgba(0, 0, 0, 0.6)
+    `,
                       fontFamily: customization.font,
                     }}
                   >
