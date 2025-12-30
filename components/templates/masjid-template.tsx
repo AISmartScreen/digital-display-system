@@ -2031,7 +2031,7 @@ export function MasjidTemplate({
                 {/* Time with enhanced typography */}
                 <div className="mb-6 mt-4">
                   <p
-                    className={`text-[${customization.fontSize}] font-black leading-[0.9] tracking-wide tabular-nums`}
+                    className={`text-[${customization.fontSize}rem] font-black leading-[0.9] tracking-wide tabular-nums`}
                     style={{
                       color: customization.colors.text,
                       textShadow: `
