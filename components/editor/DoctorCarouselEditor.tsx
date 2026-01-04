@@ -502,7 +502,7 @@ export function DoctorCarouselEditor({
               </label>
               <input
                 type="range"
-                min="2000"
+                min="1000"
                 max="100000"
                 step="1000"
                 value={doctorRotationSpeed}
