@@ -56,12 +56,11 @@ export function DoctorCarousel({
       lastTimeRef.current = timestamp;
 
       setScrollPosition((prev) => {
-        // Optimized formula for 1-100 range:
-        // slideSpeed range: 1-100
-        // Divisor: 25
-        // Result: 1/25 = 0.04 (very slow) to 100/25 = 4.0 (very fast)
-        // This gives 100x difference - extremely sensitive!
-        const speed = slideSpeed / 25;
+        // Formula for 1-100 range:
+        // slideSpeed 1 = 0.02 (very slow)
+        // slideSpeed 50 = 1.0 (medium)
+        // slideSpeed 100 = 2.0 (very fast)
+        const speed = slideSpeed / 50;
         const newPosition = prev + (speed * delta) / 16.67;
         return newPosition;
       });
@@ -81,15 +80,20 @@ export function DoctorCarousel({
     if (layout === "Advanced" && activeDoctors.length > 1) {
       if (doctorRotationRef.current) clearInterval(doctorRotationRef.current);
 
+      // Convert slideSpeed (1-100) to rotation interval
+      // slideSpeed 1 = 10000ms (10s, slowest)
+      // slideSpeed 100 = 2000ms (2s, fastest)
+      const rotationInterval = 10000 - ((slideSpeed - 1) * 8000) / 99;
+
       doctorRotationRef.current = setInterval(() => {
         setCurrentDoctorIndex((prev) => (prev + 1) % activeDoctors.length);
-      }, doctorRotationSpeed);
+      }, rotationInterval);
 
       return () => {
         if (doctorRotationRef.current) clearInterval(doctorRotationRef.current);
       };
     }
-  }, [layout, activeDoctors.length, doctorRotationSpeed]);
+  }, [layout, activeDoctors.length, slideSpeed]);
 
   const getCurrentDoctor = () => {
     if (layout === "Advanced" && activeDoctors.length > 0) {

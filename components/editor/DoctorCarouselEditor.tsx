@@ -502,9 +502,9 @@ export function DoctorCarouselEditor({
               </label>
               <input
                 type="range"
-                min="1000"
-                max="100000"
-                step="1000"
+                min="2000"
+                max="15000"
+                step="500"
                 value={doctorRotationSpeed}
                 onChange={(e) =>
                   handleFieldChange(
