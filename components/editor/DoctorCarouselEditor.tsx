@@ -515,16 +515,16 @@ export function DoctorCarouselEditor({
                 className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
               />
               <div className="flex justify-between text-xs text-slate-500 mt-1">
-                <span>2s</span>
-                <span>10s</span>
+                <span>1</span>
+                <span>10</span>
               </div>
-              {enabledCount > 0 && (
+              {/* {enabledCount > 0 && (
                 <p className="text-xs text-slate-500 mt-1">
                   Full cycle: {(doctorRotationSpeed * enabledCount) / 1000}s for{" "}
                   {enabledCount} enabled doctor
                   {enabledCount !== 1 ? "s" : ""}
                 </p>
-              )}
+              )} */}
             </div>
           )}
 

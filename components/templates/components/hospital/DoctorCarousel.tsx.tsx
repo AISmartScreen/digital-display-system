@@ -28,7 +28,7 @@ interface DoctorCarouselProps {
 export function DoctorCarousel({
   doctors = [],
   layout = "Authentic",
-  slideSpeed = 20,
+  slideSpeed = 50,
   doctorRotationSpeed = 6000,
   primaryColor,
   secondaryColor,
@@ -56,7 +56,12 @@ export function DoctorCarousel({
       lastTimeRef.current = timestamp;
 
       setScrollPosition((prev) => {
-        const speed = slideSpeed / 15;
+        // Optimized formula for 1-100 range:
+        // slideSpeed range: 1-100
+        // Divisor: 25
+        // Result: 1/25 = 0.04 (very slow) to 100/25 = 4.0 (very fast)
+        // This gives 100x difference - extremely sensitive!
+        const speed = slideSpeed / 25;
         const newPosition = prev + (speed * delta) / 16.67;
         return newPosition;
       });
