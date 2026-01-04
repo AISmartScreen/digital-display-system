@@ -523,7 +523,6 @@ function HospitalTemplateAuthentic({
           >
             <div className="flex gap-8 px-8 pb-8 pt-8 h-full overflow-hidden">
               {/* Left Side - Doctors Display */}
-              <pre>{JSON.stringify(settings.slideSpeed, null, 2)}</pre>
               <DoctorCarousel
                 doctors={settings.doctors}
                 layout={settings.layout}
