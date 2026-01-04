@@ -468,7 +468,7 @@ export function DoctorCarouselEditor({
           </h4>
 
           {/* Carousel Scroll Speed (for Authentic layout) */}
-          {layoutConfig === "Authentic" && (
+          {/* {layoutConfig === "Authentic" && (
             <div>
               <label className="text-xs text-slate-400 mb-1 block flex items-center justify-between">
                 <span>Carousel Scroll Speed</span>
@@ -489,10 +489,9 @@ export function DoctorCarouselEditor({
                 <span>Fast (50)</span>
               </div>
             </div>
-          )}
+          )} */}
 
           {/* Doctor Rotation Speed (for Advanced layout) */}
-          {layoutConfig === "Advanced" && (
             <div>
               <label className="text-xs text-slate-400 mb-1 block flex items-center justify-between">
                 <span>Doctor Rotation Speed</span>
@@ -526,7 +525,6 @@ export function DoctorCarouselEditor({
                 </p>
               )} */}
             </div>
-          )}
 
           {enabledCount === 0 && totalCount > 0 && (
             <p className="text-xs text-amber-400 bg-amber-500/10 p-2 rounded">
