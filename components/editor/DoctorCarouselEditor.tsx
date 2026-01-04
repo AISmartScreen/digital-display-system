@@ -503,7 +503,7 @@ export function DoctorCarouselEditor({
               <input
                 type="range"
                 min="2000"
-                max="10000"
+                max="100000"
                 step="1000"
                 value={doctorRotationSpeed}
                 onChange={(e) =>
