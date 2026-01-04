@@ -56,7 +56,7 @@ export function DoctorCarousel({
       lastTimeRef.current = timestamp;
 
       setScrollPosition((prev) => {
-        const speed = slideSpeed / 80;
+        const speed = slideSpeed / 5;
         const newPosition = prev + (speed * delta) / 16.67;
         return newPosition;
       });

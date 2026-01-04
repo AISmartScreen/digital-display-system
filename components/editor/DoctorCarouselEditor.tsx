@@ -9,12 +9,10 @@ import {
   Upload,
   Calendar,
   Clock,
-  GripVertical,
   ArrowUp,
   ArrowDown,
   ChevronsUp,
   ChevronsDown,
-  Star,
   Search,
   SortAsc,
   Eye,
@@ -48,8 +46,6 @@ export function DoctorCarouselEditor({
   const [uploadingDoctorIndex, setUploadingDoctorIndex] = useState<
     number | null
   >(null);
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showDisabled, setShowDisabled] = useState(true);
 
@@ -117,7 +113,6 @@ export function DoctorCarouselEditor({
       image: "",
       available: "",
       enabled: true,
-      featured: false,
     };
 
     onConfigChange({
@@ -359,37 +354,6 @@ export function DoctorCarouselEditor({
     }
   };
 
-  // Drag and Drop Handlers
-  const handleDragStart = (e: React.DragEvent, idx: number) => {
-    setDraggedIndex(idx);
-    e.dataTransfer.effectAllowed = "move";
-  };
-
-  const handleDragOver = (e: React.DragEvent, idx: number) => {
-    e.preventDefault();
-    if (draggedIndex !== null && draggedIndex !== idx) {
-      setDragOverIndex(idx);
-    }
-  };
-
-  const handleDragLeave = () => {
-    setDragOverIndex(null);
-  };
-
-  const handleDrop = (e: React.DragEvent, idx: number) => {
-    e.preventDefault();
-    if (draggedIndex !== null && draggedIndex !== idx) {
-      moveDoctor(draggedIndex, idx);
-    }
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-  };
-
   // Handle doctor image upload
   const handleDoctorImageUpload = (idx: number, imageUrl: string) => {
     handleUpdateDoctor(idx, "image", imageUrl);
@@ -578,8 +542,6 @@ export function DoctorCarouselEditor({
             const actualIdx = allDoctors.findIndex(
               (d: any) => d.id === doctor.id
             );
-            const isDragging = draggedIndex === actualIdx;
-            const isDropTarget = dragOverIndex === actualIdx;
 
             // Check if we need to show a separator (transition from enabled to disabled)
             const prevDoctor =
@@ -602,32 +564,16 @@ export function DoctorCarouselEditor({
                 )}
 
                 <div
-                  key={doctor.id}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, actualIdx)}
-                  onDragOver={(e) => handleDragOver(e, actualIdx)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, actualIdx)}
-                  onDragEnd={handleDragEnd}
                   className={`p-4 rounded-lg space-y-4 border transition-all ${
                     doctor.enabled === false
                       ? "bg-slate-800/30 border-slate-700 opacity-60"
                       : "bg-slate-700/50 border-slate-600"
-                  } ${isDragging ? "opacity-50 scale-95" : ""} ${
-                    isDropTarget
-                      ? "border-blue-500 border-2 bg-blue-500/10"
-                      : ""
                   }`}
                 >
                   {/* Header with Controls */}
                   <div className="flex items-start justify-between gap-2">
-                    {/* Left: Drag Handle and Status */}
+                    {/* Left: Status */}
                     <div className="flex items-center gap-3 flex-1">
-                      {/* Drag Handle */}
-                      <div className="cursor-move text-slate-500 hover:text-slate-300 transition-colors">
-                        <GripVertical className="w-5 h-5" />
-                      </div>
-
                       {/* Enable/Disable Toggle */}
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input
@@ -664,12 +610,6 @@ export function DoctorCarouselEditor({
                           >
                             {doctor.enabled === false ? "Disabled" : "Active"}
                           </span>
-                          {doctor.featured && (
-                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-600 text-white flex items-center gap-1">
-                              <Star className="w-3 h-3" />
-                              Featured
-                            </span>
-                          )}
                         </div>
                         {doctor.name && (
                           <p className="text-xs text-slate-400 mt-0.5">
@@ -849,50 +789,23 @@ export function DoctorCarouselEditor({
 
                     {/* Doctor Details Form */}
                     <div className="flex-1 space-y-3">
-                      {/* Name and Featured Toggle */}
-                      <div className="flex gap-2">
-                        <div className="flex-1">
-                          <label className="text-xs text-slate-400 mb-1 block">
-                            Doctor's Name
-                          </label>
-                          <Input
-                            value={doctor.name}
-                            onChange={(e) =>
-                              handleUpdateDoctor(
-                                actualIdx,
-                                "name",
-                                e.target.value
-                              )
-                            }
-                            placeholder="Dr. John Smith"
-                            className="bg-slate-700 border-slate-600 text-slate-50"
-                          />
-                        </div>
-                        <div className="flex flex-col justify-end">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() =>
-                              handleUpdateDoctor(
-                                actualIdx,
-                                "featured",
-                                !doctor.featured
-                              )
-                            }
-                            className={`h-9 ${
-                              doctor.featured
-                                ? "bg-amber-600 border-amber-600 text-white hover:bg-amber-700"
-                                : "border-slate-600 text-slate-400 hover:bg-slate-700"
-                            }`}
-                            title="Mark as featured"
-                          >
-                            <Star
-                              className={`w-3 h-3 ${
-                                doctor.featured ? "fill-white" : ""
-                              }`}
-                            />
-                          </Button>
-                        </div>
+                      {/* Doctor Name */}
+                      <div>
+                        <label className="text-xs text-slate-400 mb-1 block">
+                          Doctor's Name
+                        </label>
+                        <Input
+                          value={doctor.name}
+                          onChange={(e) =>
+                            handleUpdateDoctor(
+                              actualIdx,
+                              "name",
+                              e.target.value
+                            )
+                          }
+                          placeholder="Dr. John Smith"
+                          className="bg-slate-700 border-slate-600 text-slate-50"
+                        />
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
@@ -988,46 +901,12 @@ export function DoctorCarouselEditor({
                           className="bg-slate-700 border-slate-600 text-slate-50 text-sm"
                         />
                       </div>
-
-                      {/* Custom Display Duration (Advanced Layout Only) */}
-                      {layoutConfig === "Advanced" && (
-                        <div>
-                          <label className="text-xs text-slate-400 mb-1 block flex items-center justify-between">
-                            <span>Custom Display Duration (optional)</span>
-                            {doctor.customDuration && (
-                              <span className="text-slate-500">
-                                {doctor.customDuration / 1000}s
-                              </span>
-                            )}
-                          </label>
-                          <input
-                            type="range"
-                            min="0"
-                            max="15000"
-                            step="1000"
-                            value={doctor.customDuration || 0}
-                            onChange={(e) => {
-                              const value = parseInt(e.target.value);
-                              handleUpdateDoctor(
-                                actualIdx,
-                                "customDuration",
-                                value === 0 ? undefined : value
-                              );
-                            }}
-                            className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
-                          />
-                          <div className="flex justify-between text-xs text-slate-500 mt-1">
-                            <span>Default</span>
-                            <span>15s</span>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </div>
 
                   {/* Configuration Summary */}
                   <div className="p-2 bg-slate-800/50 rounded text-xs text-slate-400">
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                       <div>
                         <span className="text-slate-500">ID:</span>
                         <span className="ml-1 font-mono text-[10px]">
@@ -1065,18 +944,6 @@ export function DoctorCarouselEditor({
                           }`}
                         >
                           {doctor.enabled === false ? "disabled" : "active"}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500">Featured:</span>
-                        <span
-                          className={`ml-1 ${
-                            doctor.featured
-                              ? "text-amber-400"
-                              : "text-slate-500"
-                          }`}
-                        >
-                          {doctor.featured ? "Yes" : "No"}
                         </span>
                       </div>
                     </div>
@@ -1127,10 +994,6 @@ export function DoctorCarouselEditor({
             </h4>
             <ul className="text-xs text-blue-300/80 space-y-1">
               <li>
-                • <strong>Drag & Drop:</strong> Click and hold the grip icon to
-                reorder doctors within their group
-              </li>
-              <li>
                 • <strong>Arrow Buttons:</strong> Use up/down arrows to move
                 within enabled or disabled groups
               </li>
@@ -1143,12 +1006,16 @@ export function DoctorCarouselEditor({
                 reordered separately to maintain config structure
               </li>
               <li>
-                • <strong>Featured:</strong> Star icon highlights important
-                doctors in the carousel
+                • <strong>Toggle Status:</strong> Click the switch to
+                enable/disable doctors
               </li>
               <li>
                 • <strong>Bulk Actions:</strong> Use the toolbar to
                 enable/disable or sort multiple doctors
+              </li>
+              <li>
+                • <strong>Search:</strong> Filter doctors by name, specialty, or
+                qualifications
               </li>
             </ul>
           </div>
