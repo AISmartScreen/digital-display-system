@@ -52,6 +52,10 @@ interface HospitalCustomization {
     room: string;
   }>;
   galleryImages: string[];
+  galleryItems?: Array<{
+    image: string;
+    caption: string;
+  }>;
 }
 
 interface HospitalTemplateProps {
@@ -456,16 +460,17 @@ export function HospitalTemplate({
     const authenticCustomization = {
       ...customization,
       galleryItems,
+      // Ensure slideSpeed is passed through
+      slideSpeed: customization.doctorRotationSpeed || 20,
+      // Ensure doctors array is passed through
+      doctors: customization.doctors || [],
     };
 
     return (
-      <div>
-        {/* <pre>{JSON.stringify(authenticCustomization, null, 2)}</pre> */}
-        <HospitalTemplateAuthentic
-          customization={authenticCustomization}
-          backgroundStyle={backgroundStyle}
-        />
-      </div>
+      <HospitalTemplateAuthentic
+        customization={authenticCustomization}
+        backgroundStyle={backgroundStyle}
+      />
     );
   }
 

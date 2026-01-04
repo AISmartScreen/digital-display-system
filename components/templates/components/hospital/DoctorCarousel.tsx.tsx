@@ -80,20 +80,16 @@ export function DoctorCarousel({
     if (layout === "Advanced" && activeDoctors.length > 1) {
       if (doctorRotationRef.current) clearInterval(doctorRotationRef.current);
 
-      // Convert slideSpeed (1-100) to rotation interval
-      // slideSpeed 1 = 10000ms (10s, slowest)
-      // slideSpeed 100 = 2000ms (2s, fastest)
-      const rotationInterval = 10000 - ((slideSpeed - 1) * 8000) / 99;
-
+      // Use doctorRotationSpeed directly (in milliseconds)
       doctorRotationRef.current = setInterval(() => {
         setCurrentDoctorIndex((prev) => (prev + 1) % activeDoctors.length);
-      }, rotationInterval);
+      }, doctorRotationSpeed);
 
       return () => {
         if (doctorRotationRef.current) clearInterval(doctorRotationRef.current);
       };
     }
-  }, [layout, activeDoctors.length, slideSpeed]);
+  }, [layout, activeDoctors.length, doctorRotationSpeed]);
 
   const getCurrentDoctor = () => {
     if (layout === "Advanced" && activeDoctors.length > 0) {
