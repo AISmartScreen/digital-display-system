@@ -1,4 +1,4 @@
-// app/%28WithOut-Layout%29/displays/%5Bid%5D/preview/page.tsx
+// app/(WithOut-Layout)/displays/[id]/preview/page.tsx
 
 "use client";
 
@@ -15,13 +15,24 @@ import RetailTemplate from "@/components/templates/retail-template";
 export default function PreviewPage() {
   const searchParams = useSearchParams();
   const configString = searchParams.get("config");
+  const isEncoded = searchParams.get("encoded") === "true";
   const [customization, setCustomization] = useState<any>(null);
   const [scale, setScale] = useState(1);
 
   useEffect(() => {
     if (configString) {
       try {
-        const decoded = JSON.parse(decodeURIComponent(configString));
+        let decoded;
+        
+        // ✅ CHANGE: Check if config is base64 encoded
+        if (isEncoded) {
+          // Decode from base64
+          const decodedString = decodeURIComponent(escape(atob(configString)));
+          decoded = JSON.parse(decodedString);
+        } else {
+          // Original method (backward compatibility)
+          decoded = JSON.parse(decodeURIComponent(configString));
+        }
 
         // Normalize color configuration - prioritize colorTheme over colors
         // colorTheme is the source of truth for actual display colors
@@ -42,7 +53,7 @@ export default function PreviewPage() {
         console.error("Error parsing config:", e);
       }
     }
-  }, [configString]);
+  }, [configString, isEncoded]);
 
   // Perfect scaling with correct 16:9 landscape preview
   useEffect(() => {
