@@ -37,7 +37,7 @@ export function LivePreview({
     return () => clearTimeout(timeout);
   }, [displayData]);
 
-  // Construct preview URL with config (using URL params for live editing)
+  // Construct preview URL with config (using base64 compression)
   const getPreviewUrl = () => {
     // Map templateType to full template name
     const fullTemplateName =
@@ -59,10 +59,15 @@ export function LivePreview({
       template: fullTemplateName,
     };
 
-    // Build the preview URL (this uses URL params for live editing)
+    // ✅ CHANGE: Use base64 encoding to compress the config
+    const configString = JSON.stringify(configWithTemplate);
+    const encoded = btoa(unescape(encodeURIComponent(configString)));
+
+    // Build the preview URL with encoded config
     const baseUrl = `/displays/${displayData.id}/preview`;
     const params = new URLSearchParams({
-      config: JSON.stringify(configWithTemplate),
+      config: encoded, // Send as base64
+      encoded: "true", // Flag to indicate it's encoded
     });
     return `${baseUrl}?${params.toString()}`;
   };
