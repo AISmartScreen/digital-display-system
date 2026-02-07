@@ -91,7 +91,7 @@ const translations = {
     adhan: "அதான்",
     iqamah: "இகாமத்",
     adhanIn: "அதான் வரும் நேரம்",
-    iqamahIn: "இகாமத் வரும் நேரம்",
+    iqamahIn: "இகாமத் நேரம்",
   },
 };
 
@@ -735,17 +735,17 @@ export function MasjidTemplateAuthentic({
       const minutesUntilAdhan = adhanMinutes - currentMinutes;
       const minutesUntilIqamah = iqamahMinutes - currentMinutes;
 
-      if (minutesUntilAdhan > 0 && minutesUntilAdhan <= 10) {
-        const seconds = Math.floor(minutesUntilAdhan * 60);
-        return {
-          type: "adhan",
-          seconds,
-          prayerName: prayer.name,
-          prayerKey: prayer.key,
-          adhanTime: prayer.time,
-          iqamahTime: calculateIqamahTime(prayer.time, prayer.offset),
-        };
-      }
+      // if (minutesUntilAdhan > 0 && minutesUntilAdhan <= 10) {
+      //   const seconds = Math.floor(minutesUntilAdhan * 60);
+      //   return {
+      //     type: "adhan",
+      //     seconds,
+      //     prayerName: prayer.name,
+      //     prayerKey: prayer.key,
+      //     adhanTime: prayer.time,
+      //     iqamahTime: calculateIqamahTime(prayer.time, prayer.offset),
+      //   };
+      // }
 
       if (minutesUntilAdhan <= 0 && minutesUntilIqamah > 0) {
         const seconds = Math.floor(minutesUntilIqamah * 60);
@@ -1169,14 +1169,14 @@ export function MasjidTemplateAuthentic({
                       ...textStyle,
                       color:
                         countdownState.seconds > 300
-                          ? "#10B981"
-                          : countdownState.seconds > 60
-                          ? "#F59E0B"
+                          ? "#10B981"   // Green for >5 minutes
+                          : countdownState.seconds > 60       
+                          ? "#F59E0B"   // Amber for 1-5 minutes
                           : countdownState.seconds > 30
-                          ? "#F97316"
+                          ? "#F97316"   // Orange for 30-60 seconds
                           : countdownState.seconds > 10
-                          ? "#EF4444"
-                          : "#DC2626",
+                          ? "#F97316"   // Red-Orange for 10-30 seconds
+                          : "#F97316",  // Red for <10 seconds
                       animation: "subtlePulse 2s ease-in-out infinite",
                     }}
                   >
@@ -1190,14 +1190,14 @@ export function MasjidTemplateAuthentic({
                       fontWeight: 1000,
                       color:
                         countdownState.seconds > 300
-                          ? "#10B981"
+                          ? "#10B981"         // Green for >5 minutes
                           : countdownState.seconds > 60
-                          ? "#F59E0B"
+                          ? "#F59E0B"         // Amber for 1-5 minutes
                           : countdownState.seconds > 30
-                          ? "#F97316"
+                          ? "#F97316"         // Orange for 30-60 seconds
                           : countdownState.seconds > 10
-                          ? "#EF4444"
-                          : "#DC2626",
+                          ? "#F97316"        // Red-Orange for 10-30 seconds
+                          : "#F97316",       // Red for <10 seconds
                       textShadow:
                         countdownState.seconds > 300
                           ? `0 0 20px #10B98180, 0 0 40px #10B98160, 0 0 60px #10B98140, 6px 6px 20px rgba(0,0,0,0.9)`

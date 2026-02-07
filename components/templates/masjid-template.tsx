@@ -2398,11 +2398,14 @@ export function MasjidTemplate({
         {nextPrayerInfo.isAdhanTime ? (
           <div className="mb-2">
             <div
-              className="p-12 rounded-[4rem] backdrop-blur-sm text-center relative overflow-hidden animate-pulse"
+              className="p-12 rounded-[4rem] backdrop-blur-sm text-center relative overflow-hidden"
+              // style={{
+              //   backgroundColor: `${customization.colors.accent}60`,
+              //   border: `5px solid ${customization.colors.accent}`,
+              //   boxShadow: `0 0 60px ${customization.colors.accent}80, 0 12px 40px rgba(0, 0, 0, 0.6)`,
+              // }}
               style={{
-                backgroundColor: `${customization.colors.accent}60`,
                 border: `5px solid ${customization.colors.accent}`,
-                boxShadow: `0 0 60px ${customization.colors.accent}80, 0 12px 40px rgba(0, 0, 0, 0.6)`,
               }}
             >
               <div
@@ -2518,7 +2521,7 @@ export function MasjidTemplate({
         )}
 
         {/* Bottom Section - Masjid Name & Hijri Date */}
-        <div className="p-8 mt-0 rounded-3xl backdrop-blur-md text-center">
+        <div className="p-8 mt-0 rounded-3xl text-center">
           <p
             className="text-6xl font-bold tracking-wide"
             style={{
@@ -2705,11 +2708,11 @@ export function MasjidTemplate({
           {shouldShowCountdown ? (
             /* IQAMAH COUNTDOWN DISPLAY - Takes full width */
             <div
-              className="p-2 rounded-3xl backdrop-blur-sm text-center animate-pulse"
+              className="p-2 rounded-3xl backdrop-blur-sm text-center"
               style={{
-                backgroundColor: `${customization.colors.accent}40`,
+                // backgroundColor: `${customization.colors.accent}40`,
                 border: `6px solid ${customization.colors.accent}`,
-                boxShadow: `0 0 80px ${customization.colors.accent}60, 0 15px 50px rgba(0, 0, 0, 0.7)`,
+                // boxShadow: `0 0 80px ${customization.colors.accent}60, 0 15px 50px rgba(0, 0, 0, 0.7)`,
               }}
             >
               <div className="mb-0">

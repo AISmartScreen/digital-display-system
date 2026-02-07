@@ -295,10 +295,10 @@ export default function RetailTemplate({
             ? nextAd.duration * 1000 + 10000
             : 360000;
 
-        adSafetyTimeoutRef.current = setTimeout(() => {
-          console.error("⏱️ AD SAFETY TIMEOUT - Ad stuck, forcing skip");
-          handleAdComplete();
-        }, maxAdDuration);
+        // adSafetyTimeoutRef.current = setTimeout(() => {
+        //   console.error("⏱️ AD SAFETY TIMEOUT - Ad stuck, forcing skip");
+        //   handleAdComplete();
+        // }, maxAdDuration);
 
         return {
           ...prev,
@@ -505,6 +505,7 @@ export default function RetailTemplate({
           >
             <div className="flex gap-8 px-8 pb-8 pt-8 h-full overflow-hidden">
               {/* Left Side - Product Carousel */}
+              {productItems.length > 0 && (
               <MenuCarousel
                 menuItems={productItems}
                 layout={settings.layout}
@@ -515,16 +516,19 @@ export default function RetailTemplate({
                 accentColor={settings.accentColor}
                 carouselTitle={carouselTitle}
               />
+              )}
 
               {/* Right Side - Gallery Carousel */}
               <div className="flex flex-col justify-center">
                 <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-3xl overflow-hidden border border-white/20 shadow-2xl h-full flex flex-col relative">
+                  {galleryImages.length > 0 && (
                   <GalleryCarousel
                     images={galleryImages}
                     transitionSpeed={5000}
                     accentColor={settings.primaryColor}
                     isAdShowing={!!showAd}
                   />
+                  )}
                 </div>
               </div>
             </div>
