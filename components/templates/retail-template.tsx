@@ -488,7 +488,7 @@ export default function RetailTemplate({
               >
                 {formatTime(currentTime)}
               </div>
-              <div className="text-base text-gray-300">
+              <div className="text-3xl text-gray-300">
                 {formatDate(currentTime)}
               </div>
             </div>
