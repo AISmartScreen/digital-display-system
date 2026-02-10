@@ -469,7 +469,7 @@ export default function RetailTemplate({
                 </div>
               )}
               <div>
-                <h1 className="text-4xl font-bold text-white mb-1">
+                <h1 className="text-5xl font-bold text-white mb-1">
                   {settings.shopName}
                 </h1>
                 <p
